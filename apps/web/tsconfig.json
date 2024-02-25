@@ -1,0 +1,10 @@
+{
+  "extends": "@gluttony/typescript-config/solid.json",
+  "compilerOptions": {
+    "types": ["vinxi/client"],
+    "paths": {
+      "~/*": ["./src/*"],
+    },
+  },
+  "include": ["src"],
+}

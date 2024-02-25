@@ -1,0 +1,14 @@
+version: v1
+plugins:
+  - name: go
+    out: ./internal/proto
+    opt: paths=source_relative
+  - name: connect-go
+    out: ./internal/proto
+    opt: paths=source_relative
+  - name: es
+    out: ./packages/api
+    opt: target=ts
+  - name: connect-web
+    out: ./packages/api
+    opt: target=ts

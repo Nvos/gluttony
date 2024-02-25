@@ -1,0 +1,27 @@
+{
+  "name": "@gluttony/ui",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.tsx"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@gluttony/design-system": "workspace:^",
+    "@gluttony/eslint-config": "workspace:^",
+    "@gluttony/typescript-config": "workspace:^",
+    "@vanilla-extract/css": "^1.14.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.4",
+    "solid-js": "^1.8.15",
+    "typescript": "^5.3.3"
+  }
+}

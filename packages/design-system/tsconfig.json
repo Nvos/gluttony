@@ -1,0 +1,4 @@
+{
+  "extends": "@gluttony/typescript-config/solid.json",
+  "include": ["."],
+}

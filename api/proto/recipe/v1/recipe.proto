@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package recipev1;
+option go_package = "gluttony/internal/proto/recipe/v1;recipev1";
+
+message Recipe {
+  string id = 1;
+  string name = 2;
+}
+
+message GetRecipeRequest  {
+  int32 id = 1;
+}
+
+message GetRecipeResponse  {
+  Recipe recipe = 1;
+}
+
+service RecipeService {
+  rpc Login(GetRecipeRequest) returns (GetRecipeResponse);
+}
