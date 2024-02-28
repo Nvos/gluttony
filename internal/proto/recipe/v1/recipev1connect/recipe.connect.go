@@ -22,7 +22,7 @@ const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// RecipeServiceName is the fully-qualified name of the RecipeService service.
-	RecipeServiceName = "recipev1.RecipeService"
+	RecipeServiceName = "recipe.v1.RecipeService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -33,35 +33,35 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// RecipeServiceLoginProcedure is the fully-qualified name of the RecipeService's Login RPC.
-	RecipeServiceLoginProcedure = "/recipev1.RecipeService/Login"
+	// RecipeServiceGetRecipeProcedure is the fully-qualified name of the RecipeService's GetRecipe RPC.
+	RecipeServiceGetRecipeProcedure = "/recipe.v1.RecipeService/GetRecipe"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	recipeServiceServiceDescriptor     = v1.File_recipe_v1_recipe_proto.Services().ByName("RecipeService")
-	recipeServiceLoginMethodDescriptor = recipeServiceServiceDescriptor.Methods().ByName("Login")
+	recipeServiceServiceDescriptor         = v1.File_recipe_v1_recipe_proto.Services().ByName("RecipeService")
+	recipeServiceGetRecipeMethodDescriptor = recipeServiceServiceDescriptor.Methods().ByName("GetRecipe")
 )
 
-// RecipeServiceClient is a client for the recipev1.RecipeService service.
+// RecipeServiceClient is a client for the recipe.v1.RecipeService service.
 type RecipeServiceClient interface {
-	Login(context.Context, *connect.Request[v1.GetRecipeRequest]) (*connect.Response[v1.GetRecipeResponse], error)
+	GetRecipe(context.Context, *connect.Request[v1.GetRecipeRequest]) (*connect.Response[v1.GetRecipeResponse], error)
 }
 
-// NewRecipeServiceClient constructs a client for the recipev1.RecipeService service. By default, it
-// uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
-// uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
-// connect.WithGRPCWeb() options.
+// NewRecipeServiceClient constructs a client for the recipe.v1.RecipeService service. By default,
+// it uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and
+// sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC()
+// or connect.WithGRPCWeb() options.
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
 func NewRecipeServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) RecipeServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &recipeServiceClient{
-		login: connect.NewClient[v1.GetRecipeRequest, v1.GetRecipeResponse](
+		getRecipe: connect.NewClient[v1.GetRecipeRequest, v1.GetRecipeResponse](
 			httpClient,
-			baseURL+RecipeServiceLoginProcedure,
-			connect.WithSchema(recipeServiceLoginMethodDescriptor),
+			baseURL+RecipeServiceGetRecipeProcedure,
+			connect.WithSchema(recipeServiceGetRecipeMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 	}
@@ -69,17 +69,17 @@ func NewRecipeServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 
 // recipeServiceClient implements RecipeServiceClient.
 type recipeServiceClient struct {
-	login *connect.Client[v1.GetRecipeRequest, v1.GetRecipeResponse]
+	getRecipe *connect.Client[v1.GetRecipeRequest, v1.GetRecipeResponse]
 }
 
-// Login calls recipev1.RecipeService.Login.
-func (c *recipeServiceClient) Login(ctx context.Context, req *connect.Request[v1.GetRecipeRequest]) (*connect.Response[v1.GetRecipeResponse], error) {
-	return c.login.CallUnary(ctx, req)
+// GetRecipe calls recipe.v1.RecipeService.GetRecipe.
+func (c *recipeServiceClient) GetRecipe(ctx context.Context, req *connect.Request[v1.GetRecipeRequest]) (*connect.Response[v1.GetRecipeResponse], error) {
+	return c.getRecipe.CallUnary(ctx, req)
 }
 
-// RecipeServiceHandler is an implementation of the recipev1.RecipeService service.
+// RecipeServiceHandler is an implementation of the recipe.v1.RecipeService service.
 type RecipeServiceHandler interface {
-	Login(context.Context, *connect.Request[v1.GetRecipeRequest]) (*connect.Response[v1.GetRecipeResponse], error)
+	GetRecipe(context.Context, *connect.Request[v1.GetRecipeRequest]) (*connect.Response[v1.GetRecipeResponse], error)
 }
 
 // NewRecipeServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -88,16 +88,16 @@ type RecipeServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewRecipeServiceHandler(svc RecipeServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	recipeServiceLoginHandler := connect.NewUnaryHandler(
-		RecipeServiceLoginProcedure,
-		svc.Login,
-		connect.WithSchema(recipeServiceLoginMethodDescriptor),
+	recipeServiceGetRecipeHandler := connect.NewUnaryHandler(
+		RecipeServiceGetRecipeProcedure,
+		svc.GetRecipe,
+		connect.WithSchema(recipeServiceGetRecipeMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	return "/recipev1.RecipeService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return "/recipe.v1.RecipeService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case RecipeServiceLoginProcedure:
-			recipeServiceLoginHandler.ServeHTTP(w, r)
+		case RecipeServiceGetRecipeProcedure:
+			recipeServiceGetRecipeHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -107,6 +107,6 @@ func NewRecipeServiceHandler(svc RecipeServiceHandler, opts ...connect.HandlerOp
 // UnimplementedRecipeServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedRecipeServiceHandler struct{}
 
-func (UnimplementedRecipeServiceHandler) Login(context.Context, *connect.Request[v1.GetRecipeRequest]) (*connect.Response[v1.GetRecipeResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("recipev1.RecipeService.Login is not implemented"))
+func (UnimplementedRecipeServiceHandler) GetRecipe(context.Context, *connect.Request[v1.GetRecipeRequest]) (*connect.Response[v1.GetRecipeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("recipe.v1.RecipeService.GetRecipe is not implemented"))
 }

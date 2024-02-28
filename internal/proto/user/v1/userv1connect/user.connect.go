@@ -22,7 +22,7 @@ const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// UserServiceName is the fully-qualified name of the UserService service.
-	UserServiceName = "userv1.UserService"
+	UserServiceName = "user.v1.UserService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -34,7 +34,7 @@ const (
 // period.
 const (
 	// UserServiceLoginProcedure is the fully-qualified name of the UserService's Login RPC.
-	UserServiceLoginProcedure = "/userv1.UserService/Login"
+	UserServiceLoginProcedure = "/user.v1.UserService/Login"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -43,12 +43,12 @@ var (
 	userServiceLoginMethodDescriptor = userServiceServiceDescriptor.Methods().ByName("Login")
 )
 
-// UserServiceClient is a client for the userv1.UserService service.
+// UserServiceClient is a client for the user.v1.UserService service.
 type UserServiceClient interface {
 	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
 }
 
-// NewUserServiceClient constructs a client for the userv1.UserService service. By default, it uses
+// NewUserServiceClient constructs a client for the user.v1.UserService service. By default, it uses
 // the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
 // uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
 // connect.WithGRPCWeb() options.
@@ -72,12 +72,12 @@ type userServiceClient struct {
 	login *connect.Client[v1.LoginRequest, v1.LoginResponse]
 }
 
-// Login calls userv1.UserService.Login.
+// Login calls user.v1.UserService.Login.
 func (c *userServiceClient) Login(ctx context.Context, req *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error) {
 	return c.login.CallUnary(ctx, req)
 }
 
-// UserServiceHandler is an implementation of the userv1.UserService service.
+// UserServiceHandler is an implementation of the user.v1.UserService service.
 type UserServiceHandler interface {
 	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
 }
@@ -94,7 +94,7 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(userServiceLoginMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	return "/userv1.UserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return "/user.v1.UserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case UserServiceLoginProcedure:
 			userServiceLoginHandler.ServeHTTP(w, r)
@@ -108,5 +108,5 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 type UnimplementedUserServiceHandler struct{}
 
 func (UnimplementedUserServiceHandler) Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("userv1.UserService.Login is not implemented"))
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("user.v1.UserService.Login is not implemented"))
 }

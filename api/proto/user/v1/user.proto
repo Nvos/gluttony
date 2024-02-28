@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package userv1;
+package user.v1;
 option go_package = "gluttony/internal/proto/user/v1;userv1";
 
 message User {

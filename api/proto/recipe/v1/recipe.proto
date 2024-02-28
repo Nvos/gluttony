@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package recipev1;
+package recipe.v1;
 option go_package = "gluttony/internal/proto/recipe/v1;recipev1";
 
 message Recipe {
@@ -17,5 +17,5 @@ message GetRecipeResponse  {
 }
 
 service RecipeService {
-  rpc Login(GetRecipeRequest) returns (GetRecipeResponse);
+  rpc GetRecipe(GetRecipeRequest) returns (GetRecipeResponse);
 }
