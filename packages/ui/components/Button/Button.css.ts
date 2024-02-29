@@ -6,4 +6,5 @@ export const root = style({
   padding: `${vars.space[2]}`,
   display: 'flex',
   alignItems: 'center',
+  margin: 12,
 });
