@@ -16,7 +16,7 @@
     "@solidjs/start": "^0.6.0",
     "@vanilla-extract/css": "^1.14.0",
     "solid-js": "^1.8.15",
-    "vinxi": "^0.3.4"
+    "vinxi": "^0.3.6"
   },
   "devDependencies": {
     "@gluttony/eslint-config": "workspace:*",
@@ -27,8 +27,7 @@
     "@vanilla-extract/vite-plugin": "^4.0.4",
     "eslint": "^8.56.0",
     "prettier": "^3.2.4",
-    "typescript": "^5.3.3",
-    "vite": "~5.1.1"
+    "typescript": "^5.3.3"
   },
   "engines": {
     "node": ">=18"
