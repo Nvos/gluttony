@@ -1,0 +1,11 @@
+version: "2"
+sql:
+- name: postgresql-recipe
+  engine: postgresql
+  queries: internal/recipe/query.sql
+  schema: internal/database/migrations
+  gen:
+    go:
+      package: postgresql
+      out: internal/recipe/postgresql
+      sql_package: "pgx/v5"

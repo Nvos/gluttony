@@ -9,6 +9,6 @@ plugins:
   - name: es
     out: ./packages/api
     opt: target=ts
-  - name: connect-web
-    out: ./packages/api
+  - plugin: connect-es
     opt: target=ts
+    out: ./packages/api

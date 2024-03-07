@@ -33,19 +33,30 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// RecipeServiceGetRecipeProcedure is the fully-qualified name of the RecipeService's GetRecipe RPC.
-	RecipeServiceGetRecipeProcedure = "/recipe.v1.RecipeService/GetRecipe"
+	// RecipeServiceSingleRecipeProcedure is the fully-qualified name of the RecipeService's
+	// SingleRecipe RPC.
+	RecipeServiceSingleRecipeProcedure = "/recipe.v1.RecipeService/SingleRecipe"
+	// RecipeServiceAllRecipesProcedure is the fully-qualified name of the RecipeService's AllRecipes
+	// RPC.
+	RecipeServiceAllRecipesProcedure = "/recipe.v1.RecipeService/AllRecipes"
+	// RecipeServiceCreateRecipeProcedure is the fully-qualified name of the RecipeService's
+	// CreateRecipe RPC.
+	RecipeServiceCreateRecipeProcedure = "/recipe.v1.RecipeService/CreateRecipe"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	recipeServiceServiceDescriptor         = v1.File_recipe_v1_recipe_proto.Services().ByName("RecipeService")
-	recipeServiceGetRecipeMethodDescriptor = recipeServiceServiceDescriptor.Methods().ByName("GetRecipe")
+	recipeServiceServiceDescriptor            = v1.File_recipe_v1_recipe_proto.Services().ByName("RecipeService")
+	recipeServiceSingleRecipeMethodDescriptor = recipeServiceServiceDescriptor.Methods().ByName("SingleRecipe")
+	recipeServiceAllRecipesMethodDescriptor   = recipeServiceServiceDescriptor.Methods().ByName("AllRecipes")
+	recipeServiceCreateRecipeMethodDescriptor = recipeServiceServiceDescriptor.Methods().ByName("CreateRecipe")
 )
 
 // RecipeServiceClient is a client for the recipe.v1.RecipeService service.
 type RecipeServiceClient interface {
-	GetRecipe(context.Context, *connect.Request[v1.GetRecipeRequest]) (*connect.Response[v1.GetRecipeResponse], error)
+	SingleRecipe(context.Context, *connect.Request[v1.SingleRecipeRequest]) (*connect.Response[v1.SingleRecipeResponse], error)
+	AllRecipes(context.Context, *connect.Request[v1.AllRecipesRequest]) (*connect.Response[v1.AllRecipesResponse], error)
+	CreateRecipe(context.Context, *connect.Request[v1.CreateRecipeRequest]) (*connect.Response[v1.CreateRecipeResponse], error)
 }
 
 // NewRecipeServiceClient constructs a client for the recipe.v1.RecipeService service. By default,
@@ -58,10 +69,22 @@ type RecipeServiceClient interface {
 func NewRecipeServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) RecipeServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &recipeServiceClient{
-		getRecipe: connect.NewClient[v1.GetRecipeRequest, v1.GetRecipeResponse](
+		singleRecipe: connect.NewClient[v1.SingleRecipeRequest, v1.SingleRecipeResponse](
 			httpClient,
-			baseURL+RecipeServiceGetRecipeProcedure,
-			connect.WithSchema(recipeServiceGetRecipeMethodDescriptor),
+			baseURL+RecipeServiceSingleRecipeProcedure,
+			connect.WithSchema(recipeServiceSingleRecipeMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		allRecipes: connect.NewClient[v1.AllRecipesRequest, v1.AllRecipesResponse](
+			httpClient,
+			baseURL+RecipeServiceAllRecipesProcedure,
+			connect.WithSchema(recipeServiceAllRecipesMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		createRecipe: connect.NewClient[v1.CreateRecipeRequest, v1.CreateRecipeResponse](
+			httpClient,
+			baseURL+RecipeServiceCreateRecipeProcedure,
+			connect.WithSchema(recipeServiceCreateRecipeMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 	}
@@ -69,17 +92,31 @@ func NewRecipeServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 
 // recipeServiceClient implements RecipeServiceClient.
 type recipeServiceClient struct {
-	getRecipe *connect.Client[v1.GetRecipeRequest, v1.GetRecipeResponse]
+	singleRecipe *connect.Client[v1.SingleRecipeRequest, v1.SingleRecipeResponse]
+	allRecipes   *connect.Client[v1.AllRecipesRequest, v1.AllRecipesResponse]
+	createRecipe *connect.Client[v1.CreateRecipeRequest, v1.CreateRecipeResponse]
 }
 
-// GetRecipe calls recipe.v1.RecipeService.GetRecipe.
-func (c *recipeServiceClient) GetRecipe(ctx context.Context, req *connect.Request[v1.GetRecipeRequest]) (*connect.Response[v1.GetRecipeResponse], error) {
-	return c.getRecipe.CallUnary(ctx, req)
+// SingleRecipe calls recipe.v1.RecipeService.SingleRecipe.
+func (c *recipeServiceClient) SingleRecipe(ctx context.Context, req *connect.Request[v1.SingleRecipeRequest]) (*connect.Response[v1.SingleRecipeResponse], error) {
+	return c.singleRecipe.CallUnary(ctx, req)
+}
+
+// AllRecipes calls recipe.v1.RecipeService.AllRecipes.
+func (c *recipeServiceClient) AllRecipes(ctx context.Context, req *connect.Request[v1.AllRecipesRequest]) (*connect.Response[v1.AllRecipesResponse], error) {
+	return c.allRecipes.CallUnary(ctx, req)
+}
+
+// CreateRecipe calls recipe.v1.RecipeService.CreateRecipe.
+func (c *recipeServiceClient) CreateRecipe(ctx context.Context, req *connect.Request[v1.CreateRecipeRequest]) (*connect.Response[v1.CreateRecipeResponse], error) {
+	return c.createRecipe.CallUnary(ctx, req)
 }
 
 // RecipeServiceHandler is an implementation of the recipe.v1.RecipeService service.
 type RecipeServiceHandler interface {
-	GetRecipe(context.Context, *connect.Request[v1.GetRecipeRequest]) (*connect.Response[v1.GetRecipeResponse], error)
+	SingleRecipe(context.Context, *connect.Request[v1.SingleRecipeRequest]) (*connect.Response[v1.SingleRecipeResponse], error)
+	AllRecipes(context.Context, *connect.Request[v1.AllRecipesRequest]) (*connect.Response[v1.AllRecipesResponse], error)
+	CreateRecipe(context.Context, *connect.Request[v1.CreateRecipeRequest]) (*connect.Response[v1.CreateRecipeResponse], error)
 }
 
 // NewRecipeServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -88,16 +125,32 @@ type RecipeServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewRecipeServiceHandler(svc RecipeServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	recipeServiceGetRecipeHandler := connect.NewUnaryHandler(
-		RecipeServiceGetRecipeProcedure,
-		svc.GetRecipe,
-		connect.WithSchema(recipeServiceGetRecipeMethodDescriptor),
+	recipeServiceSingleRecipeHandler := connect.NewUnaryHandler(
+		RecipeServiceSingleRecipeProcedure,
+		svc.SingleRecipe,
+		connect.WithSchema(recipeServiceSingleRecipeMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	recipeServiceAllRecipesHandler := connect.NewUnaryHandler(
+		RecipeServiceAllRecipesProcedure,
+		svc.AllRecipes,
+		connect.WithSchema(recipeServiceAllRecipesMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	recipeServiceCreateRecipeHandler := connect.NewUnaryHandler(
+		RecipeServiceCreateRecipeProcedure,
+		svc.CreateRecipe,
+		connect.WithSchema(recipeServiceCreateRecipeMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
 	return "/recipe.v1.RecipeService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case RecipeServiceGetRecipeProcedure:
-			recipeServiceGetRecipeHandler.ServeHTTP(w, r)
+		case RecipeServiceSingleRecipeProcedure:
+			recipeServiceSingleRecipeHandler.ServeHTTP(w, r)
+		case RecipeServiceAllRecipesProcedure:
+			recipeServiceAllRecipesHandler.ServeHTTP(w, r)
+		case RecipeServiceCreateRecipeProcedure:
+			recipeServiceCreateRecipeHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -107,6 +160,14 @@ func NewRecipeServiceHandler(svc RecipeServiceHandler, opts ...connect.HandlerOp
 // UnimplementedRecipeServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedRecipeServiceHandler struct{}
 
-func (UnimplementedRecipeServiceHandler) GetRecipe(context.Context, *connect.Request[v1.GetRecipeRequest]) (*connect.Response[v1.GetRecipeResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("recipe.v1.RecipeService.GetRecipe is not implemented"))
+func (UnimplementedRecipeServiceHandler) SingleRecipe(context.Context, *connect.Request[v1.SingleRecipeRequest]) (*connect.Response[v1.SingleRecipeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("recipe.v1.RecipeService.SingleRecipe is not implemented"))
+}
+
+func (UnimplementedRecipeServiceHandler) AllRecipes(context.Context, *connect.Request[v1.AllRecipesRequest]) (*connect.Response[v1.AllRecipesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("recipe.v1.RecipeService.AllRecipes is not implemented"))
+}
+
+func (UnimplementedRecipeServiceHandler) CreateRecipe(context.Context, *connect.Request[v1.CreateRecipeRequest]) (*connect.Response[v1.CreateRecipeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("recipe.v1.RecipeService.CreateRecipe is not implemented"))
 }

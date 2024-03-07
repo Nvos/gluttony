@@ -7,10 +7,13 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "sideEffects": false,
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@bufbuild/protobuf": "^1.7.2"
+    "@bufbuild/protobuf": "^1.7.2",
+    "@connectrpc/connect": "^1.4.0",
+    "@connectrpc/connect-web": "^1.4.0"
   }
 }

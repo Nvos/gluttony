@@ -4,18 +4,55 @@ package recipe.v1;
 option go_package = "gluttony/internal/proto/recipe/v1;recipev1";
 
 message Recipe {
-  string id = 1;
+  int32 id = 1;
   string name = 2;
+  string description = 3;
 }
 
-message GetRecipeRequest  {
+message CreateRecipeStep {
+  int32 order = 1;
+  string description = 2;
+}
+
+message RecipeStep {
+  int32 id = 1;
+  int32 order = 2;
+  string description = 3;
+}
+
+message SingleRecipeRequest {
   int32 id = 1;
 }
 
-message GetRecipeResponse  {
-  Recipe recipe = 1;
+message SingleRecipeResponse {
+  int32 id = 1;
+  string name = 2;
+  repeated RecipeStep steps = 3;
+}
+
+message AllRecipesRequest {
+  int32 offset = 1;
+  int32 limit = 2;
+  string search = 3;
+}
+
+message AllRecipesResponse {
+   repeated Recipe recipes = 1;
+}
+
+message CreateRecipeRequest {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  repeated CreateRecipeStep steps = 4;
+}
+
+message CreateRecipeResponse {
+  int32 recipe_id = 1;
 }
 
 service RecipeService {
-  rpc GetRecipe(GetRecipeRequest) returns (GetRecipeResponse);
+  rpc SingleRecipe(SingleRecipeRequest) returns (SingleRecipeResponse);
+  rpc AllRecipes(AllRecipesRequest) returns (AllRecipesResponse);
+  rpc CreateRecipe(CreateRecipeRequest) returns (CreateRecipeResponse);
 }

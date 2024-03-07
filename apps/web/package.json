@@ -9,14 +9,17 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@gluttony/api": "workspace:^",
     "@gluttony/design-system": "workspace:^",
     "@gluttony/ui": "workspace:^",
+    "@modular-forms/solid": "^0.20.0",
+    "@solid-primitives/scheduled": "^1.4.3",
     "@solidjs/meta": "^0.29.3",
     "@solidjs/router": "^0.12.4",
     "@solidjs/start": "^0.6.0",
     "@vanilla-extract/css": "^1.14.0",
     "solid-js": "^1.8.15",
-    "vinxi": "^0.3.6"
+    "vinxi": "^0.3.9"
   },
   "devDependencies": {
     "@gluttony/eslint-config": "workspace:*",
