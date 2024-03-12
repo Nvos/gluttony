@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package recipe.v1;
+
 option go_package = "gluttony/internal/proto/recipe/v1;recipev1";
 
 message Recipe {
