@@ -8,4 +8,5 @@
 - config validation https://github.com/cue-lang/cue/blob/master/cuego/examples_test.go
 - config https://github.com/knadh/koanf
 - common dirs https://github.com/adrg/xdg
-- errtrace (interesting error handling) https://github.com/bracesdev/errtrace
+- errtrace (error handling) https://github.com/bracesdev/errtrace
+- slog awesome https://github.com/go-slog/awesome-slog

@@ -2,52 +2,19 @@ package recipe
 
 import (
 	"fmt"
+	v1 "gluttony/internal/proto/recipe/v1"
+	"gluttony/internal/util/sliceutil"
+	"gluttony/internal/util/validateutil"
 )
 
-func ValidateRecipe(recipe Recipe) error {
-	if recipe.ID <= 0 {
-		return fmt.Errorf("validate recipe: id <= 0")
-	}
-
-	if len(recipe.Name) == 0 {
-		return fmt.Errorf("validate recipe: empty name")
-	}
-
-	return nil
-}
-
-func ValidateCreateRecipe(value CreateRecipe) error {
-	if len(value.Name) == 0 {
-		return fmt.Errorf("validate recipe: empty name")
-	}
-
-	return nil
-}
-
-func ValidateRecipeStep(step Step) error {
-	if step.ID <= 0 {
-		return fmt.Errorf("validate recipe step: id <= 0")
-	}
-
-	if step.Order <= 0 {
-		return fmt.Errorf("validate recipe step: order <= 0")
-	}
-
-	if len(step.Description) == 0 {
-		return fmt.Errorf("validate recipe step: empty description")
-	}
-
-	return nil
-}
-
-func ValidateCreateRecipeStep(value CreateStep) error {
-	if value.Order <= 0 {
-		return fmt.Errorf("validate recipe step: order <= 0")
-	}
-
-	if len(value.Description) == 0 {
-		return fmt.Errorf("validate recipe step: empty description")
-	}
-
-	return nil
+func ValidateCreateRecipeRequest(value *v1.CreateRecipeRequest) error {
+	return validateutil.NewValidationError(
+		validateutil.String("name", value.Name, validateutil.Empty()),
+		validateutil.Array(value.Steps, func(index int, value *v1.CreateRecipeStep) []validateutil.FieldViolation {
+			return sliceutil.Merge(
+				validateutil.Number(fmt.Sprintf("steps.%d.order", index), value.Order, validateutil.Min[int32](0, true)),
+				validateutil.String(fmt.Sprintf("steps.%d.description", index), value.Description, validateutil.Empty()),
+			)
+		}),
+	)
 }

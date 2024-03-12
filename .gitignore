@@ -136,3 +136,8 @@ fabric.properties
 
 # Vscode
 .vscode
+
+# Env
+*.env
+!example.env
+config.toml

@@ -102,20 +102,12 @@ func (s *PostgresStore) Single(ctx context.Context, id int32) (Recipe, error) {
 		Description: rows[0].Recipe.Description,
 	}
 
-	if err := ValidateRecipe(recipe); err != nil {
-		return Recipe{}, fmt.Errorf("postgres: single recipe by id=%d: %w", id, err)
-	}
-
 	steps := make([]Step, 0, len(rows))
 	for i := range rows {
 		step := Step{
 			ID:          steps[i].ID,
 			Order:       steps[i].Order,
 			Description: steps[i].Description,
-		}
-
-		if err := ValidateRecipeStep(step); err != nil {
-			return Recipe{}, fmt.Errorf("postgres: single recipe by id=%d: %w", id, err)
 		}
 
 		steps = append(steps, step)
@@ -142,10 +134,6 @@ func (s *PostgresStore) All(ctx context.Context, search string, pagination pagin
 			ID:          rows[i].ID,
 			Name:        rows[i].Name,
 			Description: rows[i].Description,
-		}
-
-		if err := ValidateRecipe(recipe); err != nil {
-			return nil, fmt.Errorf("postgres: all recipe: %w", err)
 		}
 
 		recipes = append(recipes, recipe)

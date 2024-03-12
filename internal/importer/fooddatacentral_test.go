@@ -5,6 +5,7 @@ import (
 	"testing"
 )
 
+// TODO(AK) 11/03/2024: remove
 func TestImportFoodDataCentral(t *testing.T) {
 	open, err := os.Open("/home/czort/Downloads/FoodData_Central_foundation_food_json_2023-10-26/foundationDownload.json")
 	if err != nil {

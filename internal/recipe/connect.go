@@ -7,12 +7,13 @@ import (
 	"gluttony/internal/database/pagination"
 	v1 "gluttony/internal/proto/recipe/v1"
 	"gluttony/internal/proto/recipe/v1/recipev1connect"
+	"gluttony/internal/util/connectutil"
+	"gluttony/internal/util/validateutil"
+	"log/slog"
 	"net/http"
 )
 
 var _ recipev1connect.RecipeServiceHandler = (*ConnectService)(nil)
-
-// TODO(AK) 06/03/2024: proper errors, need to know which one is validation
 
 type ConnectService struct {
 	store Store
@@ -87,32 +88,12 @@ func (s *ConnectService) CreateRecipe(
 	r *connect.Request[v1.CreateRecipeRequest],
 ) (*connect.Response[v1.CreateRecipeResponse], error) {
 
-	steps := make([]CreateStep, 0, len(r.Msg.Steps))
-	for i := range r.Msg.Steps {
-		v := r.Msg.Steps[i]
-		step := CreateStep{
-			Order:       v.Order,
-			Description: v.Description,
-		}
-
-		if err := ValidateCreateRecipeStep(step); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-
-		steps = append(steps, step)
+	create, err := NewCreateRecipe(r.Msg)
+	if err != nil {
+		return nil, validateutil.SerializeAsConnect(err)
 	}
 
-	in := CreateRecipe{
-		Name:        r.Msg.Name,
-		Description: r.Msg.Description,
-		Steps:       steps,
-	}
-
-	if err := ValidateCreateRecipe(in); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	recipeID, err := s.store.Create(ctx, in)
+	recipeID, err := s.store.Create(ctx, create)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -122,7 +103,7 @@ func (s *ConnectService) CreateRecipe(
 	}), nil
 }
 
-func NewConnectHandler(store Store) (string, http.Handler, error) {
+func NewConnectHandler(store Store, logger *slog.Logger) (string, http.Handler, error) {
 	if store == nil {
 		return "", nil, fmt.Errorf("new connect handler: nil store")
 	}
@@ -131,6 +112,7 @@ func NewConnectHandler(store Store) (string, http.Handler, error) {
 		store: store,
 	}
 
-	path, handler := recipev1connect.NewRecipeServiceHandler(service)
+	interceptors := connect.WithInterceptors(connectutil.ErrorInterceptor(logger))
+	path, handler := recipev1connect.NewRecipeServiceHandler(service, interceptors)
 	return path, handler, nil
 }
