@@ -1,6 +1,7 @@
 package main
 
 import (
+	"connectrpc.com/connect"
 	"context"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"gluttony/internal/database"
 	"gluttony/internal/logger"
 	"gluttony/internal/recipe"
+	"gluttony/internal/util/connectutil"
 	"gluttony/internal/util/filepathutil"
 	"gluttony/internal/util/httputil"
 	"golang.org/x/net/http2"
@@ -49,8 +51,8 @@ func main() {
 	wg.Wait()
 }
 
-func mountRecipeHandler(mux *http.ServeMux, recipeStore recipe.Store) error {
-	path, handler, err := recipe.NewConnectHandler(recipeStore)
+func mountRecipeHandler(mux *http.ServeMux, recipeStore recipe.Store, opts ...connect.HandlerOption) error {
+	path, handler, err := recipe.NewConnectHandler(recipeStore, opts...)
 	if err != nil {
 		return fmt.Errorf("mount recipe connect handler: %w", err)
 	}
@@ -91,8 +93,10 @@ func Main(ctx context.Context, wg *sync.WaitGroup) (func(ctx context.Context) er
 		return nil, fmt.Errorf("create recipe postgres store: %w", err)
 	}
 
+	connectInterceptors := connect.WithInterceptors(connectutil.ErrorInterceptor(log))
+
 	mux := http.NewServeMux()
-	if err := mountRecipeHandler(mux, recipeStore); err != nil {
+	if err := mountRecipeHandler(mux, recipeStore, connectInterceptors); err != nil {
 		return nil, fmt.Errorf("mount recipe http handlers: %w", err)
 	}
 

@@ -31,7 +31,9 @@ func SerializeAsConnect(err error) error {
 	connectErr := connect.NewError(connect.CodeInvalidArgument, errors.New("validation failed"))
 	if detail, detailErr := connect.NewErrorDetail(badRequest); detailErr == nil {
 		connectErr.AddDetail(detail)
+
+		return connectErr
 	}
 
-	return connect.NewError(connect.CodeInternal, errors.New("unable to serialize validation err as connect err"))
+	return errors.New("unable to serialize validation err as connect err")
 }

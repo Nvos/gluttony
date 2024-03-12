@@ -3,6 +3,7 @@ package connectutil
 import (
 	"connectrpc.com/connect"
 	"context"
+	"errors"
 	"log/slog"
 )
 
@@ -11,7 +12,8 @@ func ErrorInterceptor(logger *slog.Logger) connect.UnaryInterceptorFunc {
 		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 			response, err := next(ctx, req)
 			if err != nil {
-				if connect.IsWireError(err) {
+				var connectErr *connect.Error
+				if errors.As(err, &connectErr) {
 					return response, err
 				}
 

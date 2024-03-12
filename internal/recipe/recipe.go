@@ -1,6 +1,8 @@
 package recipe
 
-import v1 "gluttony/internal/proto/recipe/v1"
+import (
+	v1 "gluttony/internal/proto/recipe/v1"
+)
 
 type Recipe struct {
 	ID          int32

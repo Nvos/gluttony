@@ -7,9 +7,7 @@ import (
 	"gluttony/internal/database/pagination"
 	v1 "gluttony/internal/proto/recipe/v1"
 	"gluttony/internal/proto/recipe/v1/recipev1connect"
-	"gluttony/internal/util/connectutil"
 	"gluttony/internal/util/validateutil"
-	"log/slog"
 	"net/http"
 )
 
@@ -26,7 +24,7 @@ func (s *ConnectService) SingleRecipe(
 
 	single, err := s.store.Single(ctx, r.Msg.Id)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, err
 	}
 
 	steps := make([]*v1.RecipeStep, 0, len(single.Steps))
@@ -59,12 +57,12 @@ func (s *ConnectService) AllRecipes(
 	}
 
 	if err := pagination.ValidateOffsetPagination(offsetPagination); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, err
 	}
 
 	all, err := s.store.All(ctx, r.Msg.Search, offsetPagination)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, err
 	}
 
 	recipes := make([]*v1.Recipe, 0, len(all))
@@ -95,7 +93,7 @@ func (s *ConnectService) CreateRecipe(
 
 	recipeID, err := s.store.Create(ctx, create)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, err
 	}
 
 	return connect.NewResponse(&v1.CreateRecipeResponse{
@@ -103,7 +101,7 @@ func (s *ConnectService) CreateRecipe(
 	}), nil
 }
 
-func NewConnectHandler(store Store, logger *slog.Logger) (string, http.Handler, error) {
+func NewConnectHandler(store Store, opts ...connect.HandlerOption) (string, http.Handler, error) {
 	if store == nil {
 		return "", nil, fmt.Errorf("new connect handler: nil store")
 	}
@@ -112,7 +110,6 @@ func NewConnectHandler(store Store, logger *slog.Logger) (string, http.Handler, 
 		store: store,
 	}
 
-	interceptors := connect.WithInterceptors(connectutil.ErrorInterceptor(logger))
-	path, handler := recipev1connect.NewRecipeServiceHandler(service, interceptors)
+	path, handler := recipev1connect.NewRecipeServiceHandler(service, opts...)
 	return path, handler, nil
 }

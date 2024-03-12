@@ -96,21 +96,22 @@ func (s *PostgresStore) Single(ctx context.Context, id int32) (Recipe, error) {
 		return Recipe{}, fmt.Errorf("postgres: single recipe by id=%d not found", id)
 	}
 
+	steps := make([]Step, 0, len(rows))
+	for i := range rows {
+		step := Step{
+			ID:          rows[i].RecipeStep.ID,
+			Order:       rows[i].RecipeStep.Order,
+			Description: rows[i].RecipeStep.Description,
+		}
+
+		steps = append(steps, step)
+	}
+
 	recipe := Recipe{
 		ID:          rows[0].Recipe.ID,
 		Name:        rows[0].Recipe.Name,
 		Description: rows[0].Recipe.Description,
-	}
-
-	steps := make([]Step, 0, len(rows))
-	for i := range rows {
-		step := Step{
-			ID:          steps[i].ID,
-			Order:       steps[i].Order,
-			Description: steps[i].Description,
-		}
-
-		steps = append(steps, step)
+		Steps:       steps,
 	}
 
 	return recipe, nil
