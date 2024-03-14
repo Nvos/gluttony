@@ -68,6 +68,7 @@ export const vars = createThemeContract({
     warn: colorContract,
     background: colorContract,
     common: colorCommonContract,
+    text: colorContract,
   },
   fontSize: {
     body: bodyFontSizeContract,

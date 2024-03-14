@@ -1,8 +1,10 @@
 import { createTheme } from '@vanilla-extract/css';
+import { cyan, text } from './colors.css';
 import { vars } from './contract.css';
 
 export const lightTheme = createTheme(vars, {
   color: {
+    text: text,
     danger: {
       50: 'oklch(98.83% 0.005 20)',
       100: 'oklch(96.68% 0.017 20)',
@@ -29,19 +31,7 @@ export const lightTheme = createTheme(vars, {
       900: 'oklch(30.27% 0.066 66.67)',
       950: 'oklch(19.14% 0.041 66.67)',
     },
-    primary: {
-      50: 'oklch(98.83% 0.005 140)',
-      100: 'oklch(96.29% 0.017 140)',
-      200: 'oklch(91.41% 0.042 140)',
-      300: 'oklch(84.57% 0.078 140)',
-      400: 'oklch(77.73% 0.114 140)',
-      500: 'oklch(71.09% 0.152 140)',
-      600: 'oklch(59.77% 0.136 140)',
-      700: 'oklch(51.17% 0.116 140)',
-      800: 'oklch(40.04% 0.091 140)',
-      900: 'oklch(29.49% 0.066 140)',
-      950: 'oklch(18.75% 0.041 140)',
-    },
+    primary: cyan,
     background: {
       50: 'oklch(98.83% 0.005 275)',
       100: 'oklch(96.48% 0.018 275)',

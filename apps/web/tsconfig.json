@@ -1,7 +1,7 @@
 {
   "extends": "@gluttony/typescript-config/solid.json",
   "compilerOptions": {
-    "types": ["vinxi/client"],
+    "types": ["vite/client"],
     "paths": {
       "~/*": ["./src/*"],
     },

@@ -23,5 +23,15 @@
     "prettier": "^3.2.4",
     "solid-js": "^1.8.15",
     "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@kobalte/core": "^0.12.3",
+    "@tiptap/core": "^2.2.4",
+    "@tiptap/pm": "^2.2.4",
+    "@tiptap/starter-kit": "^2.2.4",
+    "@tiptap/suggestion": "^2.2.4",
+    "@vanilla-extract/recipes": "^0.5.2",
+    "@vrite/tiptap-solid": "^1.0.0",
+    "tippy.js": "^6.3.7"
   }
 }

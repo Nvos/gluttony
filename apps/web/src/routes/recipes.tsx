@@ -1,9 +1,12 @@
 import { Title } from '@solidjs/meta';
-import { createRecipeClient } from '@gluttony/api';
+import { BadRequest, createRecipeClient } from '@gluttony/api';
 import { createEffect, createMemo, createResource, For, Suspense } from 'solid-js';
-import { createForm, SubmitHandler, insert, getValues } from '@modular-forms/solid';
+import { createForm, SubmitHandler, insert, getValues, FormError } from '@modular-forms/solid';
 import { createSignal } from 'solid-js';
 import { createScheduled, debounce } from '@solid-primitives/scheduled';
+import { Button } from '@gluttony/ui';
+import { A } from '@solidjs/router';
+import { ConnectError } from '@connectrpc/connect';
 
 type RecipeStep = {
   order: number;
@@ -43,13 +46,27 @@ export default function Home() {
   const handleSubmit: SubmitHandler<Recipe> = (data) => {
     console.log(data);
 
+    if (data.name === 'admin') {
+      throw new FormError<Recipe>('Validation error.', {
+        name: 'not unique',
+      });
+    }
+
     api
       .createRecipe(data)
       .then((it) => {
         console.log('got recipeId', it.recipeId);
         refetch();
       })
-      .catch(console.error);
+      .catch((err) => {
+        if (err instanceof ConnectError) {
+          const connectErr = ConnectError.from(err);
+          console.log('connectErr: details', connectErr.details);
+          const badRequest = err.findDetails(BadRequest);
+          console.log('connectErr: rawMessage', connectErr.rawMessage);
+          console.log('connectErr: badRequest', badRequest);
+        }
+      });
   };
 
   return (
@@ -70,10 +87,11 @@ export default function Home() {
         }}
       >
         <Field name="name">
-          {(_, props) => (
+          {(field, props) => (
             <label>
               Recipe name
               <input {...props} />
+              {field.error && <div>{field.error}</div>}
             </label>
           )}
         </Field>
@@ -117,7 +135,9 @@ export default function Home() {
             </For>
           )}
         </FieldArray>
-        <button
+        <Button
+          variant="outline"
+          colorScheme="background"
           type="button"
           onClick={() => {
             const value = getValues(recipeForm);
@@ -131,8 +151,10 @@ export default function Home() {
           }}
         >
           Add step
-        </button>
-        <button type="submit">Save</button>
+        </Button>
+        <Button variant="outline" colorScheme="primary" type="submit">
+          Save
+        </Button>
       </Form>
 
       <Suspense fallback={'Loading recipes...'}>
@@ -142,6 +164,7 @@ export default function Home() {
               <div>{value.id} </div>
               <div>{value.name} </div>
               <div>{value.description} </div>
+              <A href={`/recipe/${value.id}`}>Goto</A>
             </div>
           )}
         </For>

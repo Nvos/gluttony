@@ -56,49 +56,6 @@ export class Recipe extends Message<Recipe> {
 }
 
 /**
- * @generated from message recipe.v1.CreateRecipeStep
- */
-export class CreateRecipeStep extends Message<CreateRecipeStep> {
-  /**
-   * @generated from field: int32 order = 1;
-   */
-  order = 0;
-
-  /**
-   * @generated from field: string description = 2;
-   */
-  description = "";
-
-  constructor(data?: PartialMessage<CreateRecipeStep>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "recipe.v1.CreateRecipeStep";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "order", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateRecipeStep {
-    return new CreateRecipeStep().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateRecipeStep {
-    return new CreateRecipeStep().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateRecipeStep {
-    return new CreateRecipeStep().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: CreateRecipeStep | PlainMessage<CreateRecipeStep> | undefined, b: CreateRecipeStep | PlainMessage<CreateRecipeStep> | undefined): boolean {
-    return proto3.util.equals(CreateRecipeStep, a, b);
-  }
-}
-
-/**
  * @generated from message recipe.v1.RecipeStep
  */
 export class RecipeStep extends Message<RecipeStep> {
@@ -339,9 +296,9 @@ export class CreateRecipeRequest extends Message<CreateRecipeRequest> {
   description = "";
 
   /**
-   * @generated from field: repeated recipe.v1.CreateRecipeStep steps = 4;
+   * @generated from field: repeated recipe.v1.CreateRecipeRequest.CreateRecipeStep steps = 4;
    */
-  steps: CreateRecipeStep[] = [];
+  steps: CreateRecipeRequest_CreateRecipeStep[] = [];
 
   constructor(data?: PartialMessage<CreateRecipeRequest>) {
     super();
@@ -354,7 +311,7 @@ export class CreateRecipeRequest extends Message<CreateRecipeRequest> {
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "steps", kind: "message", T: CreateRecipeStep, repeated: true },
+    { no: 4, name: "steps", kind: "message", T: CreateRecipeRequest_CreateRecipeStep, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateRecipeRequest {
@@ -371,6 +328,49 @@ export class CreateRecipeRequest extends Message<CreateRecipeRequest> {
 
   static equals(a: CreateRecipeRequest | PlainMessage<CreateRecipeRequest> | undefined, b: CreateRecipeRequest | PlainMessage<CreateRecipeRequest> | undefined): boolean {
     return proto3.util.equals(CreateRecipeRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message recipe.v1.CreateRecipeRequest.CreateRecipeStep
+ */
+export class CreateRecipeRequest_CreateRecipeStep extends Message<CreateRecipeRequest_CreateRecipeStep> {
+  /**
+   * @generated from field: int32 order = 1;
+   */
+  order = 0;
+
+  /**
+   * @generated from field: string description = 2;
+   */
+  description = "";
+
+  constructor(data?: PartialMessage<CreateRecipeRequest_CreateRecipeStep>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "recipe.v1.CreateRecipeRequest.CreateRecipeStep";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "order", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateRecipeRequest_CreateRecipeStep {
+    return new CreateRecipeRequest_CreateRecipeStep().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateRecipeRequest_CreateRecipeStep {
+    return new CreateRecipeRequest_CreateRecipeStep().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateRecipeRequest_CreateRecipeStep {
+    return new CreateRecipeRequest_CreateRecipeStep().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateRecipeRequest_CreateRecipeStep | PlainMessage<CreateRecipeRequest_CreateRecipeStep> | undefined, b: CreateRecipeRequest_CreateRecipeStep | PlainMessage<CreateRecipeRequest_CreateRecipeStep> | undefined): boolean {
+    return proto3.util.equals(CreateRecipeRequest_CreateRecipeStep, a, b);
   }
 }
 

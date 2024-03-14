@@ -8,7 +8,8 @@
   "author": "",
   "license": "ISC",
   "exports": {
-    ".": "./index.tsx"
+    ".": "./index.tsx",
+    "./theme/global.css": "./theme/global.css.ts"
   },
   "sideEffects": false,
   "devDependencies": {

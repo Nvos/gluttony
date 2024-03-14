@@ -1,6 +1,20 @@
 import { ComponentProps } from 'solid-js';
-import { root } from './Button.css.ts';
+import { RecipeVariants } from '@vanilla-extract/recipes';
+import { root } from './Button.css';
+import { splitProps } from 'solid-js';
 
-export const Button = (props: ComponentProps<'button'>) => {
-  return <button class={root}>{props.children}</button>;
+type Variants = RecipeVariants<typeof root>;
+
+export const Button = (props: ComponentProps<'button'> & Variants) => {
+  const [local, rest] = splitProps(props, ['variant', 'colorScheme']);
+
+  return (
+    <button
+      type="button"
+      class={root({ variant: local.variant, colorScheme: local.colorScheme })}
+      {...rest}
+    >
+      {props.children}
+    </button>
+  );
 };

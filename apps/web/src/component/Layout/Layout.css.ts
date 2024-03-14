@@ -1,6 +1,8 @@
-import { vars } from '@gluttony/design-system';
-import { globalStyle } from '@vanilla-extract/css';
+import { style } from '@vanilla-extract/css';
 
-globalStyle('body', {
-  backgroundColor: vars.color.background[50],
+export const root = style({
+  display: 'flex',
+  width: '100%',
+  minHeight: '100dvh',
+  maxHeight: '100dvh',
 });
