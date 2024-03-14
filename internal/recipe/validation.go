@@ -10,7 +10,7 @@ import (
 func ValidateCreateRecipeRequest(value *v1.CreateRecipeRequest) error {
 	return validateutil.NewValidationError(
 		validateutil.String("name", value.Name, validateutil.Empty()),
-		validateutil.Array(value.Steps, func(index int, value *v1.CreateRecipeStep) []validateutil.FieldViolation {
+		validateutil.Array(value.Steps, func(index int, value *v1.CreateRecipeRequest_CreateRecipeStep) []validateutil.FieldViolation {
 			return sliceutil.Merge(
 				validateutil.Number(fmt.Sprintf("steps.%d.order", index), value.Order, validateutil.Min[int32](0, true)),
 				validateutil.String(fmt.Sprintf("steps.%d.description", index), value.Description, validateutil.Empty()),

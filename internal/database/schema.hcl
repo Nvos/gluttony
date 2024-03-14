@@ -10,6 +10,10 @@ table "users" {
     null = false
     type = varchar(100)
   }
+  column "password" {
+    null = false
+    type = varchar(100)
+  }
   primary_key {
     columns = [column.id]
   }

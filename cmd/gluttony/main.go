@@ -6,10 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/adrg/xdg"
+	"gluttony/internal/auth"
 	"gluttony/internal/config"
 	"gluttony/internal/database"
 	"gluttony/internal/logger"
 	"gluttony/internal/recipe"
+	"gluttony/internal/user"
 	"gluttony/internal/util/connectutil"
 	"gluttony/internal/util/filepathutil"
 	"gluttony/internal/util/httputil"
@@ -51,17 +53,6 @@ func main() {
 	wg.Wait()
 }
 
-func mountRecipeHandler(mux *http.ServeMux, recipeStore recipe.Store, opts ...connect.HandlerOption) error {
-	path, handler, err := recipe.NewConnectHandler(recipeStore, opts...)
-	if err != nil {
-		return fmt.Errorf("mount recipe connect handler: %w", err)
-	}
-
-	mux.Handle(path, handler)
-
-	return nil
-}
-
 func Main(ctx context.Context, wg *sync.WaitGroup) (func(ctx context.Context) error, error) {
 	dataDir, configDir, err := initializeUsedDirectories()
 	if err != nil {
@@ -93,6 +84,22 @@ func Main(ctx context.Context, wg *sync.WaitGroup) (func(ctx context.Context) er
 		return nil, fmt.Errorf("create recipe postgres store: %w", err)
 	}
 
+	sessionStore := auth.NewMemoryStorage[user.Session]()
+	sessionManager := auth.NewSessionManager[user.Session](sessionStore)
+
+	userStore, err := user.NewPostgresStore(pool)
+	if err != nil {
+		return nil, fmt.Errorf("create user postgres store: %w", err)
+	}
+
+	// TODO(AK) 13/03/2024: remove default testing account
+	_, err = userStore.Create(ctx, "admin", "admin")
+	if err != nil {
+		log.Warn("create admin user", slog.String("err", err.Error()))
+	}
+
+	userService, err := user.NewService(userStore, sessionManager)
+
 	connectInterceptors := connect.WithInterceptors(connectutil.ErrorInterceptor(log))
 
 	mux := http.NewServeMux()
@@ -100,9 +107,17 @@ func Main(ctx context.Context, wg *sync.WaitGroup) (func(ctx context.Context) er
 		return nil, fmt.Errorf("mount recipe http handlers: %w", err)
 	}
 
+	if err := mountUserHandler(mux, userService, connectInterceptors); err != nil {
+		return nil, fmt.Errorf("mount user http handlers: %w", err)
+	}
+
 	server := &http.Server{
-		Addr:    ":6001",
-		Handler: h2c.NewHandler(httputil.AllowAllCORSMiddleware(mux), &http2.Server{}),
+		Addr: ":6001",
+		Handler: h2c.NewHandler(httputil.ComposeMiddlewares(
+			mux,
+			httputil.AllowAllCORSMiddleware,
+			auth.SessionHttpMiddleware(sessionManager),
+		), &http2.Server{}),
 		// TODO(AK) 05/03/2024: timeouts
 	}
 
@@ -126,6 +141,28 @@ func Main(ctx context.Context, wg *sync.WaitGroup) (func(ctx context.Context) er
 
 		return errors.Join(errs...)
 	}, nil
+}
+
+func mountRecipeHandler(mux *http.ServeMux, recipeStore recipe.Store, opts ...connect.HandlerOption) error {
+	path, handler, err := recipe.NewConnectHandler(recipeStore, opts...)
+	if err != nil {
+		return fmt.Errorf("mount recipe connect handler: %w", err)
+	}
+
+	mux.Handle(path, handler)
+
+	return nil
+}
+
+func mountUserHandler(mux *http.ServeMux, service *user.Service, opts ...connect.HandlerOption) error {
+	path, handler, err := user.NewConnectHandler(service, opts...)
+	if err != nil {
+		return fmt.Errorf("mount user connect handler: %w", err)
+	}
+
+	mux.Handle(path, handler)
+
+	return nil
 }
 
 func initializeUsedDirectories() (string, string, error) {

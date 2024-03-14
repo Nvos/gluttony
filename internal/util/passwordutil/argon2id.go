@@ -1,4 +1,4 @@
-package user
+package passwordutil
 
 import (
 	"crypto/rand"

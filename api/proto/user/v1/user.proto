@@ -6,7 +6,6 @@ import "google/protobuf/api.proto";
 option go_package = "gluttony/internal/proto/user/v1;userv1";
 
 message User {
-  string id = 1;
   string username = 2;
 }
 
@@ -15,10 +14,20 @@ message LoginRequest  {
   string password = 2;
 }
 
-message LoginResponse  {
+message LoginResponse {
   User user = 1;
 }
 
+message MeRequest {}
+message MeResponse {
+  User user = 1;
+}
+
+message LogoutRequest {}
+message LogoutResponse{}
+
 service UserService {
   rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Me(MeRequest) returns (MeResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
 }
