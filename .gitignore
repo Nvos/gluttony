@@ -141,3 +141,4 @@ fabric.properties
 *.env
 !example.env
 config.toml
+!/api/

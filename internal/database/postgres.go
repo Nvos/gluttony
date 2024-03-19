@@ -7,6 +7,17 @@ import (
 	"gluttony/internal/config"
 )
 
+func postgresURL(cfg config.Database) string {
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%d/%s?search_path=public&sslmode=disable",
+		cfg.Username,
+		cfg.Password,
+		cfg.Host,
+		cfg.Port,
+		cfg.Database,
+	)
+}
+
 func ConnectPostgres(ctx context.Context, cfg config.Database) (*pgxpool.Pool, error) {
 	pool, err := pgxpool.New(ctx, postgresURL(cfg))
 	if err != nil {

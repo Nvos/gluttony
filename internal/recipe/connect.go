@@ -1,14 +1,16 @@
 package recipe
 
 import (
-	"connectrpc.com/connect"
 	"context"
 	"fmt"
+	"net/http"
+
+	"connectrpc.com/connect"
+
 	"gluttony/internal/database/pagination"
 	v1 "gluttony/internal/proto/recipe/v1"
 	"gluttony/internal/proto/recipe/v1/recipev1connect"
 	"gluttony/internal/util/validateutil"
-	"net/http"
 )
 
 var _ recipev1connect.RecipeServiceHandler = (*ConnectService)(nil)
@@ -21,7 +23,6 @@ func (s *ConnectService) SingleRecipe(
 	ctx context.Context,
 	r *connect.Request[v1.SingleRecipeRequest],
 ) (*connect.Response[v1.SingleRecipeResponse], error) {
-
 	single, err := s.store.Single(ctx, r.Msg.Id)
 	if err != nil {
 		return nil, err
@@ -50,7 +51,6 @@ func (s *ConnectService) AllRecipes(
 	ctx context.Context,
 	r *connect.Request[v1.AllRecipesRequest],
 ) (*connect.Response[v1.AllRecipesResponse], error) {
-
 	offsetPagination := pagination.OffsetPagination{
 		Offset: r.Msg.Offset,
 		Limit:  r.Msg.Limit,
@@ -85,7 +85,6 @@ func (s *ConnectService) CreateRecipe(
 	ctx context.Context,
 	r *connect.Request[v1.CreateRecipeRequest],
 ) (*connect.Response[v1.CreateRecipeResponse], error) {
-
 	create, err := NewCreateRecipe(r.Msg)
 	if err != nil {
 		return nil, validateutil.SerializeAsConnect(err)

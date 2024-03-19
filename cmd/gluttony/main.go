@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/adrg/xdg"
+	"github.com/jackc/pgx/v5/stdlib"
 	"gluttony/internal/auth"
 	"gluttony/internal/config"
 	"gluttony/internal/database"
@@ -15,6 +16,7 @@ import (
 	"gluttony/internal/util/connectutil"
 	"gluttony/internal/util/filepathutil"
 	"gluttony/internal/util/httputil"
+	"gluttony/migrations"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"log/slog"
@@ -70,13 +72,18 @@ func Main(ctx context.Context, wg *sync.WaitGroup) (func(ctx context.Context) er
 		return nil, fmt.Errorf("load config: %w", err)
 	}
 
-	if err := database.Migrate(cfg.Database); err != nil {
-		return nil, fmt.Errorf("migrate database: %w", err)
-	}
-
 	pool, err := database.ConnectPostgres(ctx, cfg.Database)
 	if err != nil {
 		return nil, fmt.Errorf("create postgres connection: %w", err)
+	}
+
+	migrateConn := stdlib.OpenDBFromPool(pool)
+	if err := database.Migrate(ctx, migrateConn, migrations.FS); err != nil {
+		return nil, fmt.Errorf("migrate database: %w", err)
+	}
+
+	if err := migrateConn.Close(); err != nil {
+		return nil, fmt.Errorf("close migrate db conn: %w", err)
 	}
 
 	recipeStore, err := recipe.NewPostgresStore(pool)
@@ -112,7 +119,7 @@ func Main(ctx context.Context, wg *sync.WaitGroup) (func(ctx context.Context) er
 	}
 
 	server := &http.Server{
-		Addr: ":6001",
+		Addr: "127.0.0.1:6001",
 		Handler: h2c.NewHandler(httputil.ComposeMiddlewares(
 			mux,
 			httputil.AllowAllCORSMiddleware,
