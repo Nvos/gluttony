@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"gluttony/internal/database"
+	"gluttony/internal/database/transaction"
 	"gluttony/internal/user/postgresql"
 	"gluttony/internal/util/passwordutil"
 )
@@ -14,8 +15,20 @@ import (
 var _ Store = (*PostgresStore)(nil)
 
 type PostgresStore struct {
-	pool    *pgxpool.Pool
+	pool    postgresql.DBTX
 	queries *postgresql.Queries
+}
+
+func (p *PostgresStore) UnderTransaction(tx transaction.Transaction) (Store, error) {
+	pgxTx, err := transaction.GetPgxTx(tx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PostgresStore{
+		pool:    pgxTx,
+		queries: p.queries.WithTx(pgxTx),
+	}, nil
 }
 
 func NewPostgresStore(pool *pgxpool.Pool) (*PostgresStore, error) {
@@ -27,6 +40,10 @@ func NewPostgresStore(pool *pgxpool.Pool) (*PostgresStore, error) {
 		pool:    pool,
 		queries: postgresql.New(pool),
 	}, nil
+}
+
+func (p *PostgresStore) Transaction(ctx context.Context) {
+
 }
 
 func (p *PostgresStore) Create(ctx context.Context, username, password string) (int32, error) {

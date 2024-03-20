@@ -1,5 +1,5 @@
 env "local" {
-  src = "file://internal/database/schema.hcl"
+  src = "file://migrations/schema.hcl"
   dev = "docker://postgres/16/dev?search_path=public"
   migration {
     dir = "file://migrations"

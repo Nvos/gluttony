@@ -9,7 +9,8 @@ import (
 	"github.com/jackc/pgx/v5/stdlib"
 	"gluttony/internal/auth"
 	"gluttony/internal/config"
-	"gluttony/internal/database"
+	"gluttony/internal/database/sqldb"
+	"gluttony/internal/database/transaction"
 	"gluttony/internal/logger"
 	"gluttony/internal/recipe"
 	"gluttony/internal/user"
@@ -17,6 +18,7 @@ import (
 	"gluttony/internal/util/filepathutil"
 	"gluttony/internal/util/httputil"
 	"gluttony/migrations"
+	"gluttony/seeds"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"log/slog"
@@ -72,17 +74,21 @@ func Main(ctx context.Context, wg *sync.WaitGroup) (func(ctx context.Context) er
 		return nil, fmt.Errorf("load config: %w", err)
 	}
 
-	pool, err := database.ConnectPostgres(ctx, cfg.Database)
+	pool, err := sqldb.ConnectPostgres(ctx, cfg.Database)
 	if err != nil {
 		return nil, fmt.Errorf("create postgres connection: %w", err)
 	}
 
-	migrateConn := stdlib.OpenDBFromPool(pool)
-	if err := database.Migrate(ctx, migrateConn, migrations.FS); err != nil {
+	conn := stdlib.OpenDBFromPool(pool)
+	if err := sqldb.Migrate(ctx, conn, migrations.FS); err != nil {
 		return nil, fmt.Errorf("migrate database: %w", err)
 	}
 
-	if err := migrateConn.Close(); err != nil {
+	if err := sqldb.Seed(ctx, conn, seeds.FS); err != nil {
+		return nil, fmt.Errorf("seed database: %w", err)
+	}
+
+	if err := conn.Close(); err != nil {
 		return nil, fmt.Errorf("close migrate db conn: %w", err)
 	}
 
@@ -93,24 +99,27 @@ func Main(ctx context.Context, wg *sync.WaitGroup) (func(ctx context.Context) er
 
 	sessionStore := auth.NewMemoryStorage[user.Session]()
 	sessionManager := auth.NewSessionManager[user.Session](sessionStore)
+	beginner := transaction.NewPgxBeginner(pool)
 
 	userStore, err := user.NewPostgresStore(pool)
 	if err != nil {
 		return nil, fmt.Errorf("create user postgres store: %w", err)
 	}
 
-	// TODO(AK) 13/03/2024: remove default testing account
-	_, err = userStore.Create(ctx, "admin", "admin")
+	userService, err := user.NewService(userStore, sessionManager)
 	if err != nil {
-		log.Warn("create admin user", slog.String("err", err.Error()))
+		return nil, fmt.Errorf("create user service: %w", err)
 	}
 
-	userService, err := user.NewService(userStore, sessionManager)
+	recipeService, err := recipe.NewService(beginner, recipeStore)
+	if err != nil {
+		return nil, fmt.Errorf("create recipe service: %w", err)
+	}
 
 	connectInterceptors := connect.WithInterceptors(connectutil.ErrorInterceptor(log))
 
 	mux := http.NewServeMux()
-	if err := mountRecipeHandler(mux, recipeStore, connectInterceptors); err != nil {
+	if err := mountRecipeHandler(mux, recipeService, connectInterceptors); err != nil {
 		return nil, fmt.Errorf("mount recipe http handlers: %w", err)
 	}
 
@@ -119,7 +128,7 @@ func Main(ctx context.Context, wg *sync.WaitGroup) (func(ctx context.Context) er
 	}
 
 	server := &http.Server{
-		Addr: "127.0.0.1:6001",
+		Addr: fmt.Sprintf("127.0.0.1:%d", cfg.Server.Port),
 		Handler: h2c.NewHandler(httputil.ComposeMiddlewares(
 			mux,
 			httputil.AllowAllCORSMiddleware,
@@ -150,7 +159,7 @@ func Main(ctx context.Context, wg *sync.WaitGroup) (func(ctx context.Context) er
 	}, nil
 }
 
-func mountRecipeHandler(mux *http.ServeMux, recipeStore recipe.Store, opts ...connect.HandlerOption) error {
+func mountRecipeHandler(mux *http.ServeMux, recipeStore *recipe.Service, opts ...connect.HandlerOption) error {
 	path, handler, err := recipe.NewConnectHandler(recipeStore, opts...)
 	if err != nil {
 		return fmt.Errorf("mount recipe connect handler: %w", err)

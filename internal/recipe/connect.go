@@ -16,14 +16,14 @@ import (
 var _ recipev1connect.RecipeServiceHandler = (*ConnectService)(nil)
 
 type ConnectService struct {
-	store Store
+	service *Service
 }
 
 func (s *ConnectService) SingleRecipe(
 	ctx context.Context,
 	r *connect.Request[v1.SingleRecipeRequest],
 ) (*connect.Response[v1.SingleRecipeResponse], error) {
-	single, err := s.store.Single(ctx, r.Msg.Id)
+	single, err := s.service.SingleRecipe(ctx, r.Msg.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -56,11 +56,7 @@ func (s *ConnectService) AllRecipes(
 		Limit:  r.Msg.Limit,
 	}
 
-	if err := pagination.ValidateOffsetPagination(offsetPagination); err != nil {
-		return nil, err
-	}
-
-	all, err := s.store.All(ctx, r.Msg.Search, offsetPagination)
+	all, err := s.service.AllRecipes(ctx, r.Msg.Search, offsetPagination)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +86,8 @@ func (s *ConnectService) CreateRecipe(
 		return nil, validateutil.SerializeAsConnect(err)
 	}
 
-	recipeID, err := s.store.Create(ctx, create)
+	// TODO, 20/03/2024: return recipe instead
+	recipeID, err := s.service.CreateRecipe(ctx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -100,15 +97,18 @@ func (s *ConnectService) CreateRecipe(
 	}), nil
 }
 
-func NewConnectHandler(store Store, opts ...connect.HandlerOption) (string, http.Handler, error) {
-	if store == nil {
-		return "", nil, fmt.Errorf("new connect handler: nil store")
+func NewConnectHandler(
+	service *Service,
+	opts ...connect.HandlerOption,
+) (string, http.Handler, error) {
+	if service == nil {
+		return "", nil, fmt.Errorf("new connect handler: nil service")
 	}
 
-	service := &ConnectService{
-		store: store,
+	cs := &ConnectService{
+		service: service,
 	}
 
-	path, handler := recipev1connect.NewRecipeServiceHandler(service, opts...)
+	path, handler := recipev1connect.NewRecipeServiceHandler(cs, opts...)
 	return path, handler, nil
 }

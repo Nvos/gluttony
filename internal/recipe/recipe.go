@@ -8,7 +8,10 @@ type Recipe struct {
 	ID          int32
 	Name        string
 	Description string
+}
 
+type FullRecipe struct {
+	Recipe
 	Steps []Step
 }
 

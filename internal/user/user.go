@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"gluttony/internal/database/transaction"
 )
 
 var ErrInvalidCredentials = errors.New("invalid credentials")
@@ -33,6 +34,7 @@ func (u User) MarshalJSON() ([]byte, error) {
 }
 
 type Store interface {
+	UnderTransaction(tx transaction.Transaction) (Store, error)
 	Single(ctx context.Context, id int32) (User, error)
 	SingleByUsername(ctx context.Context, username string) (User, error)
 	Create(ctx context.Context, username, password string) (int32, error)
