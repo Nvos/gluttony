@@ -1,24 +1,25 @@
-import { createEffect, createSignal } from 'solid-js';
-import { lightTheme, darkTheme } from '@gluttony/design-system';
 import { Button } from '@gluttony/ui';
+import { useEffect, useState } from 'react';
+import { Sun, Moon } from 'lucide-react';
 
 export const ThemeSelector = () => {
-  // Resolve initial theme depending on system and local storage
-  const [selectedTheme, setSelectedTheme] = createSignal<string>(darkTheme);
-  createEffect(() => {
-    document.documentElement.className = selectedTheme();
-    document.documentElement.dataset.theme = selectedTheme();
-  });
+  const [selectedTheme, setSelectedTheme] = useState<string>('dark');
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', selectedTheme);
+  }, [selectedTheme]);
 
   const handleToggleTheme = () => {
-    if (selectedTheme() == darkTheme) {
-      setSelectedTheme(lightTheme);
-      return;
-    }
-
-    setSelectedTheme(darkTheme);
+    setSelectedTheme((prev) => {
+      if (prev === 'dark') return 'light';
+      return 'dark';
+    });
   };
 
-  // Later on toggle component
-  return <Button onClick={handleToggleTheme}>Toggle</Button>;
+  return (
+    <div>
+      <Button onClick={handleToggleTheme} colorScheme="neutral" variant="ghost" size="md">
+        {selectedTheme === 'light' ? <Sun /> : <Moon />}
+      </Button>
+    </div>
+  );
 };

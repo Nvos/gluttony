@@ -1,5 +1,5 @@
 {
-  "extends": "@gluttony/typescript-config/solid.json",
+  "extends": "@gluttony/typescript-config/react.json",
   "compilerOptions": {
     "types": ["vite/client"],
     "paths": {
@@ -7,4 +7,5 @@
     },
   },
   "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
 }

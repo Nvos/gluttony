@@ -1,11 +1,10 @@
-/* @refresh reload */
-import { render } from 'solid-js/web';
+import './index.css';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/700.css';
 
-import '@fontsource/roboto/400.css';
-import '@fontsource/roboto/500.css';
-import '@fontsource/roboto/700.css';
-import '@gluttony/design-system/theme/global.css';
-
+import React from 'react';
+import ReactDOM from 'react-dom/client';
 import App from './app';
 
 const root = document.getElementById('root');
@@ -16,4 +15,8 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
   );
 }
 
-render(() => <App />, root!);
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+);

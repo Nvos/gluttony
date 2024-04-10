@@ -1,4 +1,14 @@
 {
-  "extends": "@gluttony/typescript-config/solid.json",
-  "include": ["./components"],
+  "extends": "@gluttony/typescript-config/react.json",
+  "compilerOptions": {
+    "outDir": "build",
+    "baseUrl": ".",
+    "paths": {
+      "~/components": ["./components"],
+      "~/theme": ["./theme"],
+      "~/styled-system": ["./styled-system"],
+    }
+  },
+  "include": ["src", "styled-system", ".ladle/components.tsx", "panda.config.ts"],
+  "exclude": ["node_modules", "build"]
 }

@@ -1,5 +1,5 @@
 /** @type {import("eslint").Linter.Config} */
 module.exports = {
   root: true,
-  extends: ['@gluttony/eslint-config/index.js'],
+  extends: ['@gluttony/eslint-config/react.js'],
 };
