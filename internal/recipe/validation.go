@@ -3,17 +3,17 @@ package recipe
 import (
 	"fmt"
 	v1 "gluttony/internal/proto/recipe/v1"
-	"gluttony/internal/util/sliceutil"
-	"gluttony/internal/util/validateutil"
+	"gluttony/internal/x/slicex"
+	"gluttony/internal/x/validatex"
 )
 
 func ValidateCreateRecipeRequest(value *v1.CreateRecipeRequest) error {
-	return validateutil.NewValidationError(
-		validateutil.String("name", value.Name, validateutil.Empty()),
-		validateutil.Array(value.Steps, func(index int, value *v1.CreateRecipeRequest_CreateRecipeStep) []validateutil.FieldViolation {
-			return sliceutil.Merge(
-				validateutil.Number(fmt.Sprintf("steps.%d.order", index), value.Order, validateutil.Min[int32](0, true)),
-				validateutil.String(fmt.Sprintf("steps.%d.description", index), value.Description, validateutil.Empty()),
+	return validatex.NewValidationError(
+		validatex.String("name", value.Name, validatex.Empty()),
+		validatex.Array(value.Steps, func(index int, value *v1.CreateRecipeRequest_CreateRecipeStep) []validatex.FieldViolation {
+			return slicex.Merge(
+				validatex.Number(fmt.Sprintf("steps.%d.order", index), value.Order, validatex.Min[int32](0, true)),
+				validatex.String(fmt.Sprintf("steps.%d.description", index), value.Description, validatex.Empty()),
 			)
 		}),
 	)

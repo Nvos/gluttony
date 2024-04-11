@@ -1,4 +1,4 @@
-package validateutil
+package validatex
 
 import "golang.org/x/exp/constraints"
 

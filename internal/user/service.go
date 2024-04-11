@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"gluttony/internal/auth"
 	"gluttony/internal/database"
-	"gluttony/internal/util/passwordutil"
+	"gluttony/internal/x/cryptox"
 )
 
 type Service struct {
@@ -44,7 +44,7 @@ func (s *Service) Login(ctx context.Context, input LoginInput) (string, error) {
 		return "", fmt.Errorf("login: user by username: %w", err)
 	}
 
-	ok, err := passwordutil.CompareArgon2(input.Password, user.Password)
+	ok, err := cryptox.CompareArgon2(input.Password, user.Password)
 	if err != nil {
 		return "", fmt.Errorf("compare password: %w", err)
 	}

@@ -1,4 +1,4 @@
-package sliceutil
+package slicex
 
 func Merge[T any](slices ...[]T) []T {
 	var out []T

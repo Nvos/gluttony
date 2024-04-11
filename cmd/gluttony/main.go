@@ -11,90 +11,88 @@ import (
 	"gluttony/internal/config"
 	"gluttony/internal/database/sqldb"
 	"gluttony/internal/database/transaction"
-	"gluttony/internal/logger"
 	"gluttony/internal/recipe"
 	"gluttony/internal/user"
-	"gluttony/internal/util/connectutil"
-	"gluttony/internal/util/filepathutil"
-	"gluttony/internal/util/httputil"
+	"gluttony/internal/x/connectx"
+	"gluttony/internal/x/filepathx"
+	"gluttony/internal/x/httpx"
+	"gluttony/internal/x/loggerx"
 	"gluttony/migrations"
 	"gluttony/seeds"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+	"golang.org/x/sync/errgroup"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
-	"sync"
 	"syscall"
 	"time"
 )
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
-	wg := &sync.WaitGroup{}
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
 
-	shutdownChan := make(chan os.Signal, 1)
-	signal.Notify(shutdownChan, syscall.SIGINT, syscall.SIGTERM)
+	group, groupCtx := errgroup.WithContext(ctx)
 
-	cleanup, err := Main(ctx, wg)
+	logger, err := loggerx.NewLogger(slog.LevelDebug)
 	if err != nil {
-		panic(fmt.Sprintf("failed to start gluttony: %v", err))
+		panic(fmt.Sprintf("create logger: %v", err))
 	}
 
-	<-shutdownChan
-	// Begin shutdown
-	cancel()
+	if err := Run(groupCtx, group, logger); err != nil {
+		logger.Error("failed to gracefully start gluttony", slog.String("error", err.Error()))
 
-	shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 5*time.Second)
-	defer shutdownRelease()
-
-	if err := cleanup(shutdownCtx); err != nil {
-		panic(fmt.Sprintf("failed to gracefully shutdown gluttony: %v", err))
+		os.Exit(1)
 	}
 
-	wg.Wait()
+	if err := group.Wait(); err != nil {
+		logger.Error("failed to gracefully shutdown goroutine", slog.String("error", err.Error()))
+
+		os.Exit(1)
+	}
 }
 
-func Main(ctx context.Context, wg *sync.WaitGroup) (func(ctx context.Context) error, error) {
+func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error {
 	dataDir, configDir, err := initializeUsedDirectories()
 	if err != nil {
-		return nil, fmt.Errorf("initialize app directories: %w", err)
+		return fmt.Errorf("initialize app directories: %w", err)
 	}
 
-	log, _, err := logger.NewLogger()
-	if err != nil {
-		return nil, fmt.Errorf("create logger: %w", err)
-	}
+	logger.Info(
+		"Starting gluttony",
+		slog.String("dataDir", dataDir),
+		slog.String("configDir", configDir),
+	)
 
-	log.Info("Starting gluttony", slog.String("dataDir", dataDir), slog.String("configDir", configDir))
 	cfg, err := config.LoadConfig(configDir)
 	if err != nil {
-		return nil, fmt.Errorf("load config: %w", err)
+		return fmt.Errorf("load config: %w", err)
 	}
 
 	pool, err := sqldb.ConnectPostgres(ctx, cfg.Database)
 	if err != nil {
-		return nil, fmt.Errorf("create postgres connection: %w", err)
+		return fmt.Errorf("create postgres connection: %w", err)
 	}
 
 	conn := stdlib.OpenDBFromPool(pool)
 	if err := sqldb.Migrate(ctx, conn, migrations.FS); err != nil {
-		return nil, fmt.Errorf("migrate database: %w", err)
+		return fmt.Errorf("migrate database: %w", err)
 	}
 
 	if err := sqldb.Seed(ctx, conn, seeds.FS); err != nil {
-		return nil, fmt.Errorf("seed database: %w", err)
+		return fmt.Errorf("seed database: %w", err)
 	}
 
 	if err := conn.Close(); err != nil {
-		return nil, fmt.Errorf("close migrate db conn: %w", err)
+		return fmt.Errorf("close migrate db conn: %w", err)
 	}
 
 	recipeStore, err := recipe.NewPostgresStore(pool)
 	if err != nil {
-		return nil, fmt.Errorf("create recipe postgres store: %w", err)
+		return fmt.Errorf("create recipe postgres store: %w", err)
 	}
 
 	sessionStore := auth.NewMemoryStorage[user.Session]()
@@ -103,60 +101,68 @@ func Main(ctx context.Context, wg *sync.WaitGroup) (func(ctx context.Context) er
 
 	userStore, err := user.NewPostgresStore(pool)
 	if err != nil {
-		return nil, fmt.Errorf("create user postgres store: %w", err)
+		return fmt.Errorf("create user postgres store: %w", err)
 	}
 
 	userService, err := user.NewService(userStore, sessionManager)
 	if err != nil {
-		return nil, fmt.Errorf("create user service: %w", err)
+		return fmt.Errorf("create user service: %w", err)
 	}
 
 	recipeService, err := recipe.NewService(beginner, recipeStore)
 	if err != nil {
-		return nil, fmt.Errorf("create recipe service: %w", err)
+		return fmt.Errorf("create recipe service: %w", err)
 	}
 
-	connectInterceptors := connect.WithInterceptors(connectutil.ErrorInterceptor(log))
+	connectInterceptors := connect.WithInterceptors(connectx.ErrorInterceptor(logger))
 
 	mux := http.NewServeMux()
 	if err := mountRecipeHandler(mux, recipeService, connectInterceptors); err != nil {
-		return nil, fmt.Errorf("mount recipe http handlers: %w", err)
+		return fmt.Errorf("mount recipe http handlers: %w", err)
 	}
 
 	if err := mountUserHandler(mux, userService, connectInterceptors); err != nil {
-		return nil, fmt.Errorf("mount user http handlers: %w", err)
+		return fmt.Errorf("mount user http handlers: %w", err)
 	}
 
 	server := &http.Server{
 		Addr: fmt.Sprintf("127.0.0.1:%d", cfg.Server.Port),
-		Handler: h2c.NewHandler(httputil.ComposeMiddlewares(
+		Handler: h2c.NewHandler(httpx.ComposeMiddlewares(
 			mux,
-			httputil.AllowAllCORSMiddleware,
+			httpx.AllowAllCORSMiddleware,
 			auth.SessionHttpMiddleware(sessionManager),
 		), &http2.Server{}),
 		// TODO(AK) 05/03/2024: timeouts
 	}
 
-	go func() {
-		wg.Add(1)
-		defer func() {
-			wg.Done()
-		}()
-
+	group.Go(func() error {
+		logger.Info("Http server listening on", slog.String("addr", server.Addr))
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Error("Http server", slog.String("err", err.Error()))
-		}
-	}()
-
-	log.Info("Gluttony started")
-	return func(timeoutCtx context.Context) error {
-		var errs []error
-		if err := server.Shutdown(timeoutCtx); err != nil {
-			errs = append(errs, fmt.Errorf("shutdown http server: %w", err))
+			return fmt.Errorf("http server: %w", err)
 		}
 
-		return errors.Join(errs...)
-	}, nil
+		return nil
+	})
+
+	group.Go(func() error {
+		<-ctx.Done()
+		logger.Info("Graceful shutdown started")
+
+		shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 5*time.Second)
+		defer shutdownRelease()
+
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			return fmt.Errorf("graceful shutdown: %w", err)
+		}
+
+		pool.Close()
+
+		logger.Info("Graceful shutdown completed")
+		return nil
+	})
+
+	logger.Info("Gluttony started")
+	return nil
 }
 
 func mountRecipeHandler(mux *http.ServeMux, recipeStore *recipe.Service, opts ...connect.HandlerOption) error {
@@ -183,14 +189,14 @@ func mountUserHandler(mux *http.ServeMux, service *user.Service, opts ...connect
 
 func initializeUsedDirectories() (string, string, error) {
 	dataDir := filepath.Join(xdg.DataHome, "gluttony")
-	if !filepathutil.IsFileExist(dataDir) {
+	if !filepathx.IsFileExist(dataDir) {
 		if err := os.Mkdir(dataDir, os.ModePerm); err != nil {
 			return "", "", fmt.Errorf("create data directory: %w", err)
 		}
 	}
 
 	configDir := filepath.Join(xdg.ConfigHome, "gluttony")
-	if !filepathutil.IsFileExist(configDir) {
+	if !filepathx.IsFileExist(configDir) {
 		if err := os.Mkdir(configDir, os.ModePerm); err != nil {
 			return "", "", fmt.Errorf("create config directory: %w", err)
 		}

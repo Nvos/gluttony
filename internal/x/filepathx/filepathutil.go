@@ -1,4 +1,4 @@
-package filepathutil
+package filepathx
 
 import "os"
 

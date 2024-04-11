@@ -1,4 +1,4 @@
-package validateutil
+package validatex
 
 import (
 	"fmt"

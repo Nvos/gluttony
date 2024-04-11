@@ -1,4 +1,4 @@
-package httputil
+package httpx
 
 import (
 	connectcors "connectrpc.com/cors"

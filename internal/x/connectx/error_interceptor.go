@@ -1,4 +1,4 @@
-package connectutil
+package connectx
 
 import (
 	"connectrpc.com/connect"

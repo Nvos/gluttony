@@ -3,6 +3,7 @@ package recipe
 import (
 	"context"
 	"fmt"
+	"gluttony/internal/x/validatex"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -10,7 +11,6 @@ import (
 	"gluttony/internal/database/pagination"
 	v1 "gluttony/internal/proto/recipe/v1"
 	"gluttony/internal/proto/recipe/v1/recipev1connect"
-	"gluttony/internal/util/validateutil"
 )
 
 var _ recipev1connect.RecipeServiceHandler = (*ConnectService)(nil)
@@ -83,7 +83,7 @@ func (s *ConnectService) CreateRecipe(
 ) (*connect.Response[v1.CreateRecipeResponse], error) {
 	create, err := NewCreateRecipe(r.Msg)
 	if err != nil {
-		return nil, validateutil.SerializeAsConnect(err)
+		return nil, validatex.SerializeAsConnect(err)
 	}
 
 	// TODO, 20/03/2024: return recipe instead

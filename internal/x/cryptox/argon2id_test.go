@@ -1,17 +1,17 @@
-package passwordutil_test
+package cryptox_test
 
 import (
-	"gluttony/internal/util/passwordutil"
+	"gluttony/internal/x/cryptox"
 	"testing"
 )
 
 func TestArgon2Hash(t *testing.T) {
-	hash, err := passwordutil.Argon2Hash("pa$$word", passwordutil.NewDefaultArgon2Config())
+	hash, err := cryptox.Argon2Hash("pa$$word", cryptox.NewDefaultArgon2Config())
 	if err != nil {
 		return
 	}
 
-	invalid, err := passwordutil.CompareArgon2("password", hash)
+	invalid, err := cryptox.CompareArgon2("password", hash)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -20,7 +20,7 @@ func TestArgon2Hash(t *testing.T) {
 		t.Errorf("Password comparison returned 'true' expected 'false'")
 	}
 
-	valid, err := passwordutil.CompareArgon2("pa$$word", hash)
+	valid, err := cryptox.CompareArgon2("pa$$word", hash)
 	if err != nil {
 		t.Fatal(err)
 	}

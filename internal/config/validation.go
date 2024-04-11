@@ -1,17 +1,19 @@
 package config
 
-import "gluttony/internal/util/validateutil"
+import (
+	"gluttony/internal/x/validatex"
+)
 
 func ValidateConfig(cfg Config) error {
-	return validateutil.NewValidationError(
+	return validatex.NewValidationError(
 		// Database
-		validateutil.String("database.database", cfg.Database.Database, validateutil.Empty()),
-		validateutil.String("database.host", cfg.Database.Host, validateutil.Empty()),
-		validateutil.String("database.username", cfg.Database.Username, validateutil.Empty()),
-		validateutil.String("database.password", cfg.Database.Password, validateutil.Empty()),
-		validateutil.Number("database.port", cfg.Database.Port, validateutil.Min(1, true)),
+		validatex.String("database.database", cfg.Database.Database, validatex.Empty()),
+		validatex.String("database.host", cfg.Database.Host, validatex.Empty()),
+		validatex.String("database.username", cfg.Database.Username, validatex.Empty()),
+		validatex.String("database.password", cfg.Database.Password, validatex.Empty()),
+		validatex.Number("database.port", cfg.Database.Port, validatex.Min(1, true)),
 
 		// Server
-		validateutil.Number("server.port", cfg.Server.Port, validateutil.Min(1, true)),
+		validatex.Number("server.port", cfg.Server.Port, validatex.Min(1, true)),
 	)
 }

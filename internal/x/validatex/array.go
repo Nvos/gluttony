@@ -1,4 +1,4 @@
-package validateutil
+package validatex
 
 func Array[T any](arr []T, fn func(index int, value T) []FieldViolation) []FieldViolation {
 	var violations []FieldViolation

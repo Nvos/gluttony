@@ -1,4 +1,4 @@
-package validateutil
+package validatex
 
 func String(path string, value string, rules ...Rule[string]) []FieldViolation {
 	var violations []FieldViolation

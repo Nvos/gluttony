@@ -1,4 +1,4 @@
-package passwordutil
+package cryptox
 
 import (
 	"crypto/rand"
@@ -8,9 +8,6 @@ import (
 	"golang.org/x/crypto/argon2"
 	"strings"
 )
-
-// https://www.alexedwards.net/blog/how-to-hash-and-verify-passwords-with-argon2-in-go
-// https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
 
 type Argon2Config struct {
 	Memory      uint32

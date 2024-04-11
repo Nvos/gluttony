@@ -9,7 +9,7 @@ import (
 	"gluttony/internal/database"
 	"gluttony/internal/database/transaction"
 	"gluttony/internal/user/postgresql"
-	"gluttony/internal/util/passwordutil"
+	"gluttony/internal/x/cryptox"
 )
 
 var _ Store = (*PostgresStore)(nil)
@@ -47,7 +47,7 @@ func (p *PostgresStore) Transaction(ctx context.Context) {
 }
 
 func (p *PostgresStore) Create(ctx context.Context, username, password string) (int32, error) {
-	hash, err := passwordutil.Argon2Hash(password, passwordutil.NewDefaultArgon2Config())
+	hash, err := cryptox.Argon2Hash(password, cryptox.NewDefaultArgon2Config())
 	if err != nil {
 		return 0, fmt.Errorf("hash password: %w", err)
 	}
