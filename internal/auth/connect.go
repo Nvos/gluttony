@@ -1,10 +1,9 @@
-package user
+package auth
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"gluttony/internal/auth"
 	v1 "gluttony/internal/proto/user/v1"
 	"gluttony/internal/proto/user/v1/userv1connect"
 	"net/http"
@@ -22,7 +21,7 @@ func (c *ConnectService) Logout(
 	ctx context.Context,
 	_ *connect.Request[v1.LogoutRequest],
 ) (*connect.Response[v1.LogoutResponse], error) {
-	token, err := auth.GetSessionToken(ctx)
+	token, err := GetSessionToken(ctx)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnauthenticated, nil)
 	}
@@ -31,7 +30,7 @@ func (c *ConnectService) Logout(
 		return nil, fmt.Errorf("logout: %w", err)
 	}
 
-	cookie := auth.NewExpiredSessionCookie()
+	cookie := NewExpiredSessionCookie()
 	out := connect.NewResponse(&v1.LogoutResponse{})
 	out.Header().Set("Set-Cookie", cookie.String())
 
@@ -56,7 +55,7 @@ func (c *ConnectService) Login(
 		return nil, err
 	}
 
-	cookie := auth.NewUnsecureSessionCookie(token)
+	cookie := NewUnsecureSessionCookie(token)
 	out := &v1.LoginResponse{
 		User: &v1.User{
 			Username: r.Msg.Username,
@@ -74,7 +73,7 @@ func (c *ConnectService) Me(
 	ctx context.Context,
 	_ *connect.Request[v1.MeRequest],
 ) (*connect.Response[v1.MeResponse], error) {
-	session, err := auth.GetSession[Session](ctx)
+	session, err := GetSession[Session](ctx)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnauthenticated, nil)
 	}

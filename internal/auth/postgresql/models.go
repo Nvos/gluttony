@@ -4,8 +4,6 @@
 
 package postgresql
 
-import ()
-
 type Recipe struct {
 	ID          int32
 	Name        string

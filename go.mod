@@ -6,6 +6,7 @@ require (
 	connectrpc.com/connect v1.14.0
 	connectrpc.com/cors v0.1.0
 	github.com/adrg/xdg v0.4.0
+	github.com/alexedwards/argon2id v1.0.0
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/joho/godotenv v1.5.1
 	github.com/knadh/koanf/parsers/toml v0.1.0
@@ -18,6 +19,7 @@ require (
 	golang.org/x/crypto v0.18.0
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
 	golang.org/x/net v0.20.0
+	golang.org/x/sync v0.6.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240308144416-29370a3891b7
 	google.golang.org/protobuf v1.32.0
 )
@@ -37,7 +39,6 @@ require (
 	github.com/sethvargo/go-retry v0.2.4 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 )

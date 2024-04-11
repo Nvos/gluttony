@@ -14,12 +14,12 @@ func Seed(ctx context.Context, db *sql.DB, seedDir fs.FS) error {
 			return nil
 		}
 
-		sql, err := fs.ReadFile(seedDir, path)
+		script, err := fs.ReadFile(seedDir, path)
 		if err != nil {
 			return fmt.Errorf("read seed file=%s: %w", path, err)
 		}
 
-		if _, err := db.ExecContext(ctx, string(sql)); err != nil {
+		if _, err := db.ExecContext(ctx, string(script)); err != nil {
 			return fmt.Errorf("execute seed file=%s: %w", path, err)
 		}
 
@@ -27,7 +27,7 @@ func Seed(ctx context.Context, db *sql.DB, seedDir fs.FS) error {
 	})
 
 	if err != nil {
-		return fmt.Errorf("sqldb seed: %w")
+		return fmt.Errorf("sqldb seed: %w", err)
 	}
 
 	return nil

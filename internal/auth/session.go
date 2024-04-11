@@ -2,25 +2,25 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 )
 
-type SessionManager[T any] struct {
-	store Store[T]
+type SessionManager struct {
+	store SessionStore
 }
 
-func (s *SessionManager[T]) Single(ctx context.Context, key string) (T, error) {
+func (s *SessionManager) Single(ctx context.Context, key string) (Session, error) {
 	single, err := s.store.Single(ctx, key)
 	if err != nil {
-		var t T
-
-		return t, fmt.Errorf("single session by key=%s: %w", key, err)
+		return Session{}, fmt.Errorf("single session by key=%s: %w", key, err)
 	}
 
 	return single, nil
 }
 
-func (s *SessionManager[T]) Delete(ctx context.Context, key string) error {
+func (s *SessionManager) Delete(ctx context.Context, key string) error {
 	if err := s.store.Delete(ctx, key); err != nil {
 		return fmt.Errorf("delete session: %w", err)
 	}
@@ -28,7 +28,7 @@ func (s *SessionManager[T]) Delete(ctx context.Context, key string) error {
 	return nil
 }
 
-func (s *SessionManager[T]) Create(ctx context.Context, value T) (string, error) {
+func (s *SessionManager) Create(ctx context.Context, value Session) (string, error) {
 	token, err := generateRandomToken()
 	if err != nil {
 		return "", fmt.Errorf("generate session token: %w", err)
@@ -41,8 +41,17 @@ func (s *SessionManager[T]) Create(ctx context.Context, value T) (string, error)
 	return token, nil
 }
 
-func NewSessionManager[T any](store Store[T]) *SessionManager[T] {
-	return &SessionManager[T]{
+func NewSessionManager(store SessionStore) *SessionManager {
+	return &SessionManager{
 		store: store,
 	}
+}
+
+func generateRandomToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("generate random 32 byte token: %w", err)
+	}
+
+	return base64.RawURLEncoding.EncodeToString(b), nil
 }

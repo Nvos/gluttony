@@ -9,7 +9,7 @@ import (
 type sessionValue struct{}
 type sessionToken struct{}
 
-func SessionHttpMiddleware[T any](sm *SessionManager[T]) func(handler http.Handler) http.Handler {
+func SessionHttpMiddleware(sm *SessionManager) func(handler http.Handler) http.Handler {
 	return func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			cookie, err := request.Cookie(cookieName)

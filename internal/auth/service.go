@@ -1,19 +1,18 @@
-package user
+package auth
 
 import (
 	"context"
 	"fmt"
-	"gluttony/internal/auth"
-	"gluttony/internal/database"
+	"gluttony/internal/database/sqldb"
 	"gluttony/internal/x/cryptox"
 )
 
 type Service struct {
-	store   Store
-	session *auth.SessionManager[Session]
+	store   UserStore
+	session *SessionManager
 }
 
-func NewService(store Store, session *auth.SessionManager[Session]) (*Service, error) {
+func NewService(store UserStore, session *SessionManager) (*Service, error) {
 	if store == nil {
 		return nil, fmt.Errorf("store is nil")
 	}
@@ -36,15 +35,15 @@ func (s *Service) Logout(ctx context.Context, token string) error {
 
 func (s *Service) Login(ctx context.Context, input LoginInput) (string, error) {
 	user, err := s.store.SingleByUsername(ctx, input.Username)
-	if err != nil && database.IsNotFound(err) {
+	if err != nil && sqldb.IsNotFound(err) {
 		return "", ErrInvalidCredentials
 	}
 
 	if err != nil {
-		return "", fmt.Errorf("login: user by username: %w", err)
+		return "", err
 	}
 
-	ok, err := cryptox.CompareArgon2(input.Password, user.Password)
+	ok, err := cryptox.ComparePasswordAndHash(input.Password, user.PasswordHash)
 	if err != nil {
 		return "", fmt.Errorf("compare password: %w", err)
 	}

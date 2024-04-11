@@ -12,7 +12,6 @@ import (
 	"gluttony/internal/database/sqldb"
 	"gluttony/internal/database/transaction"
 	"gluttony/internal/recipe"
-	"gluttony/internal/user"
 	"gluttony/internal/x/connectx"
 	"gluttony/internal/x/filepathx"
 	"gluttony/internal/x/httpx"
@@ -95,16 +94,16 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 		return fmt.Errorf("create recipe postgres store: %w", err)
 	}
 
-	sessionStore := auth.NewMemoryStorage[user.Session]()
-	sessionManager := auth.NewSessionManager[user.Session](sessionStore)
+	sessionStore := auth.NewMemoryStorage()
+	sessionManager := auth.NewSessionManager(sessionStore)
 	beginner := transaction.NewPgxBeginner(pool)
 
-	userStore, err := user.NewPostgresStore(pool)
+	userStore, err := auth.NewUserPostgresStore(pool)
 	if err != nil {
 		return fmt.Errorf("create user postgres store: %w", err)
 	}
 
-	userService, err := user.NewService(userStore, sessionManager)
+	userService, err := auth.NewService(userStore, sessionManager)
 	if err != nil {
 		return fmt.Errorf("create user service: %w", err)
 	}
@@ -176,8 +175,8 @@ func mountRecipeHandler(mux *http.ServeMux, recipeStore *recipe.Service, opts ..
 	return nil
 }
 
-func mountUserHandler(mux *http.ServeMux, service *user.Service, opts ...connect.HandlerOption) error {
-	path, handler, err := user.NewConnectHandler(service, opts...)
+func mountUserHandler(mux *http.ServeMux, service *auth.Service, opts ...connect.HandlerOption) error {
+	path, handler, err := auth.NewConnectHandler(service, opts...)
 	if err != nil {
 		return fmt.Errorf("mount user connect handler: %w", err)
 	}

@@ -1,8 +1,7 @@
-package user
+package auth
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"gluttony/internal/database/transaction"
 )
@@ -20,21 +19,13 @@ type Session struct {
 }
 
 type User struct {
-	ID       int32
-	Username string
-	Password string `json:"-"`
+	ID           int32
+	Username     string
+	PasswordHash string
 }
 
-func (u User) MarshalJSON() ([]byte, error) {
-	type user User
-	out := user(u)
-	out.Password = "[REDACTED]"
-
-	return json.Marshal(out)
-}
-
-type Store interface {
-	UnderTransaction(tx transaction.Transaction) (Store, error)
+type UserStore interface {
+	UnderTransaction(tx transaction.Transaction) (UserStore, error)
 	Single(ctx context.Context, id int32) (User, error)
 	SingleByUsername(ctx context.Context, username string) (User, error)
 	Create(ctx context.Context, username, password string) (int32, error)

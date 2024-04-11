@@ -2,8 +2,8 @@ package auth
 
 import "context"
 
-type Store[T any] interface {
-	Single(ctx context.Context, key string) (T, error)
-	Create(ctx context.Context, key string, value T) error
+type SessionStore interface {
+	Single(ctx context.Context, key string) (Session, error)
+	Create(ctx context.Context, key string, value Session) error
 	Delete(ctx context.Context, key string) error
 }

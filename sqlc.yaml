@@ -9,12 +9,12 @@ sql:
       package: postgresql
       out: internal/recipe/postgresql
       sql_package: "pgx/v5"
-- name: postgresql-user
+- name: postgresql-auth
   engine: postgresql
-  queries: internal/user/query.sql
+  queries: internal/auth/query.sql
   schema: internal/database/migrations
   gen:
     go:
       package: postgresql
-      out: internal/user/postgresql
+      out: internal/auth/postgresql
       sql_package: "pgx/v5"
