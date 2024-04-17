@@ -12,6 +12,7 @@ import (
 	"gluttony/internal/database/sqldb"
 	"gluttony/internal/database/transaction"
 	"gluttony/internal/recipe"
+	"gluttony/internal/static"
 	"gluttony/internal/x/connectx"
 	"gluttony/internal/x/filepathx"
 	"gluttony/internal/x/httpx"
@@ -21,6 +22,7 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"golang.org/x/sync/errgroup"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
@@ -55,18 +57,18 @@ func main() {
 }
 
 func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error {
-	dataDir, configDir, err := initializeUsedDirectories()
+	workDirectories, err := initializeUsedDirectories()
 	if err != nil {
 		return fmt.Errorf("initialize app directories: %w", err)
 	}
 
 	logger.Info(
 		"Starting gluttony",
-		slog.String("dataDir", dataDir),
-		slog.String("configDir", configDir),
+		slog.String("dataDir", workDirectories.DataDir),
+		slog.String("configDir", workDirectories.ConfigDir),
 	)
 
-	cfg, err := config.LoadConfig(configDir)
+	cfg, err := config.LoadConfig(workDirectories.ConfigDir)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
@@ -123,6 +125,9 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 	if err := mountUserHandler(mux, userService, connectInterceptors); err != nil {
 		return fmt.Errorf("mount user http handlers: %w", err)
 	}
+
+	mux.Handle("/static/", static.FileServeHandler("/static/", workDirectories.DataFS))
+	mux.Handle("/storage/", static.UploadHandler(workDirectories.DataDir))
 
 	server := &http.Server{
 		Addr: fmt.Sprintf("127.0.0.1:%d", cfg.Server.Port),
@@ -186,20 +191,33 @@ func mountUserHandler(mux *http.ServeMux, service *auth.Service, opts ...connect
 	return nil
 }
 
-func initializeUsedDirectories() (string, string, error) {
+type WorkDirectories struct {
+	DataDir string
+	DataFS  fs.FS
+
+	ConfigDir string
+	ConfigFS  fs.FS
+}
+
+func initializeUsedDirectories() (WorkDirectories, error) {
 	dataDir := filepath.Join(xdg.DataHome, "gluttony")
 	if !filepathx.IsFileExist(dataDir) {
 		if err := os.Mkdir(dataDir, os.ModePerm); err != nil {
-			return "", "", fmt.Errorf("create data directory: %w", err)
+			return WorkDirectories{}, fmt.Errorf("create data directory: %w", err)
 		}
 	}
 
 	configDir := filepath.Join(xdg.ConfigHome, "gluttony")
 	if !filepathx.IsFileExist(configDir) {
 		if err := os.Mkdir(configDir, os.ModePerm); err != nil {
-			return "", "", fmt.Errorf("create config directory: %w", err)
+			return WorkDirectories{}, fmt.Errorf("create config directory: %w", err)
 		}
 	}
 
-	return dataDir, configDir, nil
+	return WorkDirectories{
+		DataDir:   dataDir,
+		DataFS:    os.DirFS(dataDir),
+		ConfigDir: configDir,
+		ConfigFS:  os.DirFS(configDir),
+	}, nil
 }
