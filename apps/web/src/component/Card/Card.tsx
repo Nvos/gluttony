@@ -1,4 +1,4 @@
-import { css, cx } from '@gluttony/theme/css';
+import { css, cx } from '~/ui/css';
 import { forwardRef, HTMLAttributes, ImgHTMLAttributes } from 'react';
 
 const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(

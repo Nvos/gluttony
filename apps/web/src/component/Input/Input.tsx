@@ -1,6 +1,6 @@
 import { forwardRef, type InputHTMLAttributes } from 'react';
-import { cx } from '@gluttony/theme/css';
-import { input } from '@gluttony/theme/recipes';
+import { cx } from '~/ui/css';
+import { input } from '~/ui/recipes';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {}
 

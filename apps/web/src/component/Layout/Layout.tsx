@@ -1,13 +1,14 @@
 import { PropsWithChildren } from 'react';
 import { ThemeSelector } from './ThemeSelector';
-import { css } from '@gluttony/theme/css';
+import { css } from '~/ui/css';
 import { Link } from '@tanstack/react-router';
 import { Beef, CookingPot } from 'lucide-react';
-import { Button } from '@gluttony/ui';
+import { Button } from '~/component';
 
 const linkStyles = css({
   display: 'flex',
   gap: '200',
+  fontSize: '[16px]',
   alignItems: 'center',
   paddingX: '200',
   height: '[40px]',
@@ -15,8 +16,11 @@ const linkStyles = css({
   borderRadius: '100',
   transition: 'colors',
   '&.active': {
-    color: 'primary.950',
+    color: 'primary.900',
     fontWeight: 'heavy',
+    _hover: {
+      backgroundColor: 'primary.900/05',
+    },
   },
   '&:hover': {
     backgroundColor: 'neutral.300',
@@ -49,7 +53,7 @@ export const Layout = ({ children }: PropsWithChildren<unknown>) => {
           gap: '600',
           minHeight: 'dvh',
           width: '[240px]',
-          backgroundColor: 'neutral.100',
+          backgroundColor: 'surface.200',
           borderRight: '{colors.neutral.500} solid 1px',
         })}
       >

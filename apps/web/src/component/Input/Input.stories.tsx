@@ -1,5 +1,5 @@
 import type { Story } from '@ladle/react';
-import { css } from '@gluttony/theme/css';
+import { css } from '~/ui/css';
 import { Input } from './Input';
 
 export const Example: Story = () => {

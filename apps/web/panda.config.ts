@@ -1,11 +1,11 @@
 import { defineConfig } from '@pandacss/dev';
+import {} from './src/theme';
 
 export default defineConfig({
-  presets: ['@pandacss/preset-base', '@gluttony/ui/preset'],
+  presets: ['@pandacss/preset-base', './src/theme/preset'],
   preflight: true,
   jsxFramework: 'react',
-  exclude: [],
-  include: ['./src/**/*.{ts,tsx,js,jsx}', '../../packages/ui/src/**/*.tsx'],
-  outdir: '../../packages/theme',
-  importMap: '@glutony/theme',
+  include: ['./src/**/*.{ts,tsx,js,jsx}'],
+  outdir: './src/ui',
+  exclude: ['./src/ui'],
 });

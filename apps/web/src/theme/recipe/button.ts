@@ -24,6 +24,10 @@ export const buttonRecipe = defineRecipe({
       md: {
         height: '40px',
       },
+      icon: {
+        height: '40px',
+        width: '40px',
+      },
     },
     variant: {
       solid: {
@@ -34,10 +38,10 @@ export const buttonRecipe = defineRecipe({
         },
       },
       ghost: {
-        background: 'colorPalette.800/20',
-        color: 'colorPalette.950',
+        background: 'colorPalette.800/10',
+        color: 'colorPalette.800',
         '&:hover': {
-          background: 'colorPalette.800/30',
+          background: 'colorPalette.800/20',
         },
       },
     },

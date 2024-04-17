@@ -1,8 +1,8 @@
-import { ButtonHTMLAttributes, ReactNode, forwardRef } from 'react';
-import { button } from '@gluttony/theme/recipes';
-import { css, cx } from '@gluttony/theme/css';
-import { type ColorPalette } from '@gluttony/theme/tokens';
-import { type RecipeVariantProps } from '@gluttony/theme/types';
+import { ButtonHTMLAttributes, forwardRef } from 'react';
+import { button } from '~/ui/recipes';
+import { css, cx } from '~/ui/css';
+import { type ColorPalette } from '~/ui/tokens';
+import { type RecipeVariantProps } from '~/ui/types';
 
 type ButtonVariants = RecipeVariantProps<typeof button>;
 
@@ -31,3 +31,4 @@ export const Button = forwardRef<HTMLButtonElement, Props>(
     );
   },
 );
+Button.displayName = 'Button';

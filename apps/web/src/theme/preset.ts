@@ -1,12 +1,12 @@
 import { definePreset } from '@pandacss/dev';
-import { globalCss } from './theme/global';
+import { globalCss } from './global';
 import { orange, orangeDark, slate, slateDark, red, redDark } from '@radix-ui/colors';
-import { radii } from './theme/border';
-import { radixToLocalTokenScale, colorTokenToSemanticToken } from './theme/color/converter';
-import { buttonRecipe } from './theme/recipe/button';
-import { spacing } from './theme/spacing';
-import { fontWeights, textStyles } from './theme/typography';
-import { inputRecipe } from './theme/recipe/input';
+import { radii } from './border';
+import { radixToLocalTokenScale, colorTokenToSemanticToken } from './color/converter';
+import { buttonRecipe } from './recipe/button';
+import { spacing } from './spacing';
+import { fontWeights, textStyles } from './typography';
+import { inputRecipe } from './recipe/input';
 
 export const preset = definePreset({
   conditions: {
@@ -51,13 +51,19 @@ export const preset = definePreset({
           // 200, 300, 400 <-interactive
           // 500, 600, 700 <- borders and separators
           // 800, 900 <- solid color
-          // 950, 100 <- accessible text
+          // 950, 1000 <- accessible text
           danger: colorTokenToSemanticToken('red'),
           neutral: colorTokenToSemanticToken('slate'),
           primary: colorTokenToSemanticToken('orange'),
           background: {
             DEFAULT: { value: { base: '{colors.neutral.50}', _dark: '{colors.neutral.50}' } },
             layer: { value: { base: '{colors.white}', _dark: '{colors.slate.dark.50}' } },
+          },
+          surface: {
+            100: { value: '{colors.neutral.50}' },
+            200: { value: '{colors.neutral.100}' },
+            300: { value: '{colors.neutral.200}' },
+            400: { value: '{colors.neutral.300}' },
           },
         },
       },

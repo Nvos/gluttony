@@ -1,6 +1,6 @@
 import type { Story } from '@ladle/react';
 import { Button } from './Button';
-import { css } from '@gluttony/theme/css';
+import { css } from '~/ui/css';
 
 export const Example: Story = () => {
   return (

@@ -1,4 +1,4 @@
-import { css } from '@gluttony/theme/css';
+import { css } from '~/ui/theme/css';
 import { createLazyFileRoute } from '@tanstack/react-router';
 
 export const Route = createLazyFileRoute('/login')({

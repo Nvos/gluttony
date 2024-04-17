@@ -1,4 +1,4 @@
-import { Button } from '@gluttony/ui';
+import { Button } from '~/component';
 import { useEffect, useState } from 'react';
 import { Sun, Moon } from 'lucide-react';
 

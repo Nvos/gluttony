@@ -1,15 +1,16 @@
-import { css } from '@gluttony/theme/css';
+import { css } from '~/ui/css';
 import {
+  Button,
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardImage,
   CardTitle,
-} from '@gluttony/ui';
+} from '~/component';
 import BigosImg from '~/assets/bigos.jpg';
 import { Link } from '@tanstack/react-router';
+import { CookingPot } from 'lucide-react';
 
 const cardLink = css({
   width: '[320px]',
@@ -37,9 +38,26 @@ export const RecipeView = () => {
           <CardHeader>
             <CardTitle>Old polish hunter&apos;s stew</CardTitle>
           </CardHeader>
-          <CardImage src={BigosImg} />
-          <CardContent />
-          <CardFooter>Footer</CardFooter>
+          <div className={css({ position: 'relative', paddingBottom: '400' })}>
+            <CardImage src={BigosImg} />
+            <Button
+              size="icon"
+              colorScheme="primary"
+              variant="solid"
+              className={css({
+                borderRadius: 'round',
+                position: 'absolute',
+                right: '300',
+                bottom: '500',
+              })}
+            >
+              <CookingPot />
+            </Button>
+          </div>
+          <CardContent>
+            <div>Meat</div>
+          </CardContent>
+          <CardFooter></CardFooter>
         </Card>
       </Link>
     </div>

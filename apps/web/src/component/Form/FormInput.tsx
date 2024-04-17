@@ -1,7 +1,7 @@
-import { Input, InputProps } from 'src/Input/Input';
+import { Input, InputProps } from '../Input';
 import { useFormField } from './Form';
 import { forwardRef } from 'react';
-import { css } from '@gluttony/theme/css';
+import { css } from '~/ui/css';
 
 export const FormInput = forwardRef<HTMLInputElement, InputProps>(({ ...props }, ref) => {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
