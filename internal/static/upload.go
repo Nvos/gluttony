@@ -2,10 +2,12 @@ package static
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 )
 
@@ -20,7 +22,7 @@ func UploadHandler(dataDir string) http.Handler {
 		}
 
 		// Handle paths in safe way
-		file, header, err := r.FormFile("file")
+		file, _, err := r.FormFile("file")
 		if err != nil {
 			// TODO, 17/04/2024: log stuff
 			panic(err)
@@ -37,8 +39,8 @@ func UploadHandler(dataDir string) http.Handler {
 			return
 		}
 
-		// TODO, 17/04/2024: name is unsafe
-		destination, err := os.Create(filepath.Join(dataDir, filepath.Clean(header.Filename)))
+		fileName := uuid.New().String()
+		destination, err := os.Create(filepath.Join(dataDir, fileName))
 		if err != nil {
 			panic(err)
 		}
@@ -47,6 +49,10 @@ func UploadHandler(dataDir string) http.Handler {
 		if _, err := io.Copy(destination, file); err != nil {
 			panic(err)
 		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "text/plain")
+		_, _ = w.Write([]byte("/" + path.Join("static", fileName)))
 	})
 }
 

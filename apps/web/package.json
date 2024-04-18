@@ -18,6 +18,7 @@
     "@tanstack/router-devtools": "^1.22.8",
     "@tiptap/core": "^2.3.0",
     "@tiptap/extension-color": "^2.3.0",
+    "@tiptap/extension-image": "^2.3.0",
     "@tiptap/extension-list-item": "^2.3.0",
     "@tiptap/extension-mention": "^2.3.0",
     "@tiptap/extension-text-style": "^2.3.0",

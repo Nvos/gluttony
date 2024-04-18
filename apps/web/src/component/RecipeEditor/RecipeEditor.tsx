@@ -4,13 +4,14 @@ import './styles.css';
 import { Color } from '@tiptap/extension-color';
 import ListItem from '@tiptap/extension-list-item';
 import TextStyle from '@tiptap/extension-text-style';
-import { EditorProvider, useCurrentEditor } from '@tiptap/react';
+import { EditorProvider, Extensions, useCurrentEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Button } from '../Button/Button';
 import { css } from '~/ui/css';
 import Mention from '@tiptap/extension-mention';
 import { suggestion } from './suggestion';
-import IngredientExtension from './IngredientExtension';
+import ImageExtension from '@tiptap/extension-image';
+import { ImageDndExtension } from './UploadExtension';
 
 const MenuBar = () => {
   const { editor } = useCurrentEditor();
@@ -170,9 +171,9 @@ const MenuBar = () => {
   );
 };
 
-const extensions = [
+const extensions: Extensions = [
   Color.configure({ types: [TextStyle.name, ListItem.name] }),
-  TextStyle.configure({ types: [ListItem.name] }),
+  TextStyle.configure(),
   StarterKit.configure({
     bulletList: {
       keepMarks: true,
@@ -189,7 +190,9 @@ const extensions = [
     },
     suggestion,
   }),
-  IngredientExtension,
+  ImageExtension,
+  ImageDndExtension,
+  // IngredientExtension,
 ];
 
 export const RecipeEditor = () => {
