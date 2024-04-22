@@ -23,55 +23,80 @@ table "users" {
   }
 }
 
-table "recipe_steps" {
+table "ingredients" {
   schema = schema.public
   column "id" {
     null = false
     type = serial
   }
-  column "recipe_id" {
+
+  column "name" {
     null = false
-    type = int
+    type = jsonb
   }
-  column "description" {
-    null = false
-    type = text
+
+  primary_key {
+    columns = [column.id]
   }
-  column "order" {
-    null = false
-    type = int
-  }
-  index "uq_recipe_steps_order" {
-    columns = [column.recipe_id, column.order]
+
+  index "uq_ingredients_name" {
+    columns = [column.name]
     unique = true
   }
-  foreign_key "fk_recipe" {
-    columns = [column.recipe_id]
-    ref_columns = [table.recipes.column.id]
-    on_delete = CASCADE
-    on_update = NO_ACTION
+
+  index "idx_ingredients_name_en" {
+    on {
+      expr = "to_tsvector('english', (name->'en'))"
+    }
   }
 }
 
 table "recipes" {
   schema = schema.public
+
   column "id" {
     null = false
     type = serial
   }
+
   column "name" {
     null = false
-    type = varchar(100)
+    type = jsonb
   }
+
   column "description" {
     null = false
-    type = text
+    type = jsonb
   }
+
+  column "content" {
+    null = false
+    type = jsonb
+  }
+
   primary_key {
     columns = [column.id]
   }
+
   index "uq_recipes_name" {
     columns = [column.name]
     unique = true
+  }
+}
+
+table "recipes_ingredients" {
+  schema = schema.public
+  column "recipe_id" {
+    null = false
+    type = integer
+  }
+
+  column "ingredient_id" {
+    null = false
+    type = integer
+  }
+
+  primary_key {
+    columns = [column.recipe_id, column.ingredient_id]
   }
 }

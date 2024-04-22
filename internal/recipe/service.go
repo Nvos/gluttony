@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gluttony/internal/database/pagination"
 	"gluttony/internal/database/transaction"
+	"gluttony/internal/i18n"
 )
 
 type Service struct {
@@ -45,8 +45,16 @@ func (s *Service) CreateRecipe(ctx context.Context, recipe CreateRecipe) (int32,
 			return 0, fmt.Errorf("create recipe: %w", err)
 		}
 
-		if err := txStore.CreateRecipeSteps(ctx, recipeID, recipe.Steps); err != nil {
-			return 0, fmt.Errorf("create recipe steps: %w", err)
+		insertableEdges := make([]IngredientEdge, 0, len(recipe.IngredientIDs))
+		for i := range recipe.IngredientIDs {
+			insertableEdges = append(insertableEdges, IngredientEdge{
+				RecipeID:     recipeID,
+				IngredientID: recipe.IngredientIDs[i],
+			})
+		}
+
+		if err := txStore.CreateIngredientEdges(ctx, insertableEdges); err != nil {
+			return 0, fmt.Errorf("create ingredient edges: %w", err)
 		}
 
 		return recipeID, nil
@@ -60,8 +68,8 @@ func (s *Service) CreateRecipe(ctx context.Context, recipe CreateRecipe) (int32,
 	return recipeID, nil
 }
 
-func (s *Service) SingleRecipe(ctx context.Context, recipeID int32) (FullRecipe, error) {
-	single, err := s.store.Single(ctx, recipeID)
+func (s *Service) SingleRecipe(ctx context.Context, locale i18n.Locale, recipeID int32) (FullRecipe, error) {
+	single, err := s.store.Single(ctx, locale, recipeID)
 	if err != nil {
 		return FullRecipe{}, fmt.Errorf("single recipe: %w", err)
 	}
@@ -69,12 +77,8 @@ func (s *Service) SingleRecipe(ctx context.Context, recipeID int32) (FullRecipe,
 	return single, nil
 }
 
-func (s *Service) AllRecipes(ctx context.Context, search string, params pagination.OffsetPagination) ([]Recipe, error) {
-	if err := pagination.ValidateOffsetPagination(params); err != nil {
-		return nil, err
-	}
-
-	all, err := s.store.All(ctx, search, params)
+func (s *Service) AllRecipes(ctx context.Context, input AllRecipesInput) ([]Recipe, error) {
+	all, err := s.store.All(ctx, input)
 	if err != nil {
 		return nil, fmt.Errorf("all paged recipes: %w", err)
 	}

@@ -3,12 +3,12 @@ package recipe
 import (
 	"context"
 	"fmt"
+	"gluttony/internal/i18n"
 	"gluttony/internal/x/validatex"
 	"net/http"
 
 	"connectrpc.com/connect"
 
-	"gluttony/internal/database/pagination"
 	v1 "gluttony/internal/proto/recipe/v1"
 	"gluttony/internal/proto/recipe/v1/recipev1connect"
 )
@@ -23,25 +23,20 @@ func (s *ConnectService) SingleRecipe(
 	ctx context.Context,
 	r *connect.Request[v1.SingleRecipeRequest],
 ) (*connect.Response[v1.SingleRecipeResponse], error) {
-	single, err := s.service.SingleRecipe(ctx, r.Msg.Id)
+	locale, err := i18n.GetLocale(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, nil)
+	}
+
+	single, err := s.service.SingleRecipe(ctx, locale, r.Msg.Id)
 	if err != nil {
 		return nil, err
 	}
 
-	steps := make([]*v1.RecipeStep, 0, len(single.Steps))
-	for i := range single.Steps {
-		v := single.Steps[i]
-		steps = append(steps, &v1.RecipeStep{
-			Id:          v.ID,
-			Order:       v.Order,
-			Description: v.Description,
-		})
-	}
-
 	out := &v1.SingleRecipeResponse{
-		Id:    single.ID,
-		Name:  single.Name,
-		Steps: steps,
+		Id:   single.ID,
+		Name: single.Name,
+		//Content: single.
 	}
 
 	return connect.NewResponse(out), nil
@@ -51,12 +46,14 @@ func (s *ConnectService) AllRecipes(
 	ctx context.Context,
 	r *connect.Request[v1.AllRecipesRequest],
 ) (*connect.Response[v1.AllRecipesResponse], error) {
-	offsetPagination := pagination.OffsetPagination{
-		Offset: r.Msg.Offset,
-		Limit:  r.Msg.Limit,
+	locale, err := i18n.GetLocale(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, nil)
 	}
 
-	all, err := s.service.AllRecipes(ctx, r.Msg.Search, offsetPagination)
+	input, err := NewAllRecipesInput(locale, r.Msg)
+
+	all, err := s.service.AllRecipes(ctx, input)
 	if err != nil {
 		return nil, err
 	}
@@ -87,14 +84,11 @@ func (s *ConnectService) CreateRecipe(
 	}
 
 	// TODO, 20/03/2024: return recipe instead
-	recipeID, err := s.service.CreateRecipe(ctx, create)
-	if err != nil {
+	if _, err := s.service.CreateRecipe(ctx, create); err != nil {
 		return nil, err
 	}
 
-	return connect.NewResponse(&v1.CreateRecipeResponse{
-		RecipeId: recipeID,
-	}), nil
+	return connect.NewResponse(&v1.CreateRecipeResponse{}), nil
 }
 
 func NewConnectHandler(

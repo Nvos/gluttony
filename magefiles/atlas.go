@@ -17,3 +17,13 @@ func (Atlas) Codegen(migrationName string) error {
 
 	return nil
 }
+
+func (Atlas) Lint() error {
+	lint := sh.RunCmd("atlas", "migrate", "lint")
+
+	if err := lint("--env", "local", "--latest", "1"); err != nil {
+		return fmt.Errorf("atlas lint: %w", err)
+	}
+
+	return nil
+}

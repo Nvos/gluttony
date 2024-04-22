@@ -3,18 +3,30 @@ sql:
 - name: postgresql-recipe
   engine: postgresql
   queries: internal/recipe/query.sql
-  schema: internal/database/migrations
+  schema: migrations
   gen:
     go:
       package: postgresql
       out: internal/recipe/postgresql
       sql_package: "pgx/v5"
+      omit_unused_structs: true
 - name: postgresql-auth
   engine: postgresql
   queries: internal/auth/query.sql
-  schema: internal/database/migrations
+  schema: migrations
   gen:
     go:
       package: postgresql
       out: internal/auth/postgresql
       sql_package: "pgx/v5"
+      omit_unused_structs: true
+- name: postgresql-ingredient
+  engine: postgresql
+  queries: internal/ingredient/query.sql
+  schema: migrations
+  gen:
+    go:
+      package: postgresql
+      out: internal/ingredient/postgresql
+      sql_package: "pgx/v5"
+      omit_unused_structs: true

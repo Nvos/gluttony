@@ -4,18 +4,7 @@
 
 package postgresql
 
-type Recipe struct {
-	ID          int32
-	Name        string
-	Description string
-}
-
-type RecipeStep struct {
-	ID          int32
-	RecipeID    int32
-	Description string
-	Order       int32
-}
+import ()
 
 type User struct {
 	ID       int32

@@ -1,6 +1,9 @@
 package recipe
 
 import (
+	"fmt"
+	"gluttony/internal/database/pagination"
+	"gluttony/internal/i18n"
 	v1 "gluttony/internal/proto/recipe/v1"
 )
 
@@ -12,24 +15,37 @@ type Recipe struct {
 
 type FullRecipe struct {
 	Recipe
-	Steps []Step
 }
 
 type CreateRecipe struct {
-	Name        string
-	Description string
-	Steps       []CreateStep
+	Locale        i18n.Locale
+	Name          string
+	Description   string
+	Content       string
+	IngredientIDs []int32
 }
 
-type CreateStep struct {
-	Order       int32
-	Description string
+type AllRecipesInput struct {
+	Locale     i18n.Locale
+	Search     string
+	Pagination pagination.OffsetPagination
 }
 
-type Step struct {
-	ID          int32
-	Order       int32
-	Description string
+func NewAllRecipesInput(locale i18n.Locale, r *v1.AllRecipesRequest) (AllRecipesInput, error) {
+	if r == nil {
+		return AllRecipesInput{}, fmt.Errorf("all recipes request is nil")
+	}
+
+	offset, err := pagination.NewOffsetPagination(r.Offset, r.Limit)
+	if err != nil {
+		return AllRecipesInput{}, fmt.Errorf("new all recipe input: %w", err)
+	}
+
+	return AllRecipesInput{
+		Locale:     locale,
+		Search:     r.Search,
+		Pagination: offset,
+	}, nil
 }
 
 func NewCreateRecipe(r *v1.CreateRecipeRequest) (CreateRecipe, error) {
@@ -37,20 +53,16 @@ func NewCreateRecipe(r *v1.CreateRecipeRequest) (CreateRecipe, error) {
 		return CreateRecipe{}, err
 	}
 
-	steps := make([]CreateStep, 0, len(r.Steps))
-	for i := range r.Steps {
-		v := r.Steps[i]
-		step := CreateStep{
-			Order:       v.Order,
-			Description: v.Description,
-		}
-
-		steps = append(steps, step)
+	locale, err := i18n.NewLocale(r.Locale)
+	if err != nil {
+		return CreateRecipe{}, fmt.Errorf("new create recipe locale: %w", err)
 	}
 
 	return CreateRecipe{
-		Name:        r.Name,
-		Description: r.Description,
-		Steps:       steps,
+		Name:          r.Name,
+		Description:   r.Description,
+		Content:       r.Content,
+		IngredientIDs: r.IngredientIds,
+		Locale:        locale,
 	}, nil
 }

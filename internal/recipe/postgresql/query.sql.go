@@ -7,35 +7,37 @@ package postgresql
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const allRecipes = `-- name: AllRecipes :many
-SELECT id, name, description, rank FROM recipes, ts_rank(to_tsvector(name), websearch_to_tsquery($3)) as rank
-WHERE CASE WHEN $3 != '' THEN to_tsvector(name) @@ websearch_to_tsquery($3) ELSE TRUE END
-ORDER BY
-    recipes.id DESC,
-    CASE WHEN $3 != '' THEN rank END DESC
-OFFSET $1 ROWS
-FETCH FIRST $2 ROW ONLY
+SELECT id, (name ->> $1)::text as name, (description ->> $1)::text as description
+FROM recipes as rank
+WHERE CASE
+          WHEN $2 != '' THEN to_tsvector(name->>$1::text) @@ websearch_to_tsquery($2)
+          ELSE TRUE END
+OFFSET $3 ROWS FETCH FIRST $4 ROW ONLY
 `
 
 type AllRecipesParams struct {
-	Offset             int32
-	Limit              int32
-	WebsearchToTsquery string
+	Locale []byte
+	Search interface{}
+	Offset int32
+	Limit  int32
 }
 
 type AllRecipesRow struct {
 	ID          int32
 	Name        string
 	Description string
-	Rank        pgtype.Float4
 }
 
 func (q *Queries) AllRecipes(ctx context.Context, arg AllRecipesParams) ([]AllRecipesRow, error) {
-	rows, err := q.db.Query(ctx, allRecipes, arg.Offset, arg.Limit, arg.WebsearchToTsquery)
+	rows, err := q.db.Query(ctx, allRecipes,
+		arg.Locale,
+		arg.Search,
+		arg.Offset,
+		arg.Limit,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -43,12 +45,7 @@ func (q *Queries) AllRecipes(ctx context.Context, arg AllRecipesParams) ([]AllRe
 	var items []AllRecipesRow
 	for rows.Next() {
 		var i AllRecipesRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.Description,
-			&i.Rank,
-		); err != nil {
+		if err := rows.Scan(&i.ID, &i.Name, &i.Description); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -60,65 +57,58 @@ func (q *Queries) AllRecipes(ctx context.Context, arg AllRecipesParams) ([]AllRe
 }
 
 const createRecipe = `-- name: CreateRecipe :one
-INSERT INTO recipes (name, description)
-VALUES ($1, $2)
+INSERT INTO recipes (name, description, content)
+VALUES ($1, $2, $3)
 RETURNING id
 `
 
 type CreateRecipeParams struct {
-	Name        string
-	Description string
+	Name        []byte
+	Description []byte
+	Content     []byte
 }
 
 func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (int32, error) {
-	row := q.db.QueryRow(ctx, createRecipe, arg.Name, arg.Description)
+	row := q.db.QueryRow(ctx, createRecipe, arg.Name, arg.Description, arg.Content)
 	var id int32
 	err := row.Scan(&id)
 	return id, err
 }
 
-type CreateRecipeStepsParams struct {
-	RecipeID    int32
-	Description string
-	Order       int32
+type CreateRecipeIngredientEdgesParams struct {
+	RecipeID     int32
+	IngredientID int32
 }
 
-const singleRecipe = `-- name: SingleRecipe :many
-SELECT recipes.id, recipes.name, recipes.description, recipe_steps.id, recipe_steps.recipe_id, recipe_steps.description, recipe_steps."order" FROM recipes
-JOIN recipe_steps on recipes.id = recipe_steps.recipe_id
-WHERE recipes.id = $1
-ORDER BY recipe_steps.order
+const singleRecipe = `-- name: SingleRecipe :one
+SELECT id,
+       (name ->> $1::text)::text as name,
+       (description ->> $1::text)::text as description,
+       (content ->> $1::text)::text    as content
+FROM recipes
+WHERE recipes.id = $2
 `
 
-type SingleRecipeRow struct {
-	Recipe     Recipe
-	RecipeStep RecipeStep
+type SingleRecipeParams struct {
+	Locale   string
+	RecipeID int32
 }
 
-func (q *Queries) SingleRecipe(ctx context.Context, id int32) ([]SingleRecipeRow, error) {
-	rows, err := q.db.Query(ctx, singleRecipe, id)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []SingleRecipeRow
-	for rows.Next() {
-		var i SingleRecipeRow
-		if err := rows.Scan(
-			&i.Recipe.ID,
-			&i.Recipe.Name,
-			&i.Recipe.Description,
-			&i.RecipeStep.ID,
-			&i.RecipeStep.RecipeID,
-			&i.RecipeStep.Description,
-			&i.RecipeStep.Order,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+type SingleRecipeRow struct {
+	ID          int32
+	Name        string
+	Description string
+	Content     string
+}
+
+func (q *Queries) SingleRecipe(ctx context.Context, arg SingleRecipeParams) (SingleRecipeRow, error) {
+	row := q.db.QueryRow(ctx, singleRecipe, arg.Locale, arg.RecipeID)
+	var i SingleRecipeRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Content,
+	)
+	return i, err
 }

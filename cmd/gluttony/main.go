@@ -11,6 +11,8 @@ import (
 	"gluttony/internal/config"
 	"gluttony/internal/database/sqldb"
 	"gluttony/internal/database/transaction"
+	"gluttony/internal/i18n"
+	"gluttony/internal/ingredient"
 	"gluttony/internal/recipe"
 	"gluttony/internal/static"
 	"gluttony/internal/x/connectx"
@@ -79,6 +81,15 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 	}
 
 	conn := stdlib.OpenDBFromPool(pool)
+	isDbRunning, err := sqldb.IsDBRunning(ctx, conn)
+	if err != nil {
+		return fmt.Errorf("check if db is running: %w", err)
+	}
+
+	if !isDbRunning {
+		return fmt.Errorf("db is not running")
+	}
+
 	if err := sqldb.Migrate(ctx, conn, migrations.FS); err != nil {
 		return fmt.Errorf("migrate database: %w", err)
 	}
@@ -115,6 +126,10 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 		return fmt.Errorf("create recipe service: %w", err)
 	}
 
+	ingredientStore := ingredient.NewStorePostgres(pool)
+
+	ingredient.NewService(ingredientStore)
+
 	connectInterceptors := connect.WithInterceptors(connectx.ErrorInterceptor(logger))
 
 	mux := http.NewServeMux()
@@ -134,6 +149,7 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 		Handler: h2c.NewHandler(httpx.ComposeMiddlewares(
 			mux,
 			httpx.AllowAllCORSMiddleware,
+			i18n.LocaleInjectionMiddleware(logger),
 			auth.SessionHttpMiddleware(sessionManager),
 		), &http2.Server{}),
 		// TODO(AK) 05/03/2024: timeouts

@@ -7,14 +7,17 @@ type OffsetPagination struct {
 	Limit  int32
 }
 
-func ValidateOffsetPagination(pagination OffsetPagination) error {
-	if pagination.Offset < 0 {
-		return fmt.Errorf("validate offset pagination: offset < 0")
+func NewOffsetPagination(offset, limit int32) (OffsetPagination, error) {
+	if offset < 0 {
+		return OffsetPagination{}, fmt.Errorf("offset=%d has to be positive", offset)
 	}
 
-	if pagination.Limit < 0 {
-		return fmt.Errorf("validate offset pagination: limit < 0")
+	if limit <= 0 {
+		return OffsetPagination{}, fmt.Errorf("limit=%d has to be greater than 0", limit)
 	}
 
-	return nil
+	return OffsetPagination{
+		Offset: offset,
+		Limit:  limit,
+	}, nil
 }

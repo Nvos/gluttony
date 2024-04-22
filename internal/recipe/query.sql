@@ -1,22 +1,24 @@
--- name: SingleRecipe :many
-SELECT sqlc.embed(recipes), sqlc.embed(recipe_steps) FROM recipes
-JOIN recipe_steps on recipes.id = recipe_steps.recipe_id
-WHERE recipes.id = $1
-ORDER BY recipe_steps.order;
+-- name: SingleRecipe :one
+SELECT id,
+       (name ->> sqlc.arg('locale')::text)::text as name,
+       (description ->> sqlc.arg('locale')::text)::text as description,
+       (content ->> sqlc.arg('locale')::text)::text    as content
+FROM recipes
+WHERE recipes.id = sqlc.arg('recipe_id');
 
 -- name: AllRecipes :many
-SELECT * FROM recipes, ts_rank(to_tsvector(name), websearch_to_tsquery($3)) as rank
-WHERE CASE WHEN $3 != '' THEN to_tsvector(name) @@ websearch_to_tsquery($3) ELSE TRUE END
-ORDER BY
-    recipes.id DESC,
-    CASE WHEN $3 != '' THEN rank END DESC
-OFFSET $1 ROWS
-FETCH FIRST $2 ROW ONLY;
+SELECT id, (name ->> sqlc.arg('locale'))::text as name, (description ->> sqlc.arg('locale'))::text as description
+FROM recipes as rank
+WHERE CASE
+          WHEN sqlc.arg('search') != '' THEN to_tsvector(name->>sqlc.arg('locale')::text) @@ websearch_to_tsquery(sqlc.arg('search'))
+          ELSE TRUE END
+OFFSET sqlc.arg('offset') ROWS FETCH FIRST sqlc.arg('limit') ROW ONLY;
 
 -- name: CreateRecipe :one
-INSERT INTO recipes (name, description)
-VALUES ($1, $2)
+INSERT INTO recipes (name, description, content)
+VALUES ($1, $2, $3)
 RETURNING id;
 
--- name: CreateRecipeSteps :copyfrom
-INSERT INTO recipe_steps (recipe_id, description, "order") VALUES ($1, $2, $3);
+-- name: CreateRecipeIngredientEdges :copyfrom
+INSERT INTO recipes_ingredients (recipe_id, ingredient_id)
+VALUES ($1, $2);

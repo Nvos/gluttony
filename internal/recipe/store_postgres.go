@@ -2,37 +2,53 @@ package recipe
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"gluttony/internal/database/pagination"
 	"gluttony/internal/database/transaction"
+	"gluttony/internal/i18n"
 	"gluttony/internal/recipe/postgresql"
 )
 
-var _ Store = (*PostgresStore)(nil)
+var _ Store = (*StorePostgres)(nil)
 
-type PostgresStore struct {
+type StorePostgres struct {
 	pool    postgresql.DBTX
 	queries *postgresql.Queries
 }
 
-func (s *PostgresStore) UnderTransaction(tx transaction.Transaction) (Store, error) {
+func (s *StorePostgres) CreateIngredientEdges(ctx context.Context, value []IngredientEdge) error {
+	params := make([]postgresql.CreateRecipeIngredientEdgesParams, 0, len(value))
+	for i := range value {
+		params = append(params, postgresql.CreateRecipeIngredientEdgesParams{
+			RecipeID:     value[i].RecipeID,
+			IngredientID: value[i].IngredientID,
+		})
+	}
+
+	if _, err := s.queries.CreateRecipeIngredientEdges(ctx, params); err != nil {
+		return fmt.Errorf("create recipe ingredient edges: %w", err)
+	}
+
+	return nil
+}
+
+func (s *StorePostgres) UnderTransaction(tx transaction.Transaction) (Store, error) {
 	pgxTx, err := transaction.GetPgxTx(tx)
 	if err != nil {
 		return nil, err
 	}
 
-	return &PostgresStore{
+	return &StorePostgres{
 		pool:    pgxTx,
 		queries: s.queries.WithTx(pgxTx),
 	}, nil
 }
 
-func (s *PostgresStore) Create(ctx context.Context, value CreateRecipe) (int32, error) {
+func (s *StorePostgres) Create(ctx context.Context, value CreateRecipe) (int32, error) {
 	recipeId, err := s.queries.CreateRecipe(ctx, postgresql.CreateRecipeParams{
-		Description: value.Description,
-		Name:        value.Name,
+		Description: i18n.NewField(value.Locale, value.Description).JSONBytes(),
+		Name:        i18n.NewField(value.Locale, value.Name).JSONBytes(),
+		Content:     i18n.NewField(value.Locale, value.Content).JSONBytes(),
 	})
 	if err != nil {
 		return 0, fmt.Errorf("postgres: create recipe: %w", err)
@@ -41,74 +57,46 @@ func (s *PostgresStore) Create(ctx context.Context, value CreateRecipe) (int32, 
 	return recipeId, nil
 }
 
-func (s *PostgresStore) CreateRecipeSteps(ctx context.Context, recipeID int32, steps []CreateStep) error {
-	if recipeID <= 0 {
-		return fmt.Errorf("invalid recipe id=%d", recipeID)
-	}
-
-	if len(steps) == 0 {
-		return errors.New("create recipe steps list is empty")
-	}
-
-	dbSteps := make([]postgresql.CreateRecipeStepsParams, 0, len(steps))
-	for i := range steps {
-		dbSteps = append(dbSteps, postgresql.CreateRecipeStepsParams{
-			RecipeID:    recipeID,
-			Description: steps[i].Description,
-			Order:       steps[i].Order,
-		})
-	}
-
-	createdCount, err := s.queries.CreateRecipeSteps(ctx, dbSteps)
-	if err != nil {
-		return fmt.Errorf("postgres: create recipe steps: %w", err)
-	}
-
-	if len(steps) != int(createdCount) {
-		return fmt.Errorf("postgres: not all recipe steps were persisted")
-	}
-
-	return nil
-}
-
-func (s *PostgresStore) Single(ctx context.Context, id int32) (FullRecipe, error) {
-	rows, err := s.queries.SingleRecipe(ctx, id)
+func (s *StorePostgres) Single(ctx context.Context, locale i18n.Locale, id int32) (FullRecipe, error) {
+	row, err := s.queries.SingleRecipe(ctx, postgresql.SingleRecipeParams{
+		Locale:   string(locale),
+		RecipeID: id,
+	})
 	if err != nil {
 		return FullRecipe{}, fmt.Errorf("postgres: single recipe by id=%d: %w", id, err)
 	}
 
-	if len(rows) == 0 {
-		return FullRecipe{}, fmt.Errorf("postgres: single recipe by id=%d not found", id)
-	}
-
-	steps := make([]Step, 0, len(rows))
-	for i := range rows {
-		step := Step{
-			ID:          rows[i].RecipeStep.ID,
-			Order:       rows[i].RecipeStep.Order,
-			Description: rows[i].RecipeStep.Description,
-		}
-
-		steps = append(steps, step)
-	}
+	//if len(rows) == 0 {
+	//	return FullRecipe{}, fmt.Errorf("postgres: single recipe by id=%d not found", id)
+	//}
+	//
+	//steps := make([]Step, 0, len(rows))
+	//for i := range rows {
+	//	step := Step{
+	//		ID:          rows[i].RecipeStep.ID,
+	//		Order:       rows[i].RecipeStep.Order,
+	//		Description: rows[i].RecipeStep.Description,
+	//	}
+	//
+	//	steps = append(steps, step)
+	//}
 
 	recipe := FullRecipe{
 		Recipe: Recipe{
-			ID:          rows[0].Recipe.ID,
-			Name:        rows[0].Recipe.Name,
-			Description: rows[0].Recipe.Description,
+			ID:          row.ID,
+			Name:        row.Name,
+			Description: row.Description,
 		},
-		Steps: steps,
 	}
 
 	return recipe, nil
 }
 
-func (s *PostgresStore) All(ctx context.Context, search string, pagination pagination.OffsetPagination) ([]Recipe, error) {
+func (s *StorePostgres) All(ctx context.Context, input AllRecipesInput) ([]Recipe, error) {
 	params := postgresql.AllRecipesParams{
-		Offset:             pagination.Offset,
-		Limit:              pagination.Limit,
-		WebsearchToTsquery: search,
+		Offset: input.Pagination.Offset,
+		Limit:  input.Pagination.Limit,
+		Search: input.Search,
 	}
 
 	rows, err := s.queries.AllRecipes(ctx, params)
@@ -130,12 +118,12 @@ func (s *PostgresStore) All(ctx context.Context, search string, pagination pagin
 	return recipes, nil
 }
 
-func NewPostgresStore(pool *pgxpool.Pool) (*PostgresStore, error) {
+func NewPostgresStore(pool *pgxpool.Pool) (*StorePostgres, error) {
 	if pool == nil {
 		return nil, fmt.Errorf("new postgres store: pgxpool is nil")
 	}
 
-	return &PostgresStore{
+	return &StorePostgres{
 		pool:    pool,
 		queries: postgresql.New(pool),
 	}, nil

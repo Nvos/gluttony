@@ -9,13 +9,13 @@ import (
 	"context"
 )
 
-// iteratorForCreateRecipeSteps implements pgx.CopyFromSource.
-type iteratorForCreateRecipeSteps struct {
-	rows                 []CreateRecipeStepsParams
+// iteratorForCreateRecipeIngredientEdges implements pgx.CopyFromSource.
+type iteratorForCreateRecipeIngredientEdges struct {
+	rows                 []CreateRecipeIngredientEdgesParams
 	skippedFirstNextCall bool
 }
 
-func (r *iteratorForCreateRecipeSteps) Next() bool {
+func (r *iteratorForCreateRecipeIngredientEdges) Next() bool {
 	if len(r.rows) == 0 {
 		return false
 	}
@@ -27,18 +27,17 @@ func (r *iteratorForCreateRecipeSteps) Next() bool {
 	return len(r.rows) > 0
 }
 
-func (r iteratorForCreateRecipeSteps) Values() ([]interface{}, error) {
+func (r iteratorForCreateRecipeIngredientEdges) Values() ([]interface{}, error) {
 	return []interface{}{
 		r.rows[0].RecipeID,
-		r.rows[0].Description,
-		r.rows[0].Order,
+		r.rows[0].IngredientID,
 	}, nil
 }
 
-func (r iteratorForCreateRecipeSteps) Err() error {
+func (r iteratorForCreateRecipeIngredientEdges) Err() error {
 	return nil
 }
 
-func (q *Queries) CreateRecipeSteps(ctx context.Context, arg []CreateRecipeStepsParams) (int64, error) {
-	return q.db.CopyFrom(ctx, []string{"recipe_steps"}, []string{"recipe_id", "description", "order"}, &iteratorForCreateRecipeSteps{rows: arg})
+func (q *Queries) CreateRecipeIngredientEdges(ctx context.Context, arg []CreateRecipeIngredientEdgesParams) (int64, error) {
+	return q.db.CopyFrom(ctx, []string{"recipes_ingredients"}, []string{"recipe_id", "ingredient_id"}, &iteratorForCreateRecipeIngredientEdges{rows: arg})
 }
