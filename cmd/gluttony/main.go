@@ -59,9 +59,9 @@ func main() {
 }
 
 func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error {
-	workDirectories, err := initializeUsedDirectories()
+	workDirectories, err := devDirectories()
 	if err != nil {
-		return fmt.Errorf("initialize app directories: %w", err)
+		return fmt.Errorf("initialize work directories: %w", err)
 	}
 
 	logger.Info(
@@ -70,12 +70,20 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 		slog.String("configDir", workDirectories.ConfigDir),
 	)
 
-	cfg, err := config.LoadConfig(workDirectories.ConfigDir)
+	cfg, err := config.LoadConfig(workDirectories.ConfigFS)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	pool, err := sqldb.ConnectPostgres(ctx, cfg.Database)
+	dbCfg := sqldb.Config{
+		Host:     cfg.Database.Host,
+		Port:     cfg.Database.Port,
+		User:     cfg.Database.User,
+		Password: cfg.Database.Password,
+		Database: cfg.Database.Database,
+		Options:  cfg.Database.Options,
+	}
+	pool, err := sqldb.ConnectPostgres(ctx, dbCfg)
 	if err != nil {
 		return fmt.Errorf("create postgres connection: %w", err)
 	}
@@ -102,10 +110,7 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 		return fmt.Errorf("close migrate db conn: %w", err)
 	}
 
-	recipeStore, err := recipe.NewPostgresStore(pool)
-	if err != nil {
-		return fmt.Errorf("create recipe postgres store: %w", err)
-	}
+	recipeStore := recipe.NewStorePostgres(pool)
 
 	sessionStore := auth.NewMemoryStorage()
 	sessionManager := auth.NewSessionManager(sessionStore)
@@ -121,14 +126,11 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 		return fmt.Errorf("create user service: %w", err)
 	}
 
-	recipeService, err := recipe.NewService(beginner, recipeStore)
-	if err != nil {
-		return fmt.Errorf("create recipe service: %w", err)
-	}
+	recipeService := recipe.NewService(beginner, recipeStore)
 
 	ingredientStore := ingredient.NewStorePostgres(pool)
 
-	ingredient.NewService(ingredientStore)
+	ingredientService := ingredient.NewService(ingredientStore)
 
 	connectInterceptors := connect.WithInterceptors(connectx.ErrorInterceptor(logger))
 
@@ -141,15 +143,19 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 		return fmt.Errorf("mount user http handlers: %w", err)
 	}
 
+	if err := mountIngredientHandler(mux, ingredientService, connectInterceptors); err != nil {
+		return fmt.Errorf("mount ingredient http handlers: %w", err)
+	}
+
 	mux.Handle("/static/", static.FileServeHandler("/static/", workDirectories.DataFS))
 	mux.Handle("/storage/", static.UploadHandler(workDirectories.DataDir))
 
 	server := &http.Server{
-		Addr: fmt.Sprintf("127.0.0.1:%d", cfg.Server.Port),
+		Addr: fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port),
 		Handler: h2c.NewHandler(httpx.ComposeMiddlewares(
 			mux,
 			httpx.AllowAllCORSMiddleware,
-			i18n.LocaleInjectionMiddleware(logger),
+			i18n.LocaleInjectionMiddleware(),
 			auth.SessionHttpMiddleware(sessionManager),
 		), &http2.Server{}),
 		// TODO(AK) 05/03/2024: timeouts
@@ -207,6 +213,17 @@ func mountUserHandler(mux *http.ServeMux, service *auth.Service, opts ...connect
 	return nil
 }
 
+func mountIngredientHandler(mux *http.ServeMux, service *ingredient.Service, opts ...connect.HandlerOption) error {
+	path, handler, err := ingredient.NewConnectHandler(service, opts...)
+	if err != nil {
+		return fmt.Errorf("mount ingredient connect handler: %w", err)
+	}
+
+	mux.Handle(path, handler)
+
+	return nil
+}
+
 type WorkDirectories struct {
 	DataDir string
 	DataFS  fs.FS
@@ -215,7 +232,7 @@ type WorkDirectories struct {
 	ConfigFS  fs.FS
 }
 
-func initializeUsedDirectories() (WorkDirectories, error) {
+func prodDirectories() (WorkDirectories, error) {
 	dataDir := filepath.Join(xdg.DataHome, "gluttony")
 	if !filepathx.IsFileExist(dataDir) {
 		if err := os.Mkdir(dataDir, os.ModePerm); err != nil {
@@ -235,5 +252,26 @@ func initializeUsedDirectories() (WorkDirectories, error) {
 		DataFS:    os.DirFS(dataDir),
 		ConfigDir: configDir,
 		ConfigFS:  os.DirFS(configDir),
+	}, nil
+}
+
+func devDirectories() (WorkDirectories, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return WorkDirectories{}, err
+	}
+
+	dataDir := filepath.Join(wd, "workdir")
+	if !filepathx.IsFileExist(dataDir) {
+		if err := os.Mkdir(dataDir, os.ModePerm); err != nil {
+			return WorkDirectories{}, fmt.Errorf("create data directory: %w", err)
+		}
+	}
+
+	return WorkDirectories{
+		DataDir:   dataDir,
+		DataFS:    os.DirFS(dataDir),
+		ConfigDir: wd,
+		ConfigFS:  os.DirFS(wd),
 	}, nil
 }

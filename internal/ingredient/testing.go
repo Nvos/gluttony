@@ -24,7 +24,7 @@ func NewTestEnv(t *testing.T, pool *pgxpool.Pool) ingredientv1connect.Ingredient
 	mux := http.NewServeMux()
 	mux.Handle(baseURL, handler)
 
-	server := httptest.NewUnstartedServer(httpx.ComposeMiddlewares(mux, i18n.LocaleInjectionMiddleware(nil)))
+	server := httptest.NewUnstartedServer(httpx.ComposeMiddlewares(mux, i18n.LocaleInjectionMiddleware()))
 	server.EnableHTTP2 = true
 	server.StartTLS()
 	t.Cleanup(server.Close)

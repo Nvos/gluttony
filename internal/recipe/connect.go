@@ -106,3 +106,10 @@ func NewConnectHandler(
 	path, handler := recipev1connect.NewRecipeServiceHandler(cs, opts...)
 	return path, handler, nil
 }
+
+func NewConnectClient(
+	client connect.HTTPClient,
+	baseURL string,
+) recipev1connect.RecipeServiceClient {
+	return recipev1connect.NewRecipeServiceClient(client, baseURL)
+}

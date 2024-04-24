@@ -3,7 +3,6 @@ package i18n
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"sort"
 	"strconv"
@@ -26,13 +25,13 @@ func GetLocale(ctx context.Context) (Locale, error) {
 	return locale, nil
 }
 
-func LocaleInjectionMiddleware(logger *slog.Logger) func(next http.Handler) http.Handler {
+func LocaleInjectionMiddleware() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			value := r.Header.Get("Accept-Language")
-			languages, err := parseAcceptLanguage(value)
-			if err != nil {
-				logger.Error("Parse Accept-Language header failed", slog.String("err", err.Error()))
+			languages, ok := parseAcceptLanguage(value)
+			if !ok || len(languages) == 0 {
+				next.ServeHTTP(w, r)
 				return
 			}
 
@@ -56,8 +55,14 @@ type AcceptLanguage struct {
 	Weight float32
 }
 
-func parseAcceptLanguage(value string) ([]AcceptLanguage, error) {
+// TODO, 24/04/2024: add parser test
+// TODO, 24/04/2024: improve parser
+func parseAcceptLanguage(value string) ([]AcceptLanguage, bool) {
 	parts := strings.Split(value, ",")
+	if value == "" {
+		return nil, false
+	}
+
 	all := make([]AcceptLanguage, 0, len(parts))
 	for i := range parts {
 		split := strings.Split(parts[i], ";")
@@ -67,7 +72,7 @@ func parseAcceptLanguage(value string) ([]AcceptLanguage, error) {
 		if len(split) == 2 {
 			parsed, err := strconv.ParseFloat(split[1], 32)
 			if err != nil {
-				return nil, fmt.Errorf("parse language weight: %w", err)
+				return nil, false
 			}
 
 			weight = float32(parsed)
@@ -87,5 +92,5 @@ func parseAcceptLanguage(value string) ([]AcceptLanguage, error) {
 		})
 	}
 
-	return all, nil
+	return all, true
 }

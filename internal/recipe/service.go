@@ -2,10 +2,10 @@ package recipe
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"gluttony/internal/database/transaction"
 	"gluttony/internal/i18n"
+	"gluttony/internal/x/assert"
 )
 
 type Service struct {
@@ -13,19 +13,14 @@ type Service struct {
 	store    Store
 }
 
-func NewService(beginner transaction.Beginner, store Store) (*Service, error) {
-	if beginner == nil {
-		return nil, errors.New("recipe service beginner is nil")
-	}
-
-	if store == nil {
-		return nil, errors.New("recipe service store is nil")
-	}
+func NewService(beginner transaction.Beginner, store Store) *Service {
+	assert.Assert(beginner == nil, "transaction beginner is nil")
+	assert.Assert(store == nil, "store is nil")
 
 	return &Service{
 		beginner: beginner,
 		store:    store,
-	}, nil
+	}
 }
 
 func (s *Service) CreateRecipe(ctx context.Context, recipe CreateRecipe) (int32, error) {

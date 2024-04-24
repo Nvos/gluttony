@@ -27,7 +27,7 @@ message CreateRequest {
 message CreateResponse {
 }
 
-service RecipeService {
-  rpc All(AllRequest) returns (AllRequest);
+service IngredientService {
+  rpc All(AllRequest) returns (AllResponse);
   rpc Create(CreateRequest) returns (CreateResponse);
 }

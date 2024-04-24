@@ -7,6 +7,7 @@ import (
 	"gluttony/internal/database/transaction"
 	"gluttony/internal/i18n"
 	"gluttony/internal/recipe/postgresql"
+	"gluttony/internal/x/assert"
 )
 
 var _ Store = (*StorePostgres)(nil)
@@ -118,13 +119,11 @@ func (s *StorePostgres) All(ctx context.Context, input AllRecipesInput) ([]Recip
 	return recipes, nil
 }
 
-func NewPostgresStore(pool *pgxpool.Pool) (*StorePostgres, error) {
-	if pool == nil {
-		return nil, fmt.Errorf("new postgres store: pgxpool is nil")
-	}
+func NewStorePostgres(pool *pgxpool.Pool) *StorePostgres {
+	assert.Assert(pool == nil, "pgxpool is nil")
 
 	return &StorePostgres{
 		pool:    pool,
 		queries: postgresql.New(pool),
-	}, nil
+	}
 }
