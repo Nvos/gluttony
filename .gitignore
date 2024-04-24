@@ -138,7 +138,6 @@ fabric.properties
 .vscode
 
 # Env
-*.env
-!example.env
+!.env.example
 config.toml
 !/api/

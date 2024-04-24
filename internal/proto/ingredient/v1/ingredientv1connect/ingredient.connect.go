@@ -21,8 +21,8 @@ import (
 const _ = connect.IsAtLeastVersion1_13_0
 
 const (
-	// RecipeServiceName is the fully-qualified name of the RecipeService service.
-	RecipeServiceName = "ingredient.v1.RecipeService"
+	// IngredientServiceName is the fully-qualified name of the IngredientService service.
+	IngredientServiceName = "ingredient.v1.IngredientService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -33,109 +33,110 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// RecipeServiceAllProcedure is the fully-qualified name of the RecipeService's All RPC.
-	RecipeServiceAllProcedure = "/ingredient.v1.RecipeService/All"
-	// RecipeServiceCreateProcedure is the fully-qualified name of the RecipeService's Create RPC.
-	RecipeServiceCreateProcedure = "/ingredient.v1.RecipeService/Create"
+	// IngredientServiceAllProcedure is the fully-qualified name of the IngredientService's All RPC.
+	IngredientServiceAllProcedure = "/ingredient.v1.IngredientService/All"
+	// IngredientServiceCreateProcedure is the fully-qualified name of the IngredientService's Create
+	// RPC.
+	IngredientServiceCreateProcedure = "/ingredient.v1.IngredientService/Create"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	recipeServiceServiceDescriptor      = v1.File_ingredient_v1_ingredient_proto.Services().ByName("RecipeService")
-	recipeServiceAllMethodDescriptor    = recipeServiceServiceDescriptor.Methods().ByName("All")
-	recipeServiceCreateMethodDescriptor = recipeServiceServiceDescriptor.Methods().ByName("Create")
+	ingredientServiceServiceDescriptor      = v1.File_ingredient_v1_ingredient_proto.Services().ByName("IngredientService")
+	ingredientServiceAllMethodDescriptor    = ingredientServiceServiceDescriptor.Methods().ByName("All")
+	ingredientServiceCreateMethodDescriptor = ingredientServiceServiceDescriptor.Methods().ByName("Create")
 )
 
-// RecipeServiceClient is a client for the ingredient.v1.RecipeService service.
-type RecipeServiceClient interface {
-	All(context.Context, *connect.Request[v1.AllRequest]) (*connect.Response[v1.AllRequest], error)
+// IngredientServiceClient is a client for the ingredient.v1.IngredientService service.
+type IngredientServiceClient interface {
+	All(context.Context, *connect.Request[v1.AllRequest]) (*connect.Response[v1.AllResponse], error)
 	Create(context.Context, *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error)
 }
 
-// NewRecipeServiceClient constructs a client for the ingredient.v1.RecipeService service. By
-// default, it uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses,
-// and sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the
+// NewIngredientServiceClient constructs a client for the ingredient.v1.IngredientService service.
+// By default, it uses the Connect protocol with the binary Protobuf Codec, asks for gzipped
+// responses, and sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the
 // connect.WithGRPC() or connect.WithGRPCWeb() options.
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewRecipeServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) RecipeServiceClient {
+func NewIngredientServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) IngredientServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
-	return &recipeServiceClient{
-		all: connect.NewClient[v1.AllRequest, v1.AllRequest](
+	return &ingredientServiceClient{
+		all: connect.NewClient[v1.AllRequest, v1.AllResponse](
 			httpClient,
-			baseURL+RecipeServiceAllProcedure,
-			connect.WithSchema(recipeServiceAllMethodDescriptor),
+			baseURL+IngredientServiceAllProcedure,
+			connect.WithSchema(ingredientServiceAllMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 		create: connect.NewClient[v1.CreateRequest, v1.CreateResponse](
 			httpClient,
-			baseURL+RecipeServiceCreateProcedure,
-			connect.WithSchema(recipeServiceCreateMethodDescriptor),
+			baseURL+IngredientServiceCreateProcedure,
+			connect.WithSchema(ingredientServiceCreateMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
-// recipeServiceClient implements RecipeServiceClient.
-type recipeServiceClient struct {
-	all    *connect.Client[v1.AllRequest, v1.AllRequest]
+// ingredientServiceClient implements IngredientServiceClient.
+type ingredientServiceClient struct {
+	all    *connect.Client[v1.AllRequest, v1.AllResponse]
 	create *connect.Client[v1.CreateRequest, v1.CreateResponse]
 }
 
-// All calls ingredient.v1.RecipeService.All.
-func (c *recipeServiceClient) All(ctx context.Context, req *connect.Request[v1.AllRequest]) (*connect.Response[v1.AllRequest], error) {
+// All calls ingredient.v1.IngredientService.All.
+func (c *ingredientServiceClient) All(ctx context.Context, req *connect.Request[v1.AllRequest]) (*connect.Response[v1.AllResponse], error) {
 	return c.all.CallUnary(ctx, req)
 }
 
-// Create calls ingredient.v1.RecipeService.Create.
-func (c *recipeServiceClient) Create(ctx context.Context, req *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error) {
+// Create calls ingredient.v1.IngredientService.Create.
+func (c *ingredientServiceClient) Create(ctx context.Context, req *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error) {
 	return c.create.CallUnary(ctx, req)
 }
 
-// RecipeServiceHandler is an implementation of the ingredient.v1.RecipeService service.
-type RecipeServiceHandler interface {
-	All(context.Context, *connect.Request[v1.AllRequest]) (*connect.Response[v1.AllRequest], error)
+// IngredientServiceHandler is an implementation of the ingredient.v1.IngredientService service.
+type IngredientServiceHandler interface {
+	All(context.Context, *connect.Request[v1.AllRequest]) (*connect.Response[v1.AllResponse], error)
 	Create(context.Context, *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error)
 }
 
-// NewRecipeServiceHandler builds an HTTP handler from the service implementation. It returns the
-// path on which to mount the handler and the handler itself.
+// NewIngredientServiceHandler builds an HTTP handler from the service implementation. It returns
+// the path on which to mount the handler and the handler itself.
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewRecipeServiceHandler(svc RecipeServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	recipeServiceAllHandler := connect.NewUnaryHandler(
-		RecipeServiceAllProcedure,
+func NewIngredientServiceHandler(svc IngredientServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	ingredientServiceAllHandler := connect.NewUnaryHandler(
+		IngredientServiceAllProcedure,
 		svc.All,
-		connect.WithSchema(recipeServiceAllMethodDescriptor),
+		connect.WithSchema(ingredientServiceAllMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	recipeServiceCreateHandler := connect.NewUnaryHandler(
-		RecipeServiceCreateProcedure,
+	ingredientServiceCreateHandler := connect.NewUnaryHandler(
+		IngredientServiceCreateProcedure,
 		svc.Create,
-		connect.WithSchema(recipeServiceCreateMethodDescriptor),
+		connect.WithSchema(ingredientServiceCreateMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	return "/ingredient.v1.RecipeService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return "/ingredient.v1.IngredientService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case RecipeServiceAllProcedure:
-			recipeServiceAllHandler.ServeHTTP(w, r)
-		case RecipeServiceCreateProcedure:
-			recipeServiceCreateHandler.ServeHTTP(w, r)
+		case IngredientServiceAllProcedure:
+			ingredientServiceAllHandler.ServeHTTP(w, r)
+		case IngredientServiceCreateProcedure:
+			ingredientServiceCreateHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
 	})
 }
 
-// UnimplementedRecipeServiceHandler returns CodeUnimplemented from all methods.
-type UnimplementedRecipeServiceHandler struct{}
+// UnimplementedIngredientServiceHandler returns CodeUnimplemented from all methods.
+type UnimplementedIngredientServiceHandler struct{}
 
-func (UnimplementedRecipeServiceHandler) All(context.Context, *connect.Request[v1.AllRequest]) (*connect.Response[v1.AllRequest], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ingredient.v1.RecipeService.All is not implemented"))
+func (UnimplementedIngredientServiceHandler) All(context.Context, *connect.Request[v1.AllRequest]) (*connect.Response[v1.AllResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ingredient.v1.IngredientService.All is not implemented"))
 }
 
-func (UnimplementedRecipeServiceHandler) Create(context.Context, *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ingredient.v1.RecipeService.Create is not implemented"))
+func (UnimplementedIngredientServiceHandler) Create(context.Context, *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ingredient.v1.IngredientService.Create is not implemented"))
 }

@@ -3,35 +3,28 @@ package config
 import (
 	"errors"
 	"fmt"
-	"github.com/joho/godotenv"
-	"github.com/knadh/koanf/parsers/toml"
 	"github.com/knadh/koanf/providers/env"
-	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
+	"io/fs"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
-const fileConfigName = "config.toml"
 const envPrefix = "GLUTTONY_"
-const envDelim = "."
+const envDelim = "_"
 const envFile = ".env"
 
-func LoadConfig(path string) (Config, error) {
-	configFilePath := filepath.Join(path, fileConfigName)
-	envFilePath := filepath.Join(path, envFile)
+func LoadConfig(configFS fs.FS) (Config, error) {
+	open, err := configFS.Open(envFile)
+	if err != nil {
+		return Config{}, fmt.Errorf("open config .env file: %w", err)
+	}
 
-	if err := godotenv.Load(envFilePath); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return Config{}, fmt.Errorf("load .env file from path=%s to env: %w", path, err)
+	if err := LoadEnv(open); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return Config{}, fmt.Errorf("load .env file from file=%s to env: %w", envFile, err)
 	}
 
 	k := koanf.New(".")
-
-	if err := k.Load(file.Provider(configFilePath), toml.Parser()); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return Config{}, fmt.Errorf("load config from file path=%s: %w", configFilePath, err)
-	}
-
 	if err := k.Load(env.Provider(envPrefix, envDelim, transformEnvVar), nil); err != nil {
 		return Config{}, fmt.Errorf("load config from env: %w", err)
 	}

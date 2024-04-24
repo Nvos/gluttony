@@ -4,22 +4,26 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"gluttony/internal/config"
 )
 
-func postgresURL(cfg config.Database) string {
+type Config struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+	Database string
+	Options  string
+}
+
+func (c Config) URL() string {
 	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?search_path=public&sslmode=disable",
-		cfg.Username,
-		cfg.Password,
-		cfg.Host,
-		cfg.Port,
-		cfg.Database,
+		"postgres://%s:%s@%s:%s/%s?%s",
+		c.User, c.Password, c.Host, c.Port, c.Database, c.Options,
 	)
 }
 
-func ConnectPostgres(ctx context.Context, cfg config.Database) (*pgxpool.Pool, error) {
-	pool, err := pgxpool.New(ctx, postgresURL(cfg))
+func ConnectPostgres(ctx context.Context, cfg Config) (*pgxpool.Pool, error) {
+	pool, err := pgxpool.New(ctx, cfg.URL())
 	if err != nil {
 		return nil, fmt.Errorf("pgx connect to postgress: %w", err)
 	}

@@ -13,13 +13,15 @@ type Logger struct {
 }
 
 type Server struct {
-	Port int
+	Host string
+	Port string
 }
 
 type Database struct {
 	Host     string
-	Port     int
-	Username string
+	Port     string
+	User     string
 	Password string
 	Database string
+	Options  string
 }

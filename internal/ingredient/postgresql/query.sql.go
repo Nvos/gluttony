@@ -13,9 +13,10 @@ const allIngredients = `-- name: AllIngredients :many
 SELECT id, (name ->> $1::text)::text as name
 FROM ingredients
 WHERE CASE
-          WHEN $2 != '' THEN to_tsvector(name ->> sqlc('locale')::text) @@
+          WHEN $2 != '' THEN to_tsvector(name ->> $1::text) @@
                                              websearch_to_tsquery($2)
           ELSE TRUE END
+  AND (name ->> $1::text)::text IS NOT NULL
 OFFSET $3 ROWS FETCH FIRST $4 ROW ONLY
 `
 
