@@ -49,6 +49,12 @@ table "ingredients" {
       expr = "to_tsvector('english', (name->'en'))"
     }
   }
+
+  index "idx_ingredients_name_pl" {
+    on {
+      expr = "to_tsvector('polish', (name->'pl'))"
+    }
+  }
 }
 
 table "recipes" {

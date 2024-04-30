@@ -2,11 +2,15 @@ version: '3'
 
 services:
   db:
-    image: postgres:16.2-bookworm
+#    image: postgres:16.2-bookworm
+    build:
+      dockerfile: docker/postgres.Dockerfile
     restart: always
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: dev
-      POSTGRES_PASSWORD: dev
-      POSTGRES_DB: dev
+      POSTGRES_USER: ${GLUTTONY_DATABASE_USER}
+      POSTGRES_PASSWORD: ${GLUTTONY_DATABASE_PASSWORD}
+      POSTGRES_DB: ${GLUTTONY_DATABASE_DATABASE}
     ports:
       - "5432:5432"
