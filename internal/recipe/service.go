@@ -14,8 +14,8 @@ type Service struct {
 }
 
 func NewService(beginner transaction.Beginner, store Store) *Service {
-	assert.Assert(beginner == nil, "transaction beginner is nil")
-	assert.Assert(store == nil, "store is nil")
+	assert.Assert(beginner != nil, "transaction beginner is nil")
+	assert.Assert(store != nil, "store is nil")
 
 	return &Service{
 		beginner: beginner,

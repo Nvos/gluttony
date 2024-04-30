@@ -7,34 +7,43 @@ package postgresql
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const allIngredients = `-- name: AllIngredients :many
-SELECT id, (name ->> $1::text)::text as name
-FROM ingredients
-WHERE CASE
-          WHEN $2 != '' THEN to_tsvector(name ->> $1::text) @@
-                                             websearch_to_tsquery($2)
+SELECT ingredients.id,
+       (ingredients.name ->> $1::text)::text as name
+FROM ingredients,
+     to_tsvector($2, ingredients.name ->> $1::text) document,
+     websearch_to_tsquery($2, $3) query,
+     similarity($3, ingredients.name ->> $1::text) similarity,
+     NULLIF(ts_rank(document, query), 0)                  rank_name
+WHERE ingredients.name ->> $1 IS NOT NULL
+  AND CASE
+          WHEN $3 != '' THEN (query @@ document OR similarity > 0.5)
           ELSE TRUE END
-  AND (name ->> $1::text)::text IS NOT NULL
-OFFSET $3 ROWS FETCH FIRST $4 ROW ONLY
+ORDER BY rank_name, similarity DESC NULLS LAST
+OFFSET $4 ROWS FETCH FIRST $5 ROW ONLY
 `
 
 type AllIngredientsParams struct {
-	Locale string
-	Search interface{}
-	Offset int32
-	Limit  int32
+	Locale       string
+	SearchLocale interface{}
+	Search       string
+	Offset       int64
+	Limit        int64
 }
 
 type AllIngredientsRow struct {
 	ID   int32
-	Name string
+	Name pgtype.Text
 }
 
 func (q *Queries) AllIngredients(ctx context.Context, arg AllIngredientsParams) ([]AllIngredientsRow, error) {
 	rows, err := q.db.Query(ctx, allIngredients,
 		arg.Locale,
+		arg.SearchLocale,
 		arg.Search,
 		arg.Offset,
 		arg.Limit,

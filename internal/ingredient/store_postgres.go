@@ -35,10 +35,11 @@ func (s *StorePostgres) All(
 	input AllIngredientsInput,
 ) ([]Ingredient, error) {
 	rows, err := s.queries.AllIngredients(ctx, postgresql.AllIngredientsParams{
-		Locale: string(input.Locale),
-		Offset: input.Pagination.Offset,
-		Limit:  input.Pagination.Limit,
-		Search: input.Search,
+		Locale:       string(input.Locale),
+		Offset:       int64(input.Pagination.Offset),
+		Limit:        int64(input.Pagination.Limit),
+		Search:       input.Search,
+		SearchLocale: input.Locale.FullName(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("postgres all ingredients: %w", err)
@@ -48,7 +49,7 @@ func (s *StorePostgres) All(
 	for i := range rows {
 		out = append(out, Ingredient{
 			ID:   rows[i].ID,
-			Name: rows[i].Name,
+			Name: rows[i].Name.String,
 		})
 	}
 

@@ -24,7 +24,7 @@ func NewTestPGXPool(t *testing.T) *pgxpool.Pool {
 		Options:    "sslmode=disable",
 	}, m)
 
-	pool, err := ConnectPostgres(context.Background(), Config{
+	pool, err := NewPostgres(context.Background(), Config{
 		Host:     cfg.Host,
 		Port:     cfg.Port,
 		User:     cfg.User,
@@ -33,7 +33,7 @@ func NewTestPGXPool(t *testing.T) *pgxpool.Pool {
 		Options:  cfg.Options,
 	})
 	if err != nil {
-		t.Fatalf("sql.ConnectPostgres: %v", err)
+		t.Fatalf("sql.NewPostgres: %v", err)
 	}
 
 	t.Cleanup(pool.Close)

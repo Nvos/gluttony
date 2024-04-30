@@ -37,3 +37,14 @@ func (f Field) JSONBytes() []byte {
 
 	return bytes
 }
+
+func (l Locale) FullName() string {
+	switch l {
+	case EnLocale:
+		return "english"
+	case PlLocale:
+		return "polish"
+	}
+
+	panic(fmt.Sprintf("unknown locale=%s", l))
+}

@@ -1,7 +1,7 @@
 package assert
 
 func Assert(check bool, message string) {
-	if check {
+	if !check {
 		panic(message)
 	}
 }

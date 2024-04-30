@@ -24,6 +24,8 @@ sql:
   engine: postgresql
   queries: internal/ingredient/query.sql
   schema: migrations
+  database:
+    uri: postgres://dev:dev@localhost:5432/dev
   gen:
     go:
       package: postgresql

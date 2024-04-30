@@ -83,7 +83,8 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 		Database: cfg.Database.Database,
 		Options:  cfg.Database.Options,
 	}
-	pool, err := sqldb.ConnectPostgres(ctx, dbCfg)
+
+	pool, err := sqldb.NewPostgres(ctx, dbCfg)
 	if err != nil {
 		return fmt.Errorf("create postgres connection: %w", err)
 	}

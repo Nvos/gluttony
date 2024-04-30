@@ -82,6 +82,7 @@ func TestAll(t *testing.T) {
 
 		if len(all.Msg.Ingredients) != 3 {
 			t.Errorf("Expected 3 msg.Ingredients, got %d", len(all.Msg.Ingredients))
+			return
 		}
 
 		if all.Msg.Ingredients[0].Name != "Apple" {

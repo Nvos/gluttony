@@ -120,7 +120,7 @@ func (s *StorePostgres) All(ctx context.Context, input AllRecipesInput) ([]Recip
 }
 
 func NewStorePostgres(pool *pgxpool.Pool) *StorePostgres {
-	assert.Assert(pool == nil, "pgxpool is nil")
+	assert.Assert(pool != nil, "pgx pool is nil")
 
 	return &StorePostgres{
 		pool:    pool,

@@ -22,7 +22,7 @@ func (c Config) URL() string {
 	)
 }
 
-func ConnectPostgres(ctx context.Context, cfg Config) (*pgxpool.Pool, error) {
+func NewPostgres(ctx context.Context, cfg Config) (*pgxpool.Pool, error) {
 	pool, err := pgxpool.New(ctx, cfg.URL())
 	if err != nil {
 		return nil, fmt.Errorf("pgx connect to postgress: %w", err)
