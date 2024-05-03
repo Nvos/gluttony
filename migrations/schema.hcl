@@ -23,6 +23,11 @@ table "users" {
   }
 }
 
+enum "unit" {
+  schema = schema.public
+  values = ["weight", "volume"]
+}
+
 table "ingredients" {
   schema = schema.public
   column "id" {
@@ -35,13 +40,13 @@ table "ingredients" {
     type = jsonb
   }
 
-  primary_key {
-    columns = [column.id]
+  column "unit" {
+    null = false
+    type = enum.unit
   }
 
-  index "uq_ingredients_name" {
-    columns = [column.name]
-    unique = true
+  primary_key {
+    columns = [column.id]
   }
 
   index "idx_ingredients_name_en" {
@@ -83,23 +88,33 @@ table "recipes" {
   primary_key {
     columns = [column.id]
   }
-
-  index "uq_recipes_name" {
-    columns = [column.name]
-    unique = true
-  }
 }
 
 table "recipes_ingredients" {
   schema = schema.public
   column "recipe_id" {
-    null = false
     type = integer
   }
 
   column "ingredient_id" {
+    type = integer
+  }
+
+  column "note" {
+    type = text
+    default = ""
+  }
+
+  column "amount" {
     null = false
     type = integer
+    comment = "depending on ingredient unit, either ml or g"
+  }
+
+  column "count" {
+    null = false
+    type = integer
+    comment = "used to represent e.g. 3 apples, relevant for ingredients of weight type unit"
   }
 
   primary_key {

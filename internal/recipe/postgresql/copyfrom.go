@@ -31,6 +31,9 @@ func (r iteratorForCreateRecipeIngredientEdges) Values() ([]interface{}, error) 
 	return []interface{}{
 		r.rows[0].RecipeID,
 		r.rows[0].IngredientID,
+		r.rows[0].Amount,
+		r.rows[0].Count,
+		r.rows[0].Note,
 	}, nil
 }
 
@@ -39,5 +42,5 @@ func (r iteratorForCreateRecipeIngredientEdges) Err() error {
 }
 
 func (q *Queries) CreateRecipeIngredientEdges(ctx context.Context, arg []CreateRecipeIngredientEdgesParams) (int64, error) {
-	return q.db.CopyFrom(ctx, []string{"recipes_ingredients"}, []string{"recipe_id", "ingredient_id"}, &iteratorForCreateRecipeIngredientEdges{rows: arg})
+	return q.db.CopyFrom(ctx, []string{"recipes_ingredients"}, []string{"recipe_id", "ingredient_id", "amount", "count", "note"}, &iteratorForCreateRecipeIngredientEdges{rows: arg})
 }

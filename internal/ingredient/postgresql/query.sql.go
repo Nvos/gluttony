@@ -13,12 +13,13 @@ import (
 
 const allIngredients = `-- name: AllIngredients :many
 SELECT ingredients.id,
-       (ingredients.name ->> $1::text)::text as name
+       (ingredients.name ->> $1::text)::text as name,
+       ingredients.unit
 FROM ingredients,
-     to_tsvector($2, ingredients.name ->> $1::text) document,
-     websearch_to_tsquery($2, $3) query,
+     to_tsvector($2::regconfig, ingredients.name ->> $1::text) document,
+     websearch_to_tsquery($2::regconfig, $3) query,
      similarity($3, ingredients.name ->> $1::text) similarity,
-     NULLIF(ts_rank(document, query), 0)                  rank_name
+     NULLIF(ts_rank(document, query), 0) rank_name
 WHERE ingredients.name ->> $1 IS NOT NULL
   AND CASE
           WHEN $3 != '' THEN (query @@ document OR similarity > 0.5)
@@ -38,6 +39,7 @@ type AllIngredientsParams struct {
 type AllIngredientsRow struct {
 	ID   int32
 	Name pgtype.Text
+	Unit Unit
 }
 
 func (q *Queries) AllIngredients(ctx context.Context, arg AllIngredientsParams) ([]AllIngredientsRow, error) {
@@ -55,7 +57,7 @@ func (q *Queries) AllIngredients(ctx context.Context, arg AllIngredientsParams) 
 	var items []AllIngredientsRow
 	for rows.Next() {
 		var i AllIngredientsRow
-		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+		if err := rows.Scan(&i.ID, &i.Name, &i.Unit); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -67,11 +69,42 @@ func (q *Queries) AllIngredients(ctx context.Context, arg AllIngredientsParams) 
 }
 
 const createIngredient = `-- name: CreateIngredient :exec
-INSERT INTO ingredients (name)
-values ($1)
+INSERT INTO ingredients (name, unit)
+values ($1, $2)
 `
 
-func (q *Queries) CreateIngredient(ctx context.Context, name []byte) error {
-	_, err := q.db.Exec(ctx, createIngredient, name)
+type CreateIngredientParams struct {
+	Name []byte
+	Unit Unit
+}
+
+func (q *Queries) CreateIngredient(ctx context.Context, arg CreateIngredientParams) error {
+	_, err := q.db.Exec(ctx, createIngredient, arg.Name, arg.Unit)
 	return err
+}
+
+const singleIngredient = `-- name: SingleIngredient :one
+SELECT id,
+       (ingredients.name ->> $1::text)::text as name,
+       ingredients.unit
+FROM ingredients
+WHERE id = $2
+`
+
+type SingleIngredientParams struct {
+	Locale       string
+	IngredientID int32
+}
+
+type SingleIngredientRow struct {
+	ID   int32
+	Name string
+	Unit Unit
+}
+
+func (q *Queries) SingleIngredient(ctx context.Context, arg SingleIngredientParams) (SingleIngredientRow, error) {
+	row := q.db.QueryRow(ctx, singleIngredient, arg.Locale, arg.IngredientID)
+	var i SingleIngredientRow
+	err := row.Scan(&i.ID, &i.Name, &i.Unit)
+	return i, err
 }

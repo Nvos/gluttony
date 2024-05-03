@@ -35,6 +35,9 @@ const (
 const (
 	// IngredientServiceAllProcedure is the fully-qualified name of the IngredientService's All RPC.
 	IngredientServiceAllProcedure = "/ingredient.v1.IngredientService/All"
+	// IngredientServiceSingleProcedure is the fully-qualified name of the IngredientService's Single
+	// RPC.
+	IngredientServiceSingleProcedure = "/ingredient.v1.IngredientService/Single"
 	// IngredientServiceCreateProcedure is the fully-qualified name of the IngredientService's Create
 	// RPC.
 	IngredientServiceCreateProcedure = "/ingredient.v1.IngredientService/Create"
@@ -44,12 +47,14 @@ const (
 var (
 	ingredientServiceServiceDescriptor      = v1.File_ingredient_v1_ingredient_proto.Services().ByName("IngredientService")
 	ingredientServiceAllMethodDescriptor    = ingredientServiceServiceDescriptor.Methods().ByName("All")
+	ingredientServiceSingleMethodDescriptor = ingredientServiceServiceDescriptor.Methods().ByName("Single")
 	ingredientServiceCreateMethodDescriptor = ingredientServiceServiceDescriptor.Methods().ByName("Create")
 )
 
 // IngredientServiceClient is a client for the ingredient.v1.IngredientService service.
 type IngredientServiceClient interface {
 	All(context.Context, *connect.Request[v1.AllRequest]) (*connect.Response[v1.AllResponse], error)
+	Single(context.Context, *connect.Request[v1.SingleRequest]) (*connect.Response[v1.SingleResponse], error)
 	Create(context.Context, *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error)
 }
 
@@ -69,6 +74,12 @@ func NewIngredientServiceClient(httpClient connect.HTTPClient, baseURL string, o
 			connect.WithSchema(ingredientServiceAllMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		single: connect.NewClient[v1.SingleRequest, v1.SingleResponse](
+			httpClient,
+			baseURL+IngredientServiceSingleProcedure,
+			connect.WithSchema(ingredientServiceSingleMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 		create: connect.NewClient[v1.CreateRequest, v1.CreateResponse](
 			httpClient,
 			baseURL+IngredientServiceCreateProcedure,
@@ -81,12 +92,18 @@ func NewIngredientServiceClient(httpClient connect.HTTPClient, baseURL string, o
 // ingredientServiceClient implements IngredientServiceClient.
 type ingredientServiceClient struct {
 	all    *connect.Client[v1.AllRequest, v1.AllResponse]
+	single *connect.Client[v1.SingleRequest, v1.SingleResponse]
 	create *connect.Client[v1.CreateRequest, v1.CreateResponse]
 }
 
 // All calls ingredient.v1.IngredientService.All.
 func (c *ingredientServiceClient) All(ctx context.Context, req *connect.Request[v1.AllRequest]) (*connect.Response[v1.AllResponse], error) {
 	return c.all.CallUnary(ctx, req)
+}
+
+// Single calls ingredient.v1.IngredientService.Single.
+func (c *ingredientServiceClient) Single(ctx context.Context, req *connect.Request[v1.SingleRequest]) (*connect.Response[v1.SingleResponse], error) {
+	return c.single.CallUnary(ctx, req)
 }
 
 // Create calls ingredient.v1.IngredientService.Create.
@@ -97,6 +114,7 @@ func (c *ingredientServiceClient) Create(ctx context.Context, req *connect.Reque
 // IngredientServiceHandler is an implementation of the ingredient.v1.IngredientService service.
 type IngredientServiceHandler interface {
 	All(context.Context, *connect.Request[v1.AllRequest]) (*connect.Response[v1.AllResponse], error)
+	Single(context.Context, *connect.Request[v1.SingleRequest]) (*connect.Response[v1.SingleResponse], error)
 	Create(context.Context, *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error)
 }
 
@@ -112,6 +130,12 @@ func NewIngredientServiceHandler(svc IngredientServiceHandler, opts ...connect.H
 		connect.WithSchema(ingredientServiceAllMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	ingredientServiceSingleHandler := connect.NewUnaryHandler(
+		IngredientServiceSingleProcedure,
+		svc.Single,
+		connect.WithSchema(ingredientServiceSingleMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	ingredientServiceCreateHandler := connect.NewUnaryHandler(
 		IngredientServiceCreateProcedure,
 		svc.Create,
@@ -122,6 +146,8 @@ func NewIngredientServiceHandler(svc IngredientServiceHandler, opts ...connect.H
 		switch r.URL.Path {
 		case IngredientServiceAllProcedure:
 			ingredientServiceAllHandler.ServeHTTP(w, r)
+		case IngredientServiceSingleProcedure:
+			ingredientServiceSingleHandler.ServeHTTP(w, r)
 		case IngredientServiceCreateProcedure:
 			ingredientServiceCreateHandler.ServeHTTP(w, r)
 		default:
@@ -135,6 +161,10 @@ type UnimplementedIngredientServiceHandler struct{}
 
 func (UnimplementedIngredientServiceHandler) All(context.Context, *connect.Request[v1.AllRequest]) (*connect.Response[v1.AllResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ingredient.v1.IngredientService.All is not implemented"))
+}
+
+func (UnimplementedIngredientServiceHandler) Single(context.Context, *connect.Request[v1.SingleRequest]) (*connect.Response[v1.SingleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ingredient.v1.IngredientService.Single is not implemented"))
 }
 
 func (UnimplementedIngredientServiceHandler) Create(context.Context, *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error) {

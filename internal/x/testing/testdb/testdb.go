@@ -1,11 +1,11 @@
-package sqldb
+package testdb
 
 import (
 	"context"
 	"github.com/jackc/pgx/v5/pgxpool"
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/peterldowns/pgtestdb"
 	"github.com/peterldowns/pgtestdb/migrators/goosemigrator"
+	"gluttony/internal/database/sqldb"
 	"gluttony/migrations"
 	"testing"
 )
@@ -24,7 +24,7 @@ func NewTestPGXPool(t *testing.T) *pgxpool.Pool {
 		Options:    "sslmode=disable",
 	}, m)
 
-	pool, err := NewPostgres(context.Background(), Config{
+	pool, err := sqldb.NewPostgres(context.Background(), sqldb.Config{
 		Host:     cfg.Host,
 		Port:     cfg.Port,
 		User:     cfg.User,

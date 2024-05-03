@@ -9,6 +9,53 @@ import (
 	"context"
 )
 
+const allRecipeIngredients = `-- name: AllRecipeIngredients :many
+SELECT id, (name ->> $1::text)::text as name, amount, count, note, unit FROM ingredients
+JOIN recipes_ingredients ri on ingredients.id = ri.ingredient_id
+where ri.recipe_id = $2
+`
+
+type AllRecipeIngredientsParams struct {
+	Locale   string
+	RecipeID int32
+}
+
+type AllRecipeIngredientsRow struct {
+	ID     int32
+	Name   string
+	Amount int32
+	Count  int32
+	Note   string
+	Unit   Unit
+}
+
+func (q *Queries) AllRecipeIngredients(ctx context.Context, arg AllRecipeIngredientsParams) ([]AllRecipeIngredientsRow, error) {
+	rows, err := q.db.Query(ctx, allRecipeIngredients, arg.Locale, arg.RecipeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AllRecipeIngredientsRow
+	for rows.Next() {
+		var i AllRecipeIngredientsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Amount,
+			&i.Count,
+			&i.Note,
+			&i.Unit,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const allRecipes = `-- name: AllRecipes :many
 SELECT id, (name ->> $1)::text as name, (description ->> $1)::text as description
 FROM recipes as rank
@@ -78,6 +125,9 @@ func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (int
 type CreateRecipeIngredientEdgesParams struct {
 	RecipeID     int32
 	IngredientID int32
+	Amount       int32
+	Count        int32
+	Note         string
 }
 
 const singleRecipe = `-- name: SingleRecipe :one

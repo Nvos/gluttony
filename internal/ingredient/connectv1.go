@@ -16,6 +16,35 @@ type ConnectServiceV1 struct {
 	service *Service
 }
 
+func (c *ConnectServiceV1) Single(
+	ctx context.Context,
+	r *connect.Request[v1.SingleRequest],
+) (*connect.Response[v1.SingleResponse], error) {
+	locale, err := i18n.GetLocale(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, nil)
+	}
+
+	single, err := c.service.Single(ctx, SingleInput{
+		ID:     r.Msg.Id,
+		Locale: locale,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	unit, err := single.Unit.Connect()
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, nil)
+	}
+
+	return connect.NewResponse(&v1.SingleResponse{
+		Id:   single.ID,
+		Name: single.Name,
+		Unit: unit,
+	}), nil
+}
+
 func (c *ConnectServiceV1) All(
 	ctx context.Context,
 	r *connect.Request[v1.AllRequest],

@@ -33,10 +33,24 @@ func (s *ConnectService) SingleRecipe(
 		return nil, err
 	}
 
+	ingredients := make([]*v1.SingleRecipeResponse_Ingredient, 0, len(single.Ingredients))
+	for i := range single.Ingredients {
+		row := &single.Ingredients[i]
+		ingredients = append(ingredients, &v1.SingleRecipeResponse_Ingredient{
+			Id:     row.ID,
+			Name:   row.Name,
+			Amount: row.Amount,
+			Count:  row.Count,
+			Note:   row.Note,
+		})
+	}
+
 	out := &v1.SingleRecipeResponse{
-		Id:   single.ID,
-		Name: single.Name,
-		//Content: single.
+		Id:          single.ID,
+		Name:        single.Name,
+		Description: single.Description,
+		Content:     single.Content,
+		Ingredients: ingredients,
 	}
 
 	return connect.NewResponse(out), nil

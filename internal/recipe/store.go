@@ -6,9 +6,13 @@ import (
 	"gluttony/internal/i18n"
 )
 
+// TODO, 01/05/2024: fix name, move to recipe.go, add constructor
 type IngredientEdge struct {
 	RecipeID     int32
 	IngredientID int32
+	Amount       int32
+	Count        int32
+	Note         string
 }
 
 type Store interface {

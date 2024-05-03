@@ -6,6 +6,11 @@ SELECT id,
 FROM recipes
 WHERE recipes.id = sqlc.arg('recipe_id');
 
+-- name: AllRecipeIngredients :many
+SELECT id, (name ->> sqlc.arg('locale')::text)::text as name, amount, count, note, unit FROM ingredients
+JOIN recipes_ingredients ri on ingredients.id = ri.ingredient_id
+where ri.recipe_id = sqlc.arg('recipe_id');
+
 -- name: AllRecipes :many
 SELECT id, (name ->> sqlc.arg('locale'))::text as name, (description ->> sqlc.arg('locale'))::text as description
 FROM recipes as rank
@@ -20,5 +25,5 @@ VALUES ($1, $2, $3)
 RETURNING id;
 
 -- name: CreateRecipeIngredientEdges :copyfrom
-INSERT INTO recipes_ingredients (recipe_id, ingredient_id)
-VALUES ($1, $2);
+INSERT INTO recipes_ingredients (recipe_id, ingredient_id, amount, count, note)
+VALUES ($1, $2, $3, $4, $5);

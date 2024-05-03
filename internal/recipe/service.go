@@ -40,11 +40,14 @@ func (s *Service) CreateRecipe(ctx context.Context, recipe CreateRecipe) (int32,
 			return 0, fmt.Errorf("create recipe: %w", err)
 		}
 
-		insertableEdges := make([]IngredientEdge, 0, len(recipe.IngredientIDs))
-		for i := range recipe.IngredientIDs {
+		insertableEdges := make([]IngredientEdge, 0, len(recipe.Ingredients))
+		for i := range recipe.Ingredients {
 			insertableEdges = append(insertableEdges, IngredientEdge{
 				RecipeID:     recipeID,
-				IngredientID: recipe.IngredientIDs[i],
+				IngredientID: recipe.Ingredients[i].ID,
+				Amount:       recipe.Ingredients[i].Amount,
+				Count:        recipe.Ingredients[i].Count,
+				Note:         recipe.Ingredients[i].Note,
 			})
 		}
 

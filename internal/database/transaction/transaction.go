@@ -18,8 +18,10 @@ type Beginner interface {
 func ResolveTx(ctx context.Context, err error, tx Transaction) error {
 	if err != nil {
 		if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
-			return errors.Join(err, fmt.Errorf("rollback tx: %w", rollbackErr))
+			return errors.Join(err, fmt.Errorf("rollback tx: %w: %w", rollbackErr, err))
 		}
+
+		return err
 	}
 
 	if err := tx.Commit(ctx); err != nil {

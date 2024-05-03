@@ -22,8 +22,36 @@ func NewStorePostgres(pool postgresql.DBTX) *StorePostgres {
 	}
 }
 
+func (s *StorePostgres) Single(ctx context.Context, input SingleInput) (Ingredient, error) {
+	ingredient, err := s.queries.SingleIngredient(ctx, postgresql.SingleIngredientParams{
+		Locale:       string(input.Locale),
+		IngredientID: input.ID,
+	})
+	if err != nil {
+		return Ingredient{}, err
+	}
+
+	unit, err := NewUnit(string(ingredient.Unit))
+	if err != nil {
+		return Ingredient{}, err
+	}
+
+	out := Ingredient{
+		ID:   ingredient.ID,
+		Name: ingredient.Name,
+		Unit: unit,
+	}
+
+	return out, nil
+}
+
 func (s *StorePostgres) Create(ctx context.Context, input CreateIngredientInput) error {
-	if err := s.queries.CreateIngredient(ctx, i18n.NewField(input.Locale, input.Name).JSONBytes()); err != nil {
+	params := postgresql.CreateIngredientParams{
+		Name: i18n.NewField(input.Locale, input.Name).JSONBytes(),
+		Unit: postgresql.Unit(input.Unit),
+	}
+
+	if err := s.queries.CreateIngredient(ctx, params); err != nil {
 		return fmt.Errorf("create ingredient: %w", err)
 	}
 

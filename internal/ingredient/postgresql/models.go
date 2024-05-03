@@ -4,4 +4,49 @@
 
 package postgresql
 
-import ()
+import (
+	"database/sql/driver"
+	"fmt"
+)
+
+type Unit string
+
+const (
+	UnitWeight Unit = "weight"
+	UnitVolume Unit = "volume"
+)
+
+func (e *Unit) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = Unit(s)
+	case string:
+		*e = Unit(s)
+	default:
+		return fmt.Errorf("unsupported scan type for Unit: %T", src)
+	}
+	return nil
+}
+
+type NullUnit struct {
+	Unit  Unit
+	Valid bool // Valid is true if Unit is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullUnit) Scan(value interface{}) error {
+	if value == nil {
+		ns.Unit, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.Unit.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullUnit) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.Unit), nil
+}

@@ -4,9 +4,16 @@ package ingredient.v1;
 
 option go_package = "gluttony/internal/proto/ingredient/v1;ingredientv1";
 
+enum Unit {
+  UNIT_UNSPECIFIED = 0;
+  UNIT_WEIGHT = 1;
+  UNIT_VOLUME = 2;
+}
+
 message Ingredient {
   int32 id = 1;
   string name = 2;
+  Unit unit = 3;
 }
 
 message AllRequest {
@@ -22,12 +29,23 @@ message AllResponse {
 message CreateRequest {
   string name = 1;
   string locale = 2;
+  Unit unit = 3;
 }
 
 message CreateResponse {
 }
 
+message SingleRequest {
+  int32 id = 1;
+}
+message SingleResponse {
+  int32 id = 1;
+  string name = 2;
+  Unit unit = 3;
+}
+
 service IngredientService {
   rpc All(AllRequest) returns (AllResponse);
+  rpc Single(SingleRequest) returns (SingleResponse);
   rpc Create(CreateRequest) returns (CreateResponse);
 }

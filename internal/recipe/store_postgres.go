@@ -6,6 +6,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"gluttony/internal/database/transaction"
 	"gluttony/internal/i18n"
+	"gluttony/internal/ingredient"
 	"gluttony/internal/recipe/postgresql"
 	"gluttony/internal/x/assert"
 )
@@ -23,6 +24,9 @@ func (s *StorePostgres) CreateIngredientEdges(ctx context.Context, value []Ingre
 		params = append(params, postgresql.CreateRecipeIngredientEdgesParams{
 			RecipeID:     value[i].RecipeID,
 			IngredientID: value[i].IngredientID,
+			Amount:       value[i].Amount,
+			Count:        value[i].Count,
+			Note:         value[i].Note,
 		})
 	}
 
@@ -67,20 +71,28 @@ func (s *StorePostgres) Single(ctx context.Context, locale i18n.Locale, id int32
 		return FullRecipe{}, fmt.Errorf("postgres: single recipe by id=%d: %w", id, err)
 	}
 
-	//if len(rows) == 0 {
-	//	return FullRecipe{}, fmt.Errorf("postgres: single recipe by id=%d not found", id)
-	//}
-	//
-	//steps := make([]Step, 0, len(rows))
-	//for i := range rows {
-	//	step := Step{
-	//		ID:          rows[i].RecipeStep.ID,
-	//		Order:       rows[i].RecipeStep.Order,
-	//		Description: rows[i].RecipeStep.Description,
-	//	}
-	//
-	//	steps = append(steps, step)
-	//}
+	ingredients, err := s.queries.AllRecipeIngredients(ctx, postgresql.AllRecipeIngredientsParams{
+		Locale:   string(locale),
+		RecipeID: id,
+	})
+	if err != nil {
+		return FullRecipe{}, fmt.Errorf("postgres: single recipe ingredients by recipe id=%d: %w", id, err)
+	}
+
+	assert.Assert(len(ingredients) != 0, "unexpected recipe without any ingredients")
+
+	recipeIngredients := make([]Ingredient, 0, len(ingredients))
+	for i := range ingredients {
+		recipeIngredients = append(recipeIngredients, Ingredient{
+			Ingredient: ingredient.Ingredient{
+				ID:   ingredients[i].ID,
+				Name: ingredients[i].Name,
+			},
+			Amount: ingredients[i].Amount,
+			Count:  ingredients[i].Count,
+			Note:   ingredients[i].Note,
+		})
+	}
 
 	recipe := FullRecipe{
 		Recipe: Recipe{
@@ -88,6 +100,8 @@ func (s *StorePostgres) Single(ctx context.Context, locale i18n.Locale, id int32
 			Name:        row.Name,
 			Description: row.Description,
 		},
+		Content:     row.Content,
+		Ingredients: recipeIngredients,
 	}
 
 	return recipe, nil
