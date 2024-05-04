@@ -1,21 +1,12 @@
 import { createLazyFileRoute } from '@tanstack/react-router';
-import { RecipeEditor } from '~/component';
-import { css } from '~/ui/css';
+import { RecipeView } from '~/view/RecipeView/RecipeView';
+
+const View = () => {
+  const { recipeId } = Route.useParams();
+
+  return <RecipeView recipeId={recipeId} />;
+};
 
 export const Route = createLazyFileRoute('/recipes/$recipeId')({
-  component: PostComponent,
+  component: View,
 });
-
-function PostComponent() {
-  const { recipeId } = Route.useParams();
-  return (
-    <div
-      className={css({
-        padding: '300',
-      })}
-    >
-      <p>Recipe ID: {recipeId}</p>
-      <RecipeEditor />
-    </div>
-  );
-}

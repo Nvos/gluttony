@@ -1,24 +1,14 @@
-import { Button } from '~/component';
-import { useEffect, useState } from 'react';
+import { Button } from '@gluttony/ui/Button';
 import { Sun, Moon } from 'lucide-react';
+import { useTheme } from '@gluttony/ui/ThemeProvider';
 
 export const ThemeSelector = () => {
-  const [selectedTheme, setSelectedTheme] = useState<string>('dark');
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', selectedTheme);
-  }, [selectedTheme]);
-
-  const handleToggleTheme = () => {
-    setSelectedTheme((prev) => {
-      if (prev === 'dark') return 'light';
-      return 'dark';
-    });
-  };
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <div>
-      <Button onClick={handleToggleTheme} colorScheme="neutral" variant="ghost" size="md">
-        {selectedTheme === 'light' ? <Sun /> : <Moon />}
+      <Button onClick={toggleTheme} variant="secondary" size="md">
+        {theme === 'light' ? <Sun /> : <Moon />}
       </Button>
     </div>
   );

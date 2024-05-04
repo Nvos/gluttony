@@ -1,84 +1,59 @@
 import { PropsWithChildren } from 'react';
 import { ThemeSelector } from './ThemeSelector';
-import { css } from '~/ui/css';
 import { Link } from '@tanstack/react-router';
 import { Beef, CookingPot } from 'lucide-react';
-import { Button } from '~/component';
-
-const linkStyles = css({
-  display: 'flex',
-  gap: '200',
-  fontSize: '[16px]',
-  alignItems: 'center',
-  paddingX: '200',
-  height: '[40px]',
-  width: 'full',
-  borderRadius: '100',
-  transition: 'colors',
-  '&.active': {
-    color: 'primary.900',
-    fontWeight: 'heavy',
-    _hover: {
-      backgroundColor: 'primary.900/05',
-    },
-  },
-  '&:hover': {
-    backgroundColor: 'neutral.300',
-  },
-});
-
-const liStyles = css({
-  listStyle: 'none',
-});
-
-const navStyles = css({
-  display: 'flex',
-  gap: '100',
-  flexDirection: 'column',
-});
+import { Button } from '@gluttony/ui/Button';
+import { atom, vars } from '@gluttony/ui';
+import { linkRoot } from './Link.css';
 
 export const Layout = ({ children }: PropsWithChildren<unknown>) => {
   return (
     <div
-      className={css({
+      className={atom({
         display: 'flex',
       })}
     >
       <aside
-        className={css({
-          paddingX: '400',
-          paddingY: '500',
+        className={atom({
+          paddingX: 400,
+          paddingY: 500,
           display: 'flex',
           flexDirection: 'column',
-          gap: '600',
+          gap: 600,
           minHeight: 'dvh',
-          width: '[240px]',
-          backgroundColor: 'surface.200',
-          borderRight: '{colors.neutral.500} solid 1px',
         })}
+        style={{
+          width: 240,
+          backgroundColor: vars.color.surface[100],
+          borderRight: `solid 1px ${vars.color.neutral[500]}`,
+        }}
       >
-        <nav className={navStyles}>
-          <li className={liStyles}>
-            <Link className={linkStyles} to="/">
+        <nav
+          className={atom({
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 100,
+          })}
+        >
+          <li>
+            <Link className={linkRoot} to="/">
               <Beef /> Gluttony
             </Link>
           </li>
-          <li className={liStyles}>
-            <Link className={linkStyles} to="/recipes">
+          <li>
+            <Link className={linkRoot} to="/recipes">
               <CookingPot />
               Recipes
             </Link>
           </li>
         </nav>
-        <div className={css({ flex: '1' })}></div>
+        <div className={atom({ flex: 1 })}></div>
         <div>
           <ThemeSelector />
-          <Button variant="ghost" colorScheme="neutral">
-            Logout
-          </Button>
+          <Button variant="secondary">Logout</Button>
         </div>
       </aside>
-      <main className={css({ width: 'full' })}>{children}</main>
+      <main className={atom({ width: 'full' })}>{children}</main>
     </div>
   );
 };

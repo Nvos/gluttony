@@ -2,6 +2,7 @@
   "extends": "@gluttony/typescript-config/react.json",
   "compilerOptions": {
     "types": ["vite/client"],
+    "moduleResolution": "Bundler",
     "paths": {
       "~/*": ["./src/*"],
     },
