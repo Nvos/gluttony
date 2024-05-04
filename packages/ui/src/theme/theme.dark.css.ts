@@ -1,0 +1,20 @@
+import { createTheme } from '@vanilla-extract/css';
+import { vars } from './theme.contract.css';
+import { baseTheme } from './base.css';
+import { radixToLocalTokenScale } from './color.util';
+import { orangeDark, slateDark, redDark } from '@radix-ui/colors';
+
+export const darkTheme = createTheme(vars, {
+  ...baseTheme,
+  color: {
+    primary: radixToLocalTokenScale(orangeDark),
+    neutral: radixToLocalTokenScale(slateDark),
+    danger: radixToLocalTokenScale(redDark),
+    surface: {
+      50: vars.color.neutral[50],
+      100: vars.color.neutral[100],
+      200: vars.color.neutral[200],
+      300: vars.color.neutral[300],
+    },
+  },
+});

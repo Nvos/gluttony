@@ -1,0 +1,7 @@
+{
+  "extends": "@gluttony/typescript-config/react.json",
+  "compilerOptions": {
+    "types": ["vite/client"],
+  },
+  "include": ["src", "./.ladle/components.tsx"],
+}
