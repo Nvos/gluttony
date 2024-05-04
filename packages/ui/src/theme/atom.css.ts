@@ -4,12 +4,13 @@ import { vars } from './theme.contract.css';
 const properties = defineProperties({
   properties: {
     display: ['flex', 'block', 'inline-flex', 'none'],
-    justifyContent: ['center', 'space-between'],
+    justifyContent: ['center', 'space-between', 'end'],
     flexDirection: ['row', 'column'],
     flexWrap: ['wrap'],
     alignItems: ['center'],
     whiteSpace: ['nowrap'],
-    position: ['absolute', 'relative'],
+    position: ['absolute', 'relative', 'fixed'],
+    textAlign: ['center', 'left', 'right'],
     height: {
       0: '0px',
       100: vars.size[100],

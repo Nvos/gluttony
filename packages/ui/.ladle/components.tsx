@@ -7,15 +7,28 @@ import '../src/theme/global.css';
 import { darkTheme } from '../src/theme/theme.dark.css';
 import { lightTheme } from '../src/theme/theme.light.css';
 import { vars } from '../src/theme';
+import { ThemeProvider, useTheme } from '../src/components/ThemeProvider';
+import { useEffect } from 'react';
 
 export const Provider: GlobalProvider = ({ children, globalState }) => (
-  <div
-    className={globalState.theme === ThemeState.Dark ? darkTheme : lightTheme}
-    style={{
-      backgroundColor: vars.color.surface[50],
-      padding: vars.space[600],
-    }}
-  >
-    <div>{children}</div>
-  </div>
+  <ThemeProvider>
+    <ThemeSync theme={globalState.theme} />
+    <div
+      style={{
+        backgroundColor: vars.color.surface[50],
+        padding: vars.space[600],
+      }}
+    >
+      <div>{children}</div>
+    </div>
+  </ThemeProvider>
 );
+
+const ThemeSync = ({ theme }: { theme: ThemeState }) => {
+  const { setTheme } = useTheme();
+  useEffect(() => {
+    setTheme(theme === ThemeState.Dark ? 'dark' : 'light');
+  }, [theme]);
+
+  return null;
+};

@@ -1,6 +1,9 @@
 import { createThemeContract } from '@vanilla-extract/css';
 
 export const vars = createThemeContract({
+  zIndex: {
+    modal: '',
+  },
   space: {
     50: '',
     100: '',

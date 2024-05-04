@@ -12,8 +12,8 @@
   },
   "peerDependencies": {
     "@vanilla-extract/css": "^1.15.1",
-    "react-hook-form": "^7.51.3",
-    "react": "^18.3.1"
+    "react": "^18.3.1",
+    "react-hook-form": "^7.51.3"
   },
   "devDependencies": {
     "@gluttony/eslint-config": "workspace:*",
@@ -27,8 +27,11 @@
   "dependencies": {
     "@fontsource/inter": "^5.0.12",
     "@radix-ui/colors": "^3.0.0",
+    "@radix-ui/react-dialog": "^1.0.5",
     "@vanilla-extract/recipes": "^0.5.2",
     "@vanilla-extract/sprinkles": "^1.6.1",
-    "clsx": "^2.1.1"
+    "clsx": "^2.1.1",
+    "cmdk": "^1.0.0",
+    "lucide-react": "^0.365.0"
   }
 }

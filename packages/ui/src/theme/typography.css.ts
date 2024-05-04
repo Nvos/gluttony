@@ -19,6 +19,11 @@ export const typography = recipe({
       medium: { fontWeight: vars.fontWeight.medium },
       strong: { fontWeight: vars.fontWeight.strong },
     },
+    align: {
+      center: {
+        textAlign: 'center',
+      },
+    },
     size: {
       50: {
         fontSize: vars.fontSize[50],

@@ -32,9 +32,18 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     setTheme(nextTheme);
   };
 
+  const handleSetTheme = (theme: Theme) => {
+    localStorage.setItem(STORAGE_KEY, theme);
+    setTheme(theme);
+  };
+
   return (
     <ThemeContext.Provider
-      value={{ theme: theme, toggleTheme: handleThemeToggle }}
+      value={{
+        theme: theme,
+        toggleTheme: handleThemeToggle,
+        setTheme: handleSetTheme,
+      }}
     >
       {children}
     </ThemeContext.Provider>

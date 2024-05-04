@@ -13,9 +13,13 @@ type BaseTheme = {
   radii: Scale<keyof typeof vars.radii>;
   fontFamily: Scale<keyof typeof vars.fontFamily>;
   shadow: Scale<keyof typeof vars.shadow>;
+  zIndex: Scale<keyof typeof vars.zIndex>;
 };
 
 export const baseTheme: BaseTheme = {
+  zIndex: {
+    modal: '1000',
+  },
   fontFamily: {
     main: 'Inter, sans-serif',
   },

@@ -11,10 +11,10 @@ export const lightTheme = createTheme(vars, {
     neutral: radixToLocalTokenScale(slate),
     danger: radixToLocalTokenScale(red),
     surface: {
-      50: '',
-      100: '',
-      200: '',
-      300: '',
+      50: vars.color.neutral[50],
+      100: vars.color.neutral[100],
+      200: vars.color.neutral[200],
+      300: vars.color.neutral[300],
     },
   },
 });
