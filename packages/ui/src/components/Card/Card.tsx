@@ -46,7 +46,7 @@ const CardDescription = forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={clsx(typography({ color: 'caption', size: 50 }), className)}
+    className={clsx(typography({ color: 'muted', size: 50 }), className)}
     {...props}
   />
 ));

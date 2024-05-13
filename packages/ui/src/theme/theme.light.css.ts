@@ -16,5 +16,10 @@ export const lightTheme = createTheme(vars, {
       200: vars.color.neutral[200],
       300: vars.color.neutral[300],
     },
+    text: {
+      standard: vars.color.neutral[1000],
+      muted: vars.color.neutral[800],
+      danger: vars.color.danger[900],
+    },
   },
 });

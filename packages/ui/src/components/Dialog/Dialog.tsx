@@ -106,7 +106,7 @@ const DialogDescription = React.forwardRef<
     className={clsx(
       typography({
         size: 50,
-        color: 'caption',
+        color: 'muted',
       }),
       atom({ marginTop: 50 }),
       className,

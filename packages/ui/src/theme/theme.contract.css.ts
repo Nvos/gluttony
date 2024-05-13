@@ -15,6 +15,7 @@ export const vars = createThemeContract({
     700: '',
   },
   size: {
+    25: '',
     100: '',
     200: '',
   },
@@ -95,5 +96,10 @@ export const vars = createThemeContract({
       200: '',
       300: '',
     },
+    text: {
+      standard: '',
+      muted: '',
+      danger: ''
+    }
   },
 });

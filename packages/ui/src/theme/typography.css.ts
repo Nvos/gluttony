@@ -5,13 +5,13 @@ export const typography = recipe({
   variants: {
     color: {
       standard: {
-        color: vars.color.neutral[1000],
+        color: vars.color.text.standard,
       },
-      destructive: {
-        color: vars.color.danger[900],
+      danger: {
+        color: vars.color.text.danger,
       },
-      caption: {
-        color: vars.color.neutral[800],
+      muted: {
+        color: vars.color.text.muted,
       },
     },
     weight: {

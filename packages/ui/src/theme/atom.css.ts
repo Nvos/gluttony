@@ -3,6 +3,7 @@ import { vars } from './theme.contract.css';
 
 const properties = defineProperties({
   properties: {
+    boxShadow: vars.shadow,
     display: ['flex', 'block', 'inline-flex', 'none'],
     justifyContent: ['center', 'space-between', 'end'],
     flexDirection: ['row', 'column'],
@@ -11,8 +12,16 @@ const properties = defineProperties({
     whiteSpace: ['nowrap'],
     position: ['absolute', 'relative', 'fixed'],
     textAlign: ['center', 'left', 'right'],
+    overflow: ['hidden', 'auto'],
+    border: {
+      neutral: `solid 1px ${vars.color.neutral[600]}`,
+    },
+    borderBottom: {
+      neutral: `solid 1px ${vars.color.neutral[600]}`,
+    },
     height: {
       0: '0px',
+      25: vars.size[25],
       100: vars.size[100],
       200: vars.size[200],
       dvh: '100dvh',
@@ -24,6 +33,9 @@ const properties = defineProperties({
     width: {
       full: '100%',
       0: '0px',
+      25: vars.size[25],
+      100: vars.size[100],
+      200: vars.size[200],
     },
     borderRadius: {
       100: vars.radii[100],

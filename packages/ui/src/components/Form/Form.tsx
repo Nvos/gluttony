@@ -62,7 +62,7 @@ const FormLabel = forwardRef<
       ref={ref}
       className={clsx(
         atom({ display: 'block' }),
-        typography({ color: error ? 'destructive' : 'standard' }),
+        typography({ color: error ? 'danger' : 'standard' }),
         className,
       )}
       htmlFor={formItemId}
@@ -83,7 +83,7 @@ const FormDescription = forwardRef<
       ref={ref}
       id={formDescriptionId}
       className={clsx(
-        typography({ color: 'caption', size: 50 }),
+        typography({ color: 'muted', size: 50 }),
         atom({ marginTop: 50 }),
         className,
       )}
@@ -109,7 +109,7 @@ const FormMessage = forwardRef<
       ref={ref}
       id={formMessageId}
       className={clsx(
-        typography({ size: 50, color: 'destructive' }),
+        typography({ size: 50, color: 'danger' }),
         atom({ marginTop: 50 }),
         className,
       )}

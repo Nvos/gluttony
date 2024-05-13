@@ -39,6 +39,7 @@ export const baseTheme: BaseTheme = {
     700: '128px',
   },
   size: {
+    25: '16px',
     100: '32px',
     200: '40px',
   },
