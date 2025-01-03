@@ -1,0 +1,19 @@
+.link {
+    @apply px-4 gap-4 h-10 items-center flex text-neutral-font-secondary rounded-md;
+
+    &:hover {
+        @apply text-neutral-font bg-neutral-9/10;
+    }
+
+    &.active {
+        @apply text-neutral-font;
+    }
+}
+
+.sidebar {
+    @apply min-h-dvh min-w-64 flex flex-col bg-neutral-layer-1 shadow-sm border-r border-neutral-border-1;
+
+    nav {
+        @apply py-4;
+    }
+}

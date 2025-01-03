@@ -1,0 +1,18 @@
+version: "2"
+sql:
+  - engine: "sqlite"
+    queries: "internal/user/query.sql"
+    schema: "internal/database/migrations"
+    gen:
+      go:
+        package: "queries"
+        out: "internal/user/queries"
+        omit_unused_structs: true
+  - engine: "sqlite"
+    queries: "internal/recipe/query.sql"
+    schema: "internal/database/migrations"
+    gen:
+      go:
+        package: "queries"
+        out: "internal/recipe/queries"
+        omit_unused_structs: true

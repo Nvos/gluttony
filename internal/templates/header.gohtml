@@ -1,0 +1,87 @@
+{{ define "header" }}
+  <header
+    class="border-b border-neutral-border-1 px-8 h-[72px] flex justify-between items-center bg-neutral-layer-2"
+  >
+    <div class="form-control">
+      <input
+        class="input"
+        placeholder="Search recipe"
+        aria-label="Recipe search text field"
+      />
+    </div>
+    <div>
+      {{ template "theme-switcher" . }}
+    </div>
+  </header>
+{{ end }}
+
+{{ define "theme-switcher" }}
+  <div
+    class="relative"
+    x-data="{ isOpen: false, openedWithKeyboard: false, theme: localStorage.getItem('theme') }"
+    @keydown.esc.window="isOpen = false; openedWithKeyboard = false"
+  >
+    <button
+      type="button"
+      @click="isOpen = !isOpen"
+      aria-haspopup="true"
+      @keydown.space.prevent="openedWithKeyboard = true"
+      @keydown.enter.prevent="openedWithKeyboard = true"
+      @keydown.down.prevent="openedWithKeyboard = true"
+      :aria-expanded="isOpen | openedWithKeyboard"
+      class="button is-ghost-neutral"
+    >
+      Theme
+    </button>
+    <ul
+      x-cloak
+      x-show="isOpen || openedWithKeyboard"
+      x-transition
+      x-trap="openedWithKeyboard"
+      @click.outside="isOpen = false, openedWithKeyboard = false"
+      @keydown.down.prevent="$focus.wrap().next()"
+      @keydown.up.prevent="$focus.wrap().previous()"
+      class="right-0 flex flex-col gap-2 mt-2 z-[1] shadow-sm absolute origin-bottom-left p-2 border border-neutral-border-1 rounded-md bg-neutral-layer-2"
+    >
+      <li>
+        <button
+          role="menuitem"
+          class="w-full justify-start button is-text-neutral gap-2"
+          onclick="setTheme('light')"
+          @click.outside="isOpen = false, openedWithKeyboard = false"
+          :class="{ 'text-neutral-font': theme === 'light' }"
+          @click="theme = 'light'"
+        >
+          {{ template "icons/sun" . }}
+          Light
+        </button>
+      </li>
+      <li>
+        <button
+          role="menuitem"
+          class="w-full justify-start button is-text-neutral gap-2"
+          onclick="setTheme('dark')"
+          @click.outside="isOpen = false, openedWithKeyboard = false"
+          :class="{ 'text-neutral-font': theme === 'dark' }"
+          @click="theme = 'dark'"
+        >
+          {{ template "icons/moon" . }}
+          Dark
+        </button>
+      </li>
+      <li>
+        <button
+          role="menuitem"
+          class="w-full justify-start button is-text-neutral gap-2"
+          onclick="setTheme('system')"
+          @click.outside="isOpen = false, openedWithKeyboard = false"
+          @click="theme = null"
+          :class="{ 'text-neutral-font': theme === null }"
+        >
+          {{ template "icons/monitor" . }}
+          System
+        </button>
+      </li>
+    </ul>
+  </div>
+{{ end }}

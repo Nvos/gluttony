@@ -1,0 +1,82 @@
+@import '@radix-ui/colors/red.css' layer(base);
+@import '@radix-ui/colors/red-dark.css' layer(base);
+@import '@radix-ui/colors/slate.css' layer(base);
+@import '@radix-ui/colors/slate-dark.css' layer(base);
+@import '@radix-ui/colors/orange.css' layer(base);
+@import '@radix-ui/colors/orange-dark.css' layer(base);
+
+@import './button.css' layer(base);
+@import './form.css' layer(base);
+@import './card.css' layer(base);
+@import './alert.css' layer(base);
+@import './navigation.css' layer(base);
+@import './tag.css' layer(base);
+
+@import 'tailwindcss';
+@variant dark (&:is(.dark *));
+
+@theme {
+  --color-*: initial;
+  --font-*: initial;
+  --font-sans: InterVariable, sans-serif;
+
+  --color-neutral-1: var(--slate-1);
+  --color-neutral-2: var(--slate-2);
+  --color-neutral-3: var(--slate-3);
+  --color-neutral-4: var(--slate-4);
+  --color-neutral-5: var(--slate-5);
+  --color-neutral-6: var(--slate-6);
+  --color-neutral-7: var(--slate-7);
+  --color-neutral-8: var(--slate-8);
+  --color-neutral-9: var(--slate-9);
+  --color-neutral-10: var(--slate-10);
+  --color-neutral-11: var(--slate-11);
+  --color-neutral-12: var(--slate-12);
+
+  --color-primary-1: var(--orange-1);
+  --color-primary-2: var(--orange-2);
+  --color-primary-3: var(--orange-3);
+  --color-primary-4: var(--orange-4);
+  --color-primary-5: var(--orange-5);
+  --color-primary-6: var(--orange-6);
+  --color-primary-7: var(--orange-7);
+  --color-primary-8: var(--orange-8);
+  --color-primary-9: var(--orange-9);
+  --color-primary-10: var(--orange-10);
+  --color-primary-11: var(--orange-11);
+  --color-primary-12: var(--orange-12);
+
+  --color-danger-1: var(--red-1);
+  --color-danger-2: var(--red-2);
+  --color-danger-3: var(--red-3);
+  --color-danger-4: var(--red-4);
+  --color-danger-5: var(--red-5);
+  --color-danger-6: var(--red-6);
+  --color-danger-7: var(--red-7);
+  --color-danger-8: var(--red-8);
+  --color-danger-9: var(--red-9);
+  --color-danger-10: var(--red-10);
+  --color-danger-11: var(--red-11);
+  --color-danger-12: var(--red-12);
+
+
+  --color-neutral-font: var(--slate-12);
+  --color-neutral-font-secondary: var(--slate-10);
+  --color-primary-font-contrast: #FFF;
+
+  --color-neutral-layer-1: var(--slate-1);
+  --color-neutral-layer-2: var(--slate-2);
+  --color-neutral-border-1: color-mix(in srgb, var(--slate-6), transparent 40%);
+  --color-neutral-border-2: color-mix(in srgb, var(--slate-7), transparent 40%);
+}
+
+@layer base {
+  @font-face {
+    font-family: InterVariable;
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('/assets/font/inter/InterVariable.woff2') format('woff2');
+  }
+}
+

@@ -1,0 +1,35 @@
+{{ define "sidebar" }}
+  <div class="sidebar">
+    <div>
+      <div
+        class="flex gap-4 items-center h-18 px-6 border-b border-b-neutral-border-1"
+      >
+        {{ template "icons/logo" . }}
+        <span class="text-2xl">Gluttony</span>
+      </div>
+      <nav class="px-2">
+        <ul>
+          <li>
+            <a
+              href="/recipes"
+              class="link {{ if .IsURLActive "/recipes" }}active{{ end }}"
+            >
+              {{ template "icons/utensils-crossed" . }}
+              <span>Recipes</span>
+            </a>
+          </li>
+          <li>
+            <a
+              href="/settings"
+              class="link {{ if .IsURLActive "/settings" }}active{{ end }}
+            "
+            >
+              {{ template "icons/settings" . }}
+              <span>Settings</span></a
+            >
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+{{ end }}

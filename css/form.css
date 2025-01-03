@@ -1,0 +1,74 @@
+.form-control {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing);
+
+    .label {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .label-text {
+        font-size: var(--text-sm);
+        font-weight: var(--font-weight-medium);
+    }
+
+    .hint {
+        font-size: var(--text-xs);
+        color: var(--color-neutral-font-secondary)
+    }
+
+    .input {
+        --input-background-color: var(--color-neutral-1);
+        --input-border-color: color-mix(in srgb, var(--color-neutral-7), transparent 40%);
+        --input-outline-color: var(--color-primary-7);
+
+        border-radius: var(--radius-md);
+        background-color: var(--input-background-color);
+        padding: calc(var(--spacing) * 2) calc(var(--spacing) * 4);
+        box-shadow: inset 0 0 0 1px var(--input-border-color);
+        appearance: textfield;
+
+        &:focus {
+            box-shadow: none;
+            outline: var(--input-outline-color) solid 2px;
+        }
+    }
+
+    .select {
+        appearance: none;
+        background-repeat: no-repeat;
+        background-position: right .75rem center;
+        background-size: 1.5em 1.5em;
+        background-image: var(--select-chevron);
+    }
+}
+
+datalist {
+    position: absolute;
+    max-height: 20em;
+    border: 0 none;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+datalist option {
+    font-size: 0.8em;
+    padding: 0.3em 1em;
+    background-color: red;
+    cursor: pointer;
+}
+
+datalist option:hover, datalist option:focus {
+    color: #fff;
+    background-color: #036;
+    outline: 0 none;
+}
+
+:root {
+    --select-chevron: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%231C2024FF' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}
+
+.dark {
+    --select-chevron: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23EDEEF0FF' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}

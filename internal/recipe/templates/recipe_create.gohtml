@@ -1,0 +1,450 @@
+{{ define "title" }}Gluttony - Create recipe{{ end }}
+{{ define "view" }}
+  <div class="flex flex-1">
+    {{ template "sidebar" . }}
+    {{ template "sub-sidebar" . }}
+    <div class="bg-neutral-layer-2 w-full">
+      {{ template "recipe-create/header" . }}
+      <main class="flex  p-8">
+        {{ template "recipe-create/form" . }}
+      </main>
+    </div>
+  </div>
+  <script>
+    const fileToDataUrl = (event, callback) => {
+      if (!event.target.files.length) return;
+
+      let file = event.target.files[0],
+        reader = new FileReader();
+
+      reader.readAsDataURL(file);
+      reader.onload = (e) => callback(e.target.result);
+    };
+  </script>
+  {{ template "recipe-create/scripts" }}
+{{ end }}
+
+{{ define "recipe-create/form" }}
+  <form
+    class="flex flex-col gap-4 flex-1"
+    hx-target="this"
+    hx-swap="outerHTML"
+    hx-post="/recipes/create/form"
+  >
+    <h2 class="text-2xl">Summary</h2>
+    <hr class="w-full text-neutral-border-2" />
+    <div class="flex gap-4">
+      <div class="form-control">
+        <label for="cover-image">
+          <span class="label">
+            <span class="label-text">Cover image</span>
+          </span>
+        </label>
+        <div
+          x-data="{file: null, imageUrl: undefined}"
+          class="w-96 focus-within:outline-2 outline-primary-8 h-60 relative flex bg-neutral-layer-1 border border-neutral-border-2 rounded-sm"
+        >
+          <input
+            id="cover-image"
+            type="file"
+            multiple
+            class="absolute inset-0 z-50 m-0 p-0 w-full h-full outline-none opacity-0"
+            x-on:change="file = $event.target.files[0]; console.log($event.target.files); fileToDataUrl($event, url => imageUrl = url )"
+            x-on:dragover="$el.classList.add('active')"
+            x-on:dragleave="$el.classList.remove('active')"
+            x-on:drop="$el.classList.remove('active')"
+          />
+
+          <template x-if="file !== null">
+            <img
+              class="object-cover absolute h-full w-full rounded-sm"
+              :src="imageUrl"
+              alt="Image upload preview"
+            />
+          </template>
+
+          <template x-if="file === null">
+            <div class="flex flex-1 justify-center items-center flex-col gap-1">
+              <p>
+                <span class="underline">Click to upload</span> or drag & drop
+                image
+              </p>
+              <p class="text-neutral-font-secondary">
+                Maximum image size is 2 MB.
+              </p>
+            </div>
+          </template>
+        </div>
+      </div>
+      <div class="flex flex-col gap-4 max-w-124 w-124">
+        <label class="form-control">
+          <span class="label">
+            <span class="label-text"
+              >Title
+              <span class="ml-1 text-danger-11 text-xs">(Required)</span>
+            </span>
+          </span>
+          <input class="input" />
+        </label>
+        <label class="form-control">
+          <span class="label">
+            <span class="label-text">Description</span>
+          </span>
+          <textarea rows="6" class="input"></textarea>
+        </label>
+      </div>
+    </div>
+    <div>
+      <h2 class="text-2xl m-0">Metadata & Nutrition</h2>
+      <h3 class="text-sm text-neutral-font-secondary">
+        Nutrition is calculated per
+        <b class="text-neutral-font">Single Serving</b>
+      </h3>
+    </div>
+    <hr class="w-full text-neutral-border-2" />
+    <div class="flex gap-4">
+      <div class="form-control gap-2">
+        <div class="flex flex-col gap-4 max-w-96 w-96">
+          <label class="form-control">
+            <span class="label">
+              <span class="label-text">Calories (kcal)</span>
+            </span>
+            <input class="input" />
+          </label>
+
+          <label class="form-control">
+            <span class="label">
+              <span class="label-text">Fat (g)</span>
+            </span>
+            <input class="input" />
+          </label>
+
+          <label class="form-control">
+            <span class="label">
+              <span class="label-text">Carbs (g)</span>
+            </span>
+            <input class="input" />
+          </label>
+
+          <label class="form-control">
+            <span class="label">
+              <span class="label-text">Protein (g)</span>
+            </span>
+            <input class="input" />
+          </label>
+        </div>
+      </div>
+      <div class="flex flex-col gap-4 w-124 max-w-124">
+        <label class="form-control">
+          <span class="label">
+            <span class="label-text"
+              >Source
+              <span class="text-xs text-danger-11">(Required)</span></span
+            >
+          </span>
+
+          <input class="input" />
+          <span class="hint">Website link, name of cookbook, friend etc.</span>
+        </label>
+        <div class="flex gap-4">
+          <label class="form-control flex-1">
+            <span class="label">
+              <span class="label-text">Servings</span>
+            </span>
+            <input class="input w-full" type="number" />
+          </label>
+          <label class="form-control flex-1">
+            <span class="label">
+              <span class="label-text">Preparation time</span>
+            </span>
+            <input class="input w-full" type="time" />
+          </label>
+          <label class="form-control flex-1">
+            <span class="label">
+              <span class="label-text">Cook time (minutes)</span>
+            </span>
+            <input class="input w-full" type="time" />
+          </label>
+        </div>
+        {{/* Tag input */}}
+        <div class="form-control">
+          <span class="label">
+            <span class="label-text">Tags</span>
+          </span>
+          <div
+            class="p-3 bg-neutral-layer-1 border border-neutral-border-2 rounded-sm flex flex-col gap-4"
+          >
+            <div id="tags" class="flex gap-2"></div>
+            <template id="template-tag">
+              <button
+                type="button"
+                onclick="removeTag(event)"
+                class="tag is-ghost-neutral cursor-pointer hover:text-neutral-font"
+              >
+                <span class="tag-text"></span>
+                {{ template "icons/x" . }}
+              </button>
+            </template>
+            <input
+              id="form"
+              aria-label="Tags"
+              class="input bg-neutral-layer-2"
+              placeholder="Add tag"
+              onkeydown="addTag(event)"
+            />
+            <datalist id="tag-list">
+              {{/* TODO: data from backend */}}
+              <option>Dinner</option>
+              <option>Breakfast</option>
+            </datalist>
+          </div>
+        </div>
+      </div>
+    </div>
+    <h2 class="text-2xl">Ingredients</h2>
+    <hr class="w-full text-neutral-border-2" />
+    {{ template "recipe-create/ingredients" }}
+    <h2 class="text-2xl">Instructions</h2>
+    <hr class="w-full text-neutral-border-2" />
+    <div class="flex gap-4">
+      <div class="flex flex-col gap-4 max-w-96 w-96"></div>
+      {{ template "recipe_create/steps" . }}
+    </div>
+  </form>
+{{ end }}
+
+{{ define "sub-sidebar" }}
+  <div class="sidebar">
+    <div class="h-18 px-2 flex items-center border-b border-b-neutral-border-1">
+      <a class="link w-full" href="/recipes/create">
+        {{ template "icons/plus" }}
+        <span>New Recipe Draft</span>
+      </a>
+    </div>
+    <nav class="px-2">
+      <ul>
+        <li>
+          <a
+            title="Butter Curry Very Spicy"
+            class="link w-full overflow-hidden"
+            href="recipe/create/draft/1"
+          >
+            <span class="tag is-ghost-neutral">Draft</span>
+            <span class="truncate">Butter Curry Very Spicy</span>
+          </a>
+        </li>
+        <li>
+          <a class="link w-full overflow-hidden" href="recipe/create/draft/1">
+            <span class="tag is-ghost-neutral">Draft</span>
+            <span class="truncate">Apple Pie</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+{{ end }}
+
+{{ define "recipe-create/header" }}
+  <header
+    class="border-b border-neutral-border-1 px-8 h-[72px] flex justify-between items-center bg-neutral-layer-2"
+  >
+    <div class="form-control">
+      <button class="button is-ghost-neutral">Go back to recipes</button>
+    </div>
+    <div class="flex gap-4">
+      <button class="button is-ghost-neutral">Save</button>
+      <button class="button is-solid-primary">Publish</button>
+    </div>
+  </header>
+{{ end }}
+
+{{ define "recipe_create/steps" }}
+  <div class="form-control">
+    <span class="label">
+      <span class="label-text">Steps</span>
+    </span>
+    <div
+      id="instructions"
+      class="flex flex-col gap-4 w-124 border rounded-sm border-neutral-border-2 p-4"
+    >
+      <div class="flex gap-4 flex-1 instruction-row">
+        <label class="form-control flex-1">
+          <span class="label">
+            <span class="label-text">Step 1</span>
+          </span>
+          <textarea
+            rows="3"
+            class="input w-full"
+            name="instructions"
+          ></textarea>
+        </label>
+        <div class="flex flex-col gap-2 h-fit pt-6">
+          <button
+            type="button"
+            class="button is-ghost-neutral"
+            onclick="addInstructionRow(event)"
+          >
+            +
+          </button>
+          <button type="button" disabled class="button is-ghost-neutral">
+            -
+          </button>
+        </div>
+      </div>
+    </div>
+    <template id="template-instruction-row">
+      <div class="flex gap-4 flex-1 instruction-row">
+        <label class="form-control flex-1">
+          <span class="label">
+            <span class="label-text"></span>
+          </span>
+          <textarea
+            rows="3"
+            class="input w-full"
+            name="instructions"
+          ></textarea>
+        </label>
+        <div class="flex flex-col gap-2 h-fit pt-6">
+          <button
+            type="button"
+            class="button is-ghost-neutral"
+            onclick="addInstructionRow(event)"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            class="button is-ghost-neutral"
+            onclick="removeInstructionRow(event)"
+          >
+            -
+          </button>
+        </div>
+      </div>
+    </template>
+  </div>
+  {{/* TODO: move to separate js file */}}
+  <script>
+    const focusNextRow = (clickEvent) => {
+      let focusTarget = clickEvent.target.closest('.instruction-row');
+
+      if (focusTarget.nextElementSibling === null) {
+        focusTarget = focusTarget.previousElementSibling;
+      } else {
+        focusTarget = focusTarget.nextElementSibling;
+      }
+
+      focusTarget = focusTarget.querySelector('textarea');
+      focusTarget.focus();
+      focusTarget.scrollIntoView();
+    };
+
+    const updateInstructionRowNumbers = () => {
+      const labels = document
+        .getElementById('instructions')
+        .querySelectorAll('.label-text');
+      let index = 1;
+      for (const label of labels) {
+        label.textContent = `Step ${index}`;
+        index += 1;
+      }
+    };
+
+    const removeInstructionRow = (event) => {
+      focusNextRow(event);
+      event.target.closest('.instruction-row').remove();
+      updateInstructionRowNumbers();
+    };
+
+    const addInstructionRow = (event) => {
+      // Insert template after row containing add button
+      const template = document.getElementById('template-instruction-row');
+      const newNode = template.content.cloneNode(true);
+      event.target.closest('.instruction-row').after(newNode);
+
+      updateInstructionRowNumbers();
+      focusNextRow(event);
+    };
+  </script>
+{{ end }}
+{{ define "recipe-create/ingredients" }}
+  <div class="flex flex-col gap-4 w-full">
+    <div class="flex gap-4 flex-1 w-full">
+      <div class="flex gap-4 max-w-96 w-96">
+        <label class="form-control flex-1">
+          <span class="label">
+            <span class="label-text">Quantity</span>
+          </span>
+          <input
+            class="input w-full"
+            required
+            name="quantity"
+            type="number"
+            min="1"
+            step="1"
+          />
+        </label>
+        <label class="form-control flex-2">
+          <span class="label">
+            <span class="label-text">Unit</span>
+          </span>
+
+          <select class="input select w-full">
+            <option value="tsp">Teaspoon (tsp)</option>
+            <option value="tbsp">Tablespoon (tbsp)</option>
+            <option value="cup">Cup</option>
+            <option value="g" selected>Grams (g)</option>
+            <option value="ml">Milliliters (ml)</option>
+            <option value="count">Count</option>
+          </select>
+        </label>
+      </div>
+      <div class="flex gap-4 max-w-124 w-124">
+        <label class="form-control w-full">
+          <span class="label">
+            <span class="label-text">Name</span>
+          </span>
+          <input
+            class="input w-full"
+            required
+            name="name"
+            size="20"
+            list="ingredient-list"
+            autocomplete="off"
+          />
+          {{/* TODO: data from backend */}}
+          <datalist id="ingredient-list">
+            <option>Apple</option>
+            <option>Pork</option>
+          </datalist>
+        </label>
+      </div>
+    </div>
+    <div class="flex justify-end w-224">
+      <button class="button is-ghost-neutral">Add ingredient</button>
+    </div>
+  </div>
+{{ end }}
+
+{{ define "recipe-create/scripts" }}
+  <script>
+    const removeTag = (event) => {
+      event.target.remove();
+    };
+
+    const addTag = (event) => {
+      const isEnter = event.key === 'Enter' || event.keyCode === 13;
+      if (!isEnter) {
+        return;
+      }
+
+      event.preventDefault();
+
+      const template = document.getElementById('template-tag');
+      const newNode = template.content.cloneNode(true);
+      newNode.querySelector('.tag-text').textContent = event.target.value;
+      document.getElementById('tags').appendChild(newNode);
+      event.target.value = '';
+    };
+  </script>
+{{ end }}

@@ -1,0 +1,53 @@
+.button {
+    height: calc(var(--spacing) * 10);
+    padding: 0 calc(var(--spacing) * 4);
+    border-radius: var(--radius-md);
+    font-weight: var(--font-weight-medium);
+    background-color: var(--button-background-color);
+    color: var(--button-text-color);
+    transition-property: background-color;
+    transition-duration: 0.4s;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &::marker {
+        font-size: 0;
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    &:hover {
+        cursor: pointer;
+        background-color: var(--button-background-color-hover);
+    }
+
+    &:focus {
+        outline-offset: 2px;
+        outline: var(--button-outline-color) solid 2px;
+    }
+
+    &.is-solid-primary {
+        --button-background-color: var(--color-primary-9);
+        --button-text-color: var(--color-primary-font-contrast);
+        --button-background-color-hover: var(--color-primary-10);
+        --button-outline-color: var(--color-primary-8);
+    }
+
+    &.is-ghost-neutral {
+        --button-background-color: color-mix(in srgb, var(--color-neutral-9), transparent 90%);
+        --button-text-color: var(--color-neutral-font-secondary);
+        --button-background-color-hover: color-mix(in srgb, var(--color-neutral-10), transparent 80%);
+        --button-outline-color: var(--color-neutral-8);
+    }
+
+    &.is-text-neutral {
+        --button-text-color: var(--color-neutral-font-secondary);
+        --button-background-color-hover: color-mix(in srgb, var(--color-neutral-10), transparent 80%);
+        --button-outline-color: var(--color-neutral-8);
+    }
+}

@@ -1,0 +1,16 @@
+.tag {
+    @apply px-2 font-semibold h-6 rounded-sm text-sm flex items-center gap-1;
+
+    background-color: var(--tag-background-color);
+    color: var(--tag-text-color);
+
+    &.is-ghost-neutral {
+        --tag-background-color: color-mix(in srgb, var(--color-neutral-9), transparent 90%);
+        --tag-text-color: var(--color-neutral-font-secondary);
+    }
+
+    svg {
+        width: 1em;
+        height: 1em;
+    }
+}
