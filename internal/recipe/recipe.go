@@ -7,12 +7,18 @@ import (
 )
 
 type Deps struct {
-	service   *Service
-	logger    *slog.Logger
-	templates *templates.Templates
+	service    *Service
+	logger     *slog.Logger
+	templates  *templates.Templates
+	mediaStore MediaStore
 }
 
-func NewDeps(service *Service, logger *slog.Logger, templateManager *templates.Templates) *Deps {
+func NewDeps(
+	service *Service,
+	logger *slog.Logger,
+	templateManager *templates.Templates,
+	mediaStore MediaStore,
+) *Deps {
 	if logger == nil {
 		panic("logger must not be nil")
 	}
@@ -25,10 +31,15 @@ func NewDeps(service *Service, logger *slog.Logger, templateManager *templates.T
 		panic("templateManager must not be nil")
 	}
 
+	if mediaStore == nil {
+		panic("mediaStore must not be nil")
+	}
+
 	return &Deps{
-		service:   service,
-		logger:    logger,
-		templates: templateManager,
+		service:    service,
+		logger:     logger,
+		templates:  templateManager,
+		mediaStore: mediaStore,
 	}
 }
 

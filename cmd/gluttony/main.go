@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/spf13/afero"
 	"gluttony/internal/database"
+	"gluttony/internal/media"
 	"gluttony/internal/recipe"
 	"gluttony/internal/security"
 	"gluttony/internal/share"
@@ -59,9 +61,11 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 	}
 
 	assetsDir := os.DirFS(filepath.Join(wd, "assets"))
+	workDirFS := afero.NewBasePathFs(afero.NewOsFs(), workDir)
 	sessionStore := security.NewSessionStore()
 	userService := user.NewService(db, sessionStore)
 	recipeService := recipe.NewService(db)
+	mediaStore := media.NewStore(workDirFS)
 
 	reloader := reload.New()
 	if err := reloader.Watch(ctx, reload.WatchConfig{
@@ -91,6 +95,10 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 		http.StripPrefix("/assets", http.FileServerFS(assetsDir)).ServeHTTP(w, r)
 	}
 
+	mediaHandle := func(w http.ResponseWriter, r *http.Request) {
+		http.StripPrefix("/media", http.FileServerFS(os.DirFS(workDir))).ServeHTTP(w, r)
+	}
+
 	router := chi.NewRouter()
 	router.Use(
 		security.AuthenticationMiddleware(logger, sessionStore),
@@ -101,12 +109,13 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 	// Public
 	router.Group(func(r chi.Router) {
 		router.Get("/assets/*", assetHandle)
+		router.Get("/media/*", mediaHandle)
 	})
 
 	userDeps := user.NewDeps(sessionStore, templateManager, logger, userService)
 	router.Group(user.Routes(userDeps))
 
-	recipeDeps := recipe.NewDeps(recipeService, logger, templateManager)
+	recipeDeps := recipe.NewDeps(recipeService, logger, templateManager, mediaStore)
 	router.Group(recipe.Routes(recipeDeps))
 
 	httpServer := &http.Server{

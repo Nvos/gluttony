@@ -1,3 +1,4 @@
+{{- /*gotype: gluttony/internal/recipe.CreateFormModel */ -}}
 {{ define "title" }}Gluttony - Create recipe{{ end }}
 {{ define "view" }}
   <div class="flex flex-1">
@@ -26,6 +27,8 @@
 
 {{ define "recipe-create/form" }}
   <form
+    enctype="multipart/form-data"
+    id="recipe-create-form"
     class="flex flex-col gap-4 flex-1"
     hx-target="this"
     hx-swap="outerHTML"
@@ -41,21 +44,26 @@
           </span>
         </label>
         <div
-          x-data="{file: null, imageUrl: undefined}"
+          x-data="{file: null, imageUrl: '{{ .Form.CoverImageURL }}'}"
           class="w-96 focus-within:outline-2 outline-primary-8 h-60 relative flex bg-neutral-layer-1 border border-neutral-border-2 rounded-sm"
         >
           <input
+            name="cover-image-url"
+            type="hidden"
+            value="{{ .Form.CoverImageURL }}"
+          />
+          <input
             id="cover-image"
             type="file"
-            multiple
+            name="cover-image"
             class="absolute inset-0 z-50 m-0 p-0 w-full h-full outline-none opacity-0"
-            x-on:change="file = $event.target.files[0]; console.log($event.target.files); fileToDataUrl($event, url => imageUrl = url )"
+            x-on:change="file = $event.target.files[0]; fileToDataUrl($event, url => imageUrl = url )"
             x-on:dragover="$el.classList.add('active')"
             x-on:dragleave="$el.classList.remove('active')"
             x-on:drop="$el.classList.remove('active')"
           />
 
-          <template x-if="file !== null">
+          <template x-if="imageUrl !== ''">
             <img
               class="object-cover absolute h-full w-full rounded-sm"
               :src="imageUrl"
@@ -63,7 +71,7 @@
             />
           </template>
 
-          <template x-if="file === null">
+          <template x-if="imageUrl === ''">
             <div class="flex flex-1 justify-center items-center flex-col gap-1">
               <p>
                 <span class="underline">Click to upload</span> or drag & drop
@@ -84,13 +92,15 @@
               <span class="ml-1 text-danger-11 text-xs">(Required)</span>
             </span>
           </span>
-          <input class="input" />
+          <input class="input" name="name" value="{{ .Form.Name }}" />
         </label>
         <label class="form-control">
           <span class="label">
             <span class="label-text">Description</span>
           </span>
-          <textarea rows="6" class="input"></textarea>
+          <textarea rows="6" class="input" name="description">
+{{ .Form.Description }}</textarea
+          >
         </label>
       </div>
     </div>
@@ -109,28 +119,40 @@
             <span class="label">
               <span class="label-text">Calories (kcal)</span>
             </span>
-            <input class="input" />
+            <input
+              class="input"
+              name="calories"
+              value="{{ .Form.Nutrition.Calories }}"
+            />
           </label>
 
           <label class="form-control">
             <span class="label">
               <span class="label-text">Fat (g)</span>
             </span>
-            <input class="input" />
+            <input class="input" name="fat" value="{{ .Form.Nutrition.Fat }}" />
           </label>
 
           <label class="form-control">
             <span class="label">
               <span class="label-text">Carbs (g)</span>
             </span>
-            <input class="input" />
+            <input
+              class="input"
+              name="carbs"
+              value="{{ .Form.Nutrition.Carbs }}"
+            />
           </label>
 
           <label class="form-control">
             <span class="label">
               <span class="label-text">Protein (g)</span>
             </span>
-            <input class="input" />
+            <input
+              class="input"
+              name="protein"
+              value="{{ .Form.Nutrition.Protein }}"
+            />
           </label>
         </div>
       </div>
@@ -143,7 +165,7 @@
             >
           </span>
 
-          <input class="input" />
+          <input class="input" name="source" value="{{ .Form.Source }}" />
           <span class="hint">Website link, name of cookbook, friend etc.</span>
         </label>
         <div class="flex gap-4">
@@ -151,19 +173,34 @@
             <span class="label">
               <span class="label-text">Servings</span>
             </span>
-            <input class="input w-full" type="number" />
+            <input
+              class="input w-full"
+              type="number"
+              name="servings"
+              value="{{ .Form.Servings }}"
+            />
           </label>
           <label class="form-control flex-1">
             <span class="label">
               <span class="label-text">Preparation time</span>
             </span>
-            <input class="input w-full" type="time" />
+            <input
+              name="preparation-time"
+              class="input w-full"
+              type="time"
+              value="{{ formatDuration .Form.PreparationTime }}"
+            />
           </label>
           <label class="form-control flex-1">
             <span class="label">
-              <span class="label-text">Cook time (minutes)</span>
+              <span class="label-text">Cook time</span>
             </span>
-            <input class="input w-full" type="time" />
+            <input
+              name="cook-time"
+              class="input w-full"
+              type="time"
+              value="{{ formatDuration .Form.CookTime }}"
+            />
           </label>
         </div>
         {{/* Tag input */}}
@@ -174,13 +211,26 @@
           <div
             class="p-3 bg-neutral-layer-1 border border-neutral-border-2 rounded-sm flex flex-col gap-4"
           >
-            <div id="tags" class="flex gap-2"></div>
+            <div id="tags" class="flex gap-2">
+              {{ range $value := .Form.Tags }}
+                <button
+                  type="button"
+                  onclick="removeTag(event)"
+                  class="tag is-ghost-neutral cursor-pointer hover:text-neutral-font"
+                >
+                  <input type="hidden" name="tag" value="{{ $value }}" />
+                  <span class="tag-text">{{ $value }}</span>
+                  {{ template "icons/x" . }}
+                </button>
+              {{ end }}
+            </div>
             <template id="template-tag">
               <button
                 type="button"
                 onclick="removeTag(event)"
                 class="tag is-ghost-neutral cursor-pointer hover:text-neutral-font"
               >
+                <input type="hidden" name="tag" />
                 <span class="tag-text"></span>
                 {{ template "icons/x" . }}
               </button>
@@ -190,6 +240,7 @@
               aria-label="Tags"
               class="input bg-neutral-layer-2"
               placeholder="Add tag"
+              list="tag-list"
               onkeydown="addTag(event)"
             />
             <datalist id="tag-list">
@@ -203,12 +254,19 @@
     </div>
     <h2 class="text-2xl">Ingredients</h2>
     <hr class="w-full text-neutral-border-2" />
-    {{ template "recipe-create/ingredients" }}
+    {{ template "recipe-create/ingredients" . }}
     <h2 class="text-2xl">Instructions</h2>
     <hr class="w-full text-neutral-border-2" />
-    <div class="flex gap-4">
-      <div class="flex flex-col gap-4 max-w-96 w-96"></div>
-      {{ template "recipe_create/steps" . }}
+    <div class="form-control w-226">
+      <textarea
+        id="instructions"
+        aria-label="Instructions"
+        rows="3"
+        class="input w-full min-h-[320px] max-h-[80dvh]"
+        name="instructions"
+      >
+{{ .Form.Instructions }}</textarea
+      >
     </div>
   </form>
 {{ end }}
@@ -249,187 +307,139 @@
     class="border-b border-neutral-border-1 px-8 h-[72px] flex justify-between items-center bg-neutral-layer-2"
   >
     <div class="form-control">
-      <button class="button is-ghost-neutral">Go back to recipes</button>
+      <a href="/recipes" class="button is-ghost-neutral">Go back to recipes</a>
     </div>
     <div class="flex gap-4">
-      <button class="button is-ghost-neutral">Save</button>
+      <button
+        class="button is-ghost-neutral"
+        type="submit"
+        form="recipe-create-form"
+      >
+        Save
+      </button>
       <button class="button is-solid-primary">Publish</button>
     </div>
   </header>
 {{ end }}
 
-{{ define "recipe_create/steps" }}
-  <div class="form-control">
-    <span class="label">
-      <span class="label-text">Steps</span>
-    </span>
-    <div
-      id="instructions"
-      class="flex flex-col gap-4 w-124 border rounded-sm border-neutral-border-2 p-4"
-    >
-      <div class="flex gap-4 flex-1 instruction-row">
-        <label class="form-control flex-1">
-          <span class="label">
-            <span class="label-text">Step 1</span>
-          </span>
-          <textarea
-            rows="3"
-            class="input w-full"
-            name="instructions"
-          ></textarea>
-        </label>
-        <div class="flex flex-col gap-2 h-fit pt-6">
-          <button
-            type="button"
-            class="button is-ghost-neutral"
-            onclick="addInstructionRow(event)"
-          >
-            +
-          </button>
-          <button type="button" disabled class="button is-ghost-neutral">
-            -
-          </button>
-        </div>
-      </div>
-    </div>
-    <template id="template-instruction-row">
-      <div class="flex gap-4 flex-1 instruction-row">
-        <label class="form-control flex-1">
-          <span class="label">
-            <span class="label-text"></span>
-          </span>
-          <textarea
-            rows="3"
-            class="input w-full"
-            name="instructions"
-          ></textarea>
-        </label>
-        <div class="flex flex-col gap-2 h-fit pt-6">
-          <button
-            type="button"
-            class="button is-ghost-neutral"
-            onclick="addInstructionRow(event)"
-          >
-            +
-          </button>
-          <button
-            type="button"
-            class="button is-ghost-neutral"
-            onclick="removeInstructionRow(event)"
-          >
-            -
-          </button>
-        </div>
-      </div>
-    </template>
-  </div>
-  {{/* TODO: move to separate js file */}}
-  <script>
-    const focusNextRow = (clickEvent) => {
-      let focusTarget = clickEvent.target.closest('.instruction-row');
-
-      if (focusTarget.nextElementSibling === null) {
-        focusTarget = focusTarget.previousElementSibling;
-      } else {
-        focusTarget = focusTarget.nextElementSibling;
-      }
-
-      focusTarget = focusTarget.querySelector('textarea');
-      focusTarget.focus();
-      focusTarget.scrollIntoView();
-    };
-
-    const updateInstructionRowNumbers = () => {
-      const labels = document
-        .getElementById('instructions')
-        .querySelectorAll('.label-text');
-      let index = 1;
-      for (const label of labels) {
-        label.textContent = `Step ${index}`;
-        index += 1;
-      }
-    };
-
-    const removeInstructionRow = (event) => {
-      focusNextRow(event);
-      event.target.closest('.instruction-row').remove();
-      updateInstructionRowNumbers();
-    };
-
-    const addInstructionRow = (event) => {
-      // Insert template after row containing add button
-      const template = document.getElementById('template-instruction-row');
-      const newNode = template.content.cloneNode(true);
-      event.target.closest('.instruction-row').after(newNode);
-
-      updateInstructionRowNumbers();
-      focusNextRow(event);
-    };
-  </script>
-{{ end }}
-{{ define "recipe-create/ingredients" }}
-  <div class="flex flex-col gap-4 w-full">
-    <div class="flex gap-4 flex-1 w-full">
-      <div class="flex gap-4 max-w-96 w-96">
-        <label class="form-control flex-1">
+{{ define "recipe-create/ingredient-row" }}
+  <div class="flex gap-4 flex-1 w-full">
+    <div class="flex gap-4 max-w-96 w-96">
+      <label class="form-control flex-1">
+        {{ if eq .Order 0 }}
           <span class="label">
             <span class="label-text">Quantity</span>
           </span>
-          <input
-            class="input w-full"
-            required
-            name="quantity"
-            type="number"
-            min="1"
-            step="1"
-          />
-        </label>
-        <label class="form-control flex-2">
+        {{ end }}
+        <input
+          class="input w-full"
+          required
+          name="quantity"
+          type="number"
+          min="1"
+          step="1"
+          value="{{ .Quantity }}"
+        />
+      </label>
+      <label class="form-control flex-2">
+        {{ if eq .Order 0 }}
           <span class="label">
             <span class="label-text">Unit</span>
           </span>
-
-          <select class="input select w-full">
-            <option value="tsp">Teaspoon (tsp)</option>
-            <option value="tbsp">Tablespoon (tbsp)</option>
-            <option value="cup">Cup</option>
-            <option value="g" selected>Grams (g)</option>
-            <option value="ml">Milliliters (ml)</option>
-            <option value="count">Count</option>
-          </select>
-        </label>
-      </div>
-      <div class="flex gap-4 max-w-124 w-124">
-        <label class="form-control w-full">
+        {{ end }}
+        <select name="unit" class="input select w-full">
+          <option
+            value="tsp"
+            {{ if eq .Unit "tsp" }}selected{{ end }}
+          >
+            Teaspoon (tsp)
+          </option>
+          <option
+            value="tbsp"
+            {{ if eq .Unit "tbsp" }}selected{{ end }}
+          >
+            Tablespoon (tbsp)
+          </option>
+          <option
+            value="cup"
+            {{ if eq .Unit "cup" }}selected{{ end }}
+          >
+            Cup
+          </option>
+          <option
+            value="g"
+            {{ if eq .Unit "g" }}
+              selected
+            {{ else if eq .Unit nil }}
+              selected
+            {{ end }}
+          >
+            Grams (g)
+          </option>
+          <option value="ml" {{ if eq .Unit "ml" }}selected{{ end }}>
+            Milliliters (ml)
+          </option>
+          <option
+            value="count"
+            {{ if eq .Unit "count" }}selected{{ end }}
+          >
+            Count
+          </option>
+        </select>
+      </label>
+    </div>
+    <div class="flex gap-4 max-w-124 w-124">
+      <label class="form-control w-full">
+        {{ if eq .Order 0 }}
           <span class="label">
             <span class="label-text">Name</span>
           </span>
-          <input
-            class="input w-full"
-            required
-            name="name"
-            size="20"
-            list="ingredient-list"
-            autocomplete="off"
-          />
-          {{/* TODO: data from backend */}}
-          <datalist id="ingredient-list">
-            <option>Apple</option>
-            <option>Pork</option>
-          </datalist>
-        </label>
-      </div>
+        {{ end }}
+        <input
+          class="input w-full"
+          required
+          name="ingredient"
+          size="20"
+          list="ingredient-list"
+          autocomplete="off"
+          value="{{ .Name }}"
+        />
+      </label>
     </div>
+  </div>
+{{ end }}
+{{ define "recipe-create/ingredients" }}
+  <div class="flex flex-col gap-4 w-full">
+    <div id="ingredients" class="flex flex-col gap-4">
+      {{ range $val := .Form.Ingredients }}
+        {{ template "recipe-create/ingredient-row" $val }}
+      {{ end }}
+    </div>
+    <template id="template-ingredient-row">
+      {{ template "recipe-create/ingredient-row" }}
+    </template>
+    {{/* TODO: data from backend */}}
+    <datalist id="ingredient-list">
+      <option>Apple</option>
+      <option>Pork</option>
+    </datalist>
     <div class="flex justify-end w-224">
-      <button class="button is-ghost-neutral">Add ingredient</button>
+      <button
+        class="button is-ghost-neutral"
+        type="button"
+        onclick="addIngredientRow()"
+      >
+        Add ingredient
+      </button>
     </div>
   </div>
 {{ end }}
 
 {{ define "recipe-create/scripts" }}
   <script>
+    // Tags
     const removeTag = (event) => {
-      event.target.remove();
+      event.target.closest('.tag').remove();
     };
 
     const addTag = (event) => {
@@ -443,8 +453,50 @@
       const template = document.getElementById('template-tag');
       const newNode = template.content.cloneNode(true);
       newNode.querySelector('.tag-text').textContent = event.target.value;
+      newNode.querySelector('input').value = event.target.value;
       document.getElementById('tags').appendChild(newNode);
       event.target.value = '';
     };
+
+    // Ingredients
+    const focusLastIngredientRow = () => {
+      const focusTarget = document
+        .getElementById('ingredients')
+        .lastElementChild.querySelector('[name="quantity"]');
+
+      focusTarget.focus();
+      focusTarget.scrollIntoView();
+    };
+
+    const removeIngredientRow = (event) => {
+      event.target.closest('.ingredient-row').remove();
+      focusLastIngredientRow();
+    };
+
+    const addIngredientRow = () => {
+      // Insert template after row containing add button
+      const template = document.getElementById('template-ingredient-row');
+      const newNode = template.content.cloneNode(true);
+
+      document.getElementById('ingredients').appendChild(newNode);
+      focusLastIngredientRow();
+    };
+
+    const autoResizeTextarea = (event) => {
+      console.log(event);
+      if (event.target.scrollHeight <= 320) {
+        console.log('out', event.target.scrollHeight);
+        return;
+      }
+
+      console.log(event.target.scrollHeight);
+      event.target.style.height = 'auto';
+      event.target.style.height = `${event.target.scrollHeight}px`;
+      event.target.scrollIntoView({ block: 'end' });
+    };
+
+    document
+      .getElementById('instructions')
+      .addEventListener('input', autoResizeTextarea);
   </script>
 {{ end }}

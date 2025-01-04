@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"io"
 	"io/fs"
+	"time"
 )
 
 type TemplateExecutor interface {
@@ -40,7 +41,14 @@ func (t *Templates) Get(scope, name string) (TemplateExecutor, error) {
 		panic("expected base scope template fs to exist")
 	}
 
-	templ, err := template.ParseFS(baseFS, "*.gohtml")
+	templ := template.New("")
+	templ = templ.Funcs(template.FuncMap{
+		"formatDuration": func(duration time.Duration) string {
+			return time.Unix(0, 0).UTC().Add(duration).Format("15:04")
+		},
+	})
+
+	templ, err := templ.ParseFS(baseFS, "*.gohtml")
 	if err != nil {
 		return nil, fmt.Errorf("parse base template: %w", err)
 	}
