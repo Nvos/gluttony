@@ -64,8 +64,8 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 	workDirFS := afero.NewBasePathFs(afero.NewOsFs(), workDir)
 	sessionStore := security.NewSessionStore()
 	userService := user.NewService(db, sessionStore)
-	recipeService := recipe.NewService(db)
 	mediaStore := media.NewStore(workDirFS)
+	recipeService := recipe.NewService(db, mediaStore)
 
 	reloader := reload.New()
 	if err := reloader.Watch(ctx, reload.WatchConfig{

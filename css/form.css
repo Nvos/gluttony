@@ -35,6 +35,28 @@
         }
     }
 
+    .radio {
+        @apply cursor-pointer border-2 border-neutral-border-1 rounded-full w-5 h-5 grid place-content-center appearance-none;
+
+        &::before {
+            content: "";
+            @apply w-3 h-3 rounded-full;
+            /*width: 0.65em;*/
+            /*height: 0.65em;*/
+            transform: scale(0);
+            transition: 120ms transform ease-in-out;
+            box-shadow: inset 1em 1em var(--color-primary-9);
+        }
+
+        &:checked::before {
+            transform: scale(1);
+        }
+
+        &:focus {
+            outline: var(--color-primary-7) solid 2px;
+        }
+    }
+
     .select {
         appearance: none;
         background-repeat: no-repeat;

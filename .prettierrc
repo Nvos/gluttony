@@ -1,6 +1,7 @@
 {
   "singleQuote": true,
   "plugins": [
-    "prettier-plugin-go-template"
+    "prettier-plugin-go-template",
+    "prettier-plugin-tailwindcss"
   ]
 }

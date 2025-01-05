@@ -1,35 +1,124 @@
 {{ define "sidebar" }}
   <div class="sidebar">
-    <div>
-      <div
-        class="flex gap-4 items-center h-18 px-6 border-b border-b-neutral-border-1"
-      >
-        {{ template "icons/logo" . }}
-        <span class="text-2xl">Gluttony</span>
-      </div>
-      <nav class="px-2">
-        <ul>
-          <li>
-            <a
-              href="/recipes"
-              class="link {{ if .IsURLActive "/recipes" }}active{{ end }}"
-            >
-              {{ template "icons/utensils-crossed" . }}
-              <span>Recipes</span>
-            </a>
-          </li>
-          <li>
-            <a
-              href="/settings"
-              class="link {{ if .IsURLActive "/settings" }}active{{ end }}
-            "
-            >
-              {{ template "icons/settings" . }}
-              <span>Settings</span></a
-            >
-          </li>
-        </ul>
-      </nav>
+    <div
+      class="border-b-neutral-border-1 flex h-18 items-center gap-4 border-b px-6"
+    >
+      {{ template "icons/logo" . }}
+      <span class="text-2xl">Gluttony</span>
     </div>
+    <nav class="flex-1 px-2">
+      <ul>
+        <li>
+          <a
+            href="/recipes"
+            class="link {{ if .IsURLActive "/recipes" }}active{{ end }}"
+          >
+            {{ template "icons/utensils-crossed" . }}
+            <span>Recipes</span>
+          </a>
+        </li>
+        <li>
+          <a
+            href="/settings"
+            class="link {{ if .IsURLActive "/settings" }}active{{ end }}"
+          >
+            {{ template "icons/settings" . }}
+            <span>Settings</span></a
+          >
+        </li>
+      </ul>
+    </nav>
+    <div
+      class="border-t-neutral-border-1 flex h-[72px] items-center border-t-1"
+    >
+      {{ template "theme-switcher" . }}
+    </div>
+  </div>
+{{ end }}
+
+{{ define "theme-switcher" }}
+  <div
+    class="relative w-full px-2"
+    x-data="{ isOpen: false, openedWithKeyboard: false, theme: localStorage.getItem('theme') }"
+    @keydown.esc.window="isOpen = false; openedWithKeyboard = false"
+  >
+    <button
+      type="button"
+      @click="isOpen = !isOpen"
+      aria-haspopup="true"
+      @keydown.space.prevent="openedWithKeyboard = true"
+      @keydown.enter.prevent="openedWithKeyboard = true"
+      @keydown.down.prevent="openedWithKeyboard = true"
+      :aria-expanded="isOpen | openedWithKeyboard"
+      class="link w-full cursor-pointer"
+    >
+      <span x-show="theme === 'dark'">
+        {{ template "icons/moon" . }}
+      </span>
+      <span x-show="theme === 'light'">
+        {{ template "icons/sun" . }}
+      </span>
+      <span
+        x-show="theme === null && window.matchMedia('(prefers-color-scheme: dark)').matches"
+      >
+        {{ template "icons/moon" . }}
+      </span>
+      <span
+        x-show="theme === null && !window.matchMedia('(prefers-color-scheme: dark)').matches"
+      >
+        {{ template "icons/sun" . }}
+      </span>
+      Change theme
+    </button>
+    <ul
+      x-cloak
+      x-show="isOpen || openedWithKeyboard"
+      x-transition
+      x-trap="openedWithKeyboard"
+      @click.outside="isOpen = false, openedWithKeyboard = false"
+      @keydown.down.prevent="$focus.wrap().next()"
+      @keydown.up.prevent="$focus.wrap().previous()"
+      class="border-neutral-border-1 bg-neutral-layer-2 absolute top-[-162px] right-0 left-0 z-[1] mx-2 flex origin-top flex-col gap-2 rounded-md border p-2 shadow-sm"
+    >
+      <li>
+        <button
+          role="menuitem"
+          class="button is-text-neutral w-full justify-start gap-2"
+          onclick="setTheme('light')"
+          @click.outside="isOpen = false, openedWithKeyboard = false"
+          :class="{ 'text-neutral-font': theme === 'light' }"
+          @click="theme = 'light'"
+        >
+          {{ template "icons/sun" . }}
+          Light
+        </button>
+      </li>
+      <li>
+        <button
+          role="menuitem"
+          class="button is-text-neutral w-full justify-start gap-2"
+          onclick="setTheme('dark')"
+          @click.outside="isOpen = false, openedWithKeyboard = false"
+          :class="{ 'text-neutral-font': theme === 'dark' }"
+          @click="theme = 'dark'"
+        >
+          {{ template "icons/moon" . }}
+          Dark
+        </button>
+      </li>
+      <li>
+        <button
+          role="menuitem"
+          class="button is-text-neutral w-full justify-start gap-2"
+          onclick="setTheme('system')"
+          @click.outside="isOpen = false, openedWithKeyboard = false"
+          @click="theme = null"
+          :class="{ 'text-neutral-font': theme === null }"
+        >
+          {{ template "icons/monitor" . }}
+          System
+        </button>
+      </li>
+    </ul>
   </div>
 {{ end }}

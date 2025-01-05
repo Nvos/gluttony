@@ -1,27 +1,16 @@
 {{- /*gotype: gluttony/internal/recipe.CreateFormModel */ -}}
 {{ define "title" }}Gluttony - Create recipe{{ end }}
 {{ define "view" }}
-  <div class="flex flex-1">
+  <div class="relative flex flex-1">
     {{ template "sidebar" . }}
     {{ template "sub-sidebar" . }}
     <div class="bg-neutral-layer-2 w-full">
       {{ template "recipe-create/header" . }}
-      <main class="flex  p-8">
+      <main class="flex p-8">
         {{ template "recipe-create/form" . }}
       </main>
     </div>
   </div>
-  <script>
-    const fileToDataUrl = (event, callback) => {
-      if (!event.target.files.length) return;
-
-      let file = event.target.files[0],
-        reader = new FileReader();
-
-      reader.readAsDataURL(file);
-      reader.onload = (e) => callback(e.target.result);
-    };
-  </script>
   {{ template "recipe-create/scripts" }}
 {{ end }}
 
@@ -29,34 +18,34 @@
   <form
     enctype="multipart/form-data"
     id="recipe-create-form"
-    class="flex flex-col gap-4 flex-1"
+    class="flex flex-1 flex-col gap-4"
     hx-target="this"
     hx-swap="outerHTML"
     hx-post="/recipes/create/form"
   >
     <h2 class="text-2xl">Summary</h2>
-    <hr class="w-full text-neutral-border-2" />
+    <hr class="text-neutral-border-2 w-full" />
     <div class="flex gap-4">
       <div class="form-control">
         <label for="cover-image">
           <span class="label">
-            <span class="label-text">Cover image</span>
+            <span class="label-text">Thumbnail</span>
           </span>
         </label>
         <div
-          x-data="{file: null, imageUrl: '{{ .Form.CoverImageURL }}'}"
-          class="w-96 focus-within:outline-2 outline-primary-8 h-60 relative flex bg-neutral-layer-1 border border-neutral-border-2 rounded-sm"
+          x-data="{file: null, imageUrl: '{{ .Form.ThumbnailImageURL }}'}"
+          class="outline-primary-8 bg-neutral-layer-1 border-neutral-border-2 relative flex h-60 w-96 rounded-sm border focus-within:outline-2"
         >
           <input
-            name="cover-image-url"
+            name="thumbnail-image-url"
             type="hidden"
-            value="{{ .Form.CoverImageURL }}"
+            value="{{ .Form.ThumbnailImageURL }}"
           />
           <input
-            id="cover-image"
+            id="thumbnail-image"
             type="file"
-            name="cover-image"
-            class="absolute inset-0 z-50 m-0 p-0 w-full h-full outline-none opacity-0"
+            name="thumbnail-image"
+            class="absolute inset-0 z-50 m-0 h-full w-full p-0 opacity-0 outline-none"
             x-on:change="file = $event.target.files[0]; fileToDataUrl($event, url => imageUrl = url )"
             x-on:dragover="$el.classList.add('active')"
             x-on:dragleave="$el.classList.remove('active')"
@@ -65,14 +54,14 @@
 
           <template x-if="imageUrl !== ''">
             <img
-              class="object-cover absolute h-full w-full rounded-sm"
+              class="absolute h-full w-full rounded-sm object-cover"
               :src="imageUrl"
               alt="Image upload preview"
             />
           </template>
 
           <template x-if="imageUrl === ''">
-            <div class="flex flex-1 justify-center items-center flex-col gap-1">
+            <div class="flex flex-1 flex-col items-center justify-center gap-1">
               <p>
                 <span class="underline">Click to upload</span> or drag & drop
                 image
@@ -84,12 +73,12 @@
           </template>
         </div>
       </div>
-      <div class="flex flex-col gap-4 max-w-124 w-124">
+      <div class="flex w-124 max-w-124 flex-col gap-4">
         <label class="form-control">
           <span class="label">
             <span class="label-text"
               >Title
-              <span class="ml-1 text-danger-11 text-xs">(Required)</span>
+              <span class="text-danger-11 ml-1 text-xs">(Required)</span>
             </span>
           </span>
           <input class="input" name="name" value="{{ .Form.Name }}" />
@@ -98,23 +87,56 @@
           <span class="label">
             <span class="label-text">Description</span>
           </span>
-          <textarea rows="6" class="input" name="description">
+          <textarea rows="6" class="input resize-none" name="description">
 {{ .Form.Description }}</textarea
           >
         </label>
       </div>
     </div>
     <div>
-      <h2 class="text-2xl m-0">Metadata & Nutrition</h2>
-      <h3 class="text-sm text-neutral-font-secondary">
+      <div class="form-control">
+        <span class="label">
+          <span class="label-text">Visibility</span>
+        </span>
+        <div class="flex gap-4">
+          <label class="flex cursor-pointer gap-2">
+            <input
+              type="radio"
+              checked="checked"
+              name="mode"
+              class="radio"
+              value="draft"
+            />
+            <div class="flex flex-col">
+              <span>Draft</span>
+              <span class="text-neutral-font-secondary text-sm">
+                Recipe will not be visible
+              </span>
+            </div>
+          </label>
+          <label class="flex cursor-pointer gap-2">
+            <input type="radio" name="mode" class="radio" value="public" />
+            <div class="flex flex-col">
+              <span>Public</span>
+              <span class="text-neutral-font-secondary text-sm">
+                Recipe will be visible for everyone
+              </span>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h2 class="m-0 text-2xl">Metadata & Nutrition</h2>
+      <h3 class="text-neutral-font-secondary text-sm">
         Nutrition is calculated per
-        <b class="text-neutral-font">Single Serving</b>
+        <b class="text-neutral-font">single serving</b>
       </h3>
     </div>
-    <hr class="w-full text-neutral-border-2" />
+    <hr class="text-neutral-border-2 w-full" />
     <div class="flex gap-4">
       <div class="form-control gap-2">
-        <div class="flex flex-col gap-4 max-w-96 w-96">
+        <div class="flex w-96 max-w-96 flex-col gap-4">
           <label class="form-control">
             <span class="label">
               <span class="label-text">Calories (kcal)</span>
@@ -156,12 +178,12 @@
           </label>
         </div>
       </div>
-      <div class="flex flex-col gap-4 w-124 max-w-124">
+      <div class="flex w-124 max-w-124 flex-col gap-4">
         <label class="form-control">
           <span class="label">
             <span class="label-text"
               >Source
-              <span class="text-xs text-danger-11">(Required)</span></span
+              <span class="text-danger-11 text-xs">(Required)</span></span
             >
           </span>
 
@@ -209,14 +231,14 @@
             <span class="label-text">Tags</span>
           </span>
           <div
-            class="p-3 bg-neutral-layer-1 border border-neutral-border-2 rounded-sm flex flex-col gap-4"
+            class="bg-neutral-layer-1 border-neutral-border-2 flex flex-col gap-4 rounded-sm border p-3"
           >
-            <div id="tags" class="flex gap-2">
+            <div id="tags" class="flex min-h-6 gap-2">
               {{ range $value := .Form.Tags }}
                 <button
                   type="button"
                   onclick="removeTag(event)"
-                  class="tag is-ghost-neutral cursor-pointer hover:text-neutral-font"
+                  class="tag is-ghost-neutral hover:text-neutral-font cursor-pointer"
                 >
                   <input type="hidden" name="tag" value="{{ $value }}" />
                   <span class="tag-text">{{ $value }}</span>
@@ -228,7 +250,7 @@
               <button
                 type="button"
                 onclick="removeTag(event)"
-                class="tag is-ghost-neutral cursor-pointer hover:text-neutral-font"
+                class="tag is-ghost-neutral hover:text-neutral-font cursor-pointer"
               >
                 <input type="hidden" name="tag" />
                 <span class="tag-text"></span>
@@ -253,16 +275,16 @@
       </div>
     </div>
     <h2 class="text-2xl">Ingredients</h2>
-    <hr class="w-full text-neutral-border-2" />
+    <hr class="text-neutral-border-2 w-full" />
     {{ template "recipe-create/ingredients" . }}
     <h2 class="text-2xl">Instructions</h2>
-    <hr class="w-full text-neutral-border-2" />
+    <hr class="text-neutral-border-2 w-full" />
     <div class="form-control w-226">
       <textarea
         id="instructions"
         aria-label="Instructions"
         rows="3"
-        class="input w-full min-h-[320px] max-h-[80dvh]"
+        class="input max-h-[80dvh] min-h-[320px] w-full"
         name="instructions"
       >
 {{ .Form.Instructions }}</textarea
@@ -273,7 +295,7 @@
 
 {{ define "sub-sidebar" }}
   <div class="sidebar">
-    <div class="h-18 px-2 flex items-center border-b border-b-neutral-border-1">
+    <div class="border-b-neutral-border-1 flex h-18 items-center border-b px-2">
       <a class="link w-full" href="/recipes/create">
         {{ template "icons/plus" }}
         <span>New Recipe Draft</span>
@@ -304,27 +326,26 @@
 
 {{ define "recipe-create/header" }}
   <header
-    class="border-b border-neutral-border-1 px-8 h-[72px] flex justify-between items-center bg-neutral-layer-2"
+    class="border-neutral-border-1 bg-neutral-layer-2/80 sticky top-0 z-50 flex h-[72px] items-center justify-between border-b px-8 backdrop-blur-md"
   >
     <div class="form-control">
       <a href="/recipes" class="button is-ghost-neutral">Go back to recipes</a>
     </div>
     <div class="flex gap-4">
       <button
-        class="button is-ghost-neutral"
+        class="button is-solid-primary"
         type="submit"
         form="recipe-create-form"
       >
-        Save
+        Create
       </button>
-      <button class="button is-solid-primary">Publish</button>
     </div>
   </header>
 {{ end }}
 
 {{ define "recipe-create/ingredient-row" }}
-  <div class="flex gap-4 flex-1 w-full">
-    <div class="flex gap-4 max-w-96 w-96">
+  <div class="flex w-full flex-1 gap-4">
+    <div class="flex w-96 max-w-96 gap-4">
       <label class="form-control flex-1">
         {{ if eq .Order 0 }}
           <span class="label">
@@ -388,7 +409,7 @@
         </select>
       </label>
     </div>
-    <div class="flex gap-4 max-w-124 w-124">
+    <div class="flex w-124 max-w-124 gap-4">
       <label class="form-control w-full">
         {{ if eq .Order 0 }}
           <span class="label">
@@ -409,7 +430,7 @@
   </div>
 {{ end }}
 {{ define "recipe-create/ingredients" }}
-  <div class="flex flex-col gap-4 w-full">
+  <div class="flex w-full flex-col gap-4">
     <div id="ingredients" class="flex flex-col gap-4">
       {{ range $val := .Form.Ingredients }}
         {{ template "recipe-create/ingredient-row" $val }}
@@ -423,7 +444,7 @@
       <option>Apple</option>
       <option>Pork</option>
     </datalist>
-    <div class="flex justify-end w-224">
+    <div class="flex w-224 justify-end">
       <button
         class="button is-ghost-neutral"
         type="button"
@@ -437,6 +458,15 @@
 
 {{ define "recipe-create/scripts" }}
   <script>
+    const fileToDataUrl = (event, callback) => {
+      if (!event.target.files.length) return;
+
+      let file = event.target.files[0],
+        reader = new FileReader();
+
+      reader.readAsDataURL(file);
+      reader.onload = (e) => callback(e.target.result);
+    };
     // Tags
     const removeTag = (event) => {
       event.target.closest('.tag').remove();
@@ -483,13 +513,10 @@
     };
 
     const autoResizeTextarea = (event) => {
-      console.log(event);
       if (event.target.scrollHeight <= 320) {
-        console.log('out', event.target.scrollHeight);
         return;
       }
 
-      console.log(event.target.scrollHeight);
       event.target.style.height = 'auto';
       event.target.style.height = `${event.target.scrollHeight}px`;
       event.target.scrollIntoView({ block: 'end' });

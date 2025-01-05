@@ -11,7 +11,7 @@
 }
 
 .sidebar {
-    @apply min-h-dvh min-w-64 flex flex-col bg-neutral-layer-1 shadow-sm border-r border-neutral-border-1;
+    @apply h-dvh overflow-y-auto overscroll-contain top-0 sticky min-w-64 flex flex-col bg-neutral-layer-1 shadow-sm border-r border-neutral-border-1;
 
     nav {
         @apply py-4;

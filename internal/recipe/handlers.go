@@ -2,7 +2,9 @@ package recipe
 
 import (
 	"fmt"
+	"gluttony/internal/ingredient"
 	"gluttony/internal/share"
+	"gluttony/x/httpx"
 	"io"
 	"net/http"
 	"net/url"
@@ -12,10 +14,12 @@ import (
 )
 
 type Ingredient struct {
+	ingredient.Ingredient
+
 	Order    int8
-	Name     string
 	Quantity float32
-	Unit     string
+	// TODO: unit enum
+	Unit string
 }
 
 type Nutrition struct {
@@ -26,17 +30,32 @@ type Nutrition struct {
 }
 
 type CreateForm struct {
-	Name            string
-	Description     string
-	Source          string
-	Instructions    string
-	CoverImageURL   string
-	Servings        int8
-	PreparationTime time.Duration
-	CookTime        time.Duration
-	Tags            []string
-	Ingredients     []Ingredient
-	Nutrition       Nutrition
+	Name              string
+	Description       string
+	Source            string
+	Instructions      string
+	ThumbnailImageURL string
+	Servings          int8
+	PreparationTime   time.Duration
+	CookTime          time.Duration
+	Tags              []string
+	Ingredients       []Ingredient
+	Nutrition         Nutrition
+}
+
+func (form CreateForm) ToInput() CreateInput {
+	return CreateInput{
+		Name:            form.Name,
+		Description:     form.Description,
+		Source:          form.Source,
+		Instructions:    form.Instructions,
+		Servings:        form.Servings,
+		PreparationTime: form.PreparationTime,
+		CookTime:        form.CookTime,
+		Tags:            form.Tags,
+		Ingredients:     form.Ingredients,
+		Nutrition:       form.Nutrition,
+	}
 }
 
 type CreateFormModel struct {
@@ -58,7 +77,9 @@ func RecipeCreateViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Req
 			Form: CreateForm{
 				Ingredients: []Ingredient{
 					{
-						Name:     "",
+						Ingredient: ingredient.Ingredient{
+							Name: "",
+						},
 						Quantity: 0,
 						Unit:     "g",
 					},
@@ -101,7 +122,9 @@ func RecipesCreateHandler(deps *Deps) func(w http.ResponseWriter, r *http.Reques
 			Form:    NewRecipeForm(r.MultipartForm.Value),
 		}
 
-		coverImage := r.MultipartForm.File["cover-image"]
+		input := model.Form.ToInput()
+
+		coverImage := r.MultipartForm.File["thumbnail-image"]
 		if len(coverImage) == 1 {
 			file, err := coverImage[0].Open()
 			if err != nil {
@@ -109,15 +132,15 @@ func RecipesCreateHandler(deps *Deps) func(w http.ResponseWriter, r *http.Reques
 				panic(fmt.Errorf("could not open cover image: %v", err))
 			}
 			defer file.Close()
-			coverImage[0].Header.Get("Content-Type")
 
-			fileName, err := deps.mediaStore.Store(file)
-			if err != nil {
-				// TODO: handle err
-				panic(fmt.Errorf("could not store cover image: %v", err))
-			}
+			input.ThumbnailImage = file
+		}
 
-			model.Form.CoverImageURL = fmt.Sprintf("/media/%s", fileName)
+		err := deps.service.Create(r.Context(), input)
+		if err == nil {
+			httpx.HTMXRedirect(w, "/recipes")
+
+			return
 		}
 
 		get, err := deps.templates.Get("recipe", "recipe_create")
@@ -138,17 +161,17 @@ func NewRecipeForm(values url.Values) CreateForm {
 
 	quantities := values["quantity"]
 	units := values["unit"]
-	for i, ingredient := range values["ingredient"] {
-		value, err := strconv.ParseFloat(quantities[i], 32)
+	for i, name := range values["ingredient"] {
+		quantity, err := strconv.ParseFloat(quantities[i], 32)
 		if err != nil {
 			// TODO: handle
 			panic(err)
 		}
 
 		ingredients[i].Order = int8(i)
-		ingredients[i].Quantity = float32(value)
+		ingredients[i].Quantity = float32(quantity)
 		ingredients[i].Unit = units[i]
-		ingredients[i].Name = ingredient
+		ingredients[i].Name = name
 	}
 
 	servings, err := strconv.ParseInt(values.Get("servings"), 10, 8)
@@ -166,16 +189,16 @@ func NewRecipeForm(values url.Values) CreateForm {
 	carbs, _ := strconv.ParseFloat(values.Get("carbs"), 32)
 
 	return CreateForm{
-		Name:            values.Get("name"),
-		Description:     values.Get("description"),
-		Source:          values.Get("source"),
-		Instructions:    values.Get("instructions"),
-		Servings:        int8(servings),
-		PreparationTime: preparationDuration,
-		CookTime:        cookDuration,
-		Tags:            values["tag"],
-		Ingredients:     ingredients,
-		CoverImageURL:   values.Get("cover-image-url"),
+		Name:              values.Get("name"),
+		Description:       values.Get("description"),
+		Source:            values.Get("source"),
+		Instructions:      values.Get("instructions"),
+		Servings:          int8(servings),
+		PreparationTime:   preparationDuration,
+		CookTime:          cookDuration,
+		Tags:              values["tag"],
+		Ingredients:       ingredients,
+		ThumbnailImageURL: values.Get("cover-image-url"),
 		Nutrition: Nutrition{
 			Calories: float32(calories),
 			Fat:      float32(fat),
@@ -186,7 +209,6 @@ func NewRecipeForm(values url.Values) CreateForm {
 }
 
 // TODO: move to some time utils
-
 func ParseFormDuration(value string) (time.Duration, error) {
 	parts := strings.Split(value, ":")
 	if len(parts) != 2 {
@@ -197,5 +219,5 @@ func ParseFormDuration(value string) (time.Duration, error) {
 }
 
 type MediaStore interface {
-	Store(file io.Reader) (string, error)
+	UploadImage(file io.Reader) (string, error)
 }

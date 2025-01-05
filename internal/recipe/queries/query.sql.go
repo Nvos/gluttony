@@ -7,36 +7,137 @@ package queries
 
 import (
 	"context"
-	"time"
+	"database/sql"
 )
 
-const createRecipe = `-- name: CreateRecipe :one
+const createIngredient = `-- name: CreateIngredient :one
+INSERT INTO ingredients (name)
+VALUES (?)
+ON CONFLICT DO NOTHING
+RETURNING id
+`
 
-INSERT INTO recipes (name, content_markdown, created_at)
-VALUES (?, ?, ?)
-RETURNING id, name, content_markdown, created_at
+func (q *Queries) CreateIngredient(ctx context.Context, name string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createIngredient, name)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createNutrition = `-- name: CreateNutrition :exec
+INSERT INTO recipe_nutrition (recipe_id, calories, fat, carbs, protein)
+VALUES (?, ?, ?, ?, ?)
+`
+
+type CreateNutritionParams struct {
+	RecipeID int64
+	Calories float64
+	Fat      float64
+	Carbs    float64
+	Protein  float64
+}
+
+func (q *Queries) CreateNutrition(ctx context.Context, arg CreateNutritionParams) error {
+	_, err := q.db.ExecContext(ctx, createNutrition,
+		arg.RecipeID,
+		arg.Calories,
+		arg.Fat,
+		arg.Carbs,
+		arg.Protein,
+	)
+	return err
+}
+
+const createRecipe = `-- name: CreateRecipe :one
+INSERT INTO recipes (name, description, instructions_markdown, thumbnail_url,
+                     cook_time_seconds, preparation_time_seconds, source, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id
 `
 
 type CreateRecipeParams struct {
-	Name            string
-	ContentMarkdown string
-	CreatedAt       time.Time
+	Name                   string
+	Description            string
+	InstructionsMarkdown   string
+	ThumbnailUrl           sql.NullString
+	CookTimeSeconds        int64
+	PreparationTimeSeconds int64
+	Source                 string
+	UpdatedAt              sql.NullTime
 }
 
-func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (Recipe, error) {
-	row := q.db.QueryRowContext(ctx, createRecipe, arg.Name, arg.ContentMarkdown, arg.CreatedAt)
-	var i Recipe
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.ContentMarkdown,
-		&i.CreatedAt,
+func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createRecipe,
+		arg.Name,
+		arg.Description,
+		arg.InstructionsMarkdown,
+		arg.ThumbnailUrl,
+		arg.CookTimeSeconds,
+		arg.PreparationTimeSeconds,
+		arg.Source,
+		arg.UpdatedAt,
 	)
-	return i, err
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createRecipeIngredient = `-- name: CreateRecipeIngredient :exec
+INSERT INTO recipe_ingredients (recipe_order, recipe_id, ingredient_id, unit, quantity)
+VALUES (?, ?, ?, ?, ?)
+`
+
+type CreateRecipeIngredientParams struct {
+	RecipeOrder  int64
+	RecipeID     int64
+	IngredientID int64
+	Unit         string
+	Quantity     int64
+}
+
+func (q *Queries) CreateRecipeIngredient(ctx context.Context, arg CreateRecipeIngredientParams) error {
+	_, err := q.db.ExecContext(ctx, createRecipeIngredient,
+		arg.RecipeOrder,
+		arg.RecipeID,
+		arg.IngredientID,
+		arg.Unit,
+		arg.Quantity,
+	)
+	return err
+}
+
+const createRecipeTag = `-- name: CreateRecipeTag :exec
+INSERT INTO recipe_tags (recipe_order, recipe_id, tag_id)
+VALUES (?, ?, ?)
+`
+
+type CreateRecipeTagParams struct {
+	RecipeOrder int64
+	RecipeID    int64
+	TagID       int64
+}
+
+func (q *Queries) CreateRecipeTag(ctx context.Context, arg CreateRecipeTagParams) error {
+	_, err := q.db.ExecContext(ctx, createRecipeTag, arg.RecipeOrder, arg.RecipeID, arg.TagID)
+	return err
+}
+
+const createTag = `-- name: CreateTag :one
+INSERT INTO tags (name)
+VALUES (?)
+ON CONFLICT DO NOTHING
+RETURNING id
+`
+
+func (q *Queries) CreateTag(ctx context.Context, name string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createTag, name)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const getRecipe = `-- name: GetRecipe :one
-SELECT id, name, content_markdown, created_at
+SELECT id, name, description, instructions_markdown, thumbnail_url, servings, cook_time_seconds, preparation_time_seconds, source, created_at, updated_at
 FROM recipes
 WHERE id = ?
 LIMIT 1
@@ -48,8 +149,15 @@ func (q *Queries) GetRecipe(ctx context.Context, id int64) (Recipe, error) {
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
-		&i.ContentMarkdown,
+		&i.Description,
+		&i.InstructionsMarkdown,
+		&i.ThumbnailUrl,
+		&i.Servings,
+		&i.CookTimeSeconds,
+		&i.PreparationTimeSeconds,
+		&i.Source,
 		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
