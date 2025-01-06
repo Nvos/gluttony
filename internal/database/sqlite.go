@@ -15,13 +15,15 @@ var embedMigrations embed.FS
 
 func New(workDir string) (*sql.DB, error) {
 	dbPath := filepath.Join(workDir, "sqlite.db")
-	create, err := os.Create(dbPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := create.Close(); err != nil {
-		return nil, err
+	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+		create, err := os.Create(dbPath)
+		if err != nil {
+			return nil, err
+		}
+		
+		if err := create.Close(); err != nil {
+			return nil, err
+		}
 	}
 
 	db, err := sql.Open("sqlite", dbPath)

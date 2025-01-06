@@ -12,6 +12,7 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (username, password)
 VALUES (?, ?)
+ON CONFLICT (username) DO UPDATE SET username=EXCLUDED.username
 RETURNING id, username, password, role
 `
 

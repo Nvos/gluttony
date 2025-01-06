@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"gluttony/internal/ingredient"
 	"gluttony/internal/recipe/queries"
 	"io"
 	"time"
@@ -75,30 +76,14 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (err error) {
 
 	txQueries := s.queries.WithTx(tx)
 
-	ingredients := make([]Ingredient, len(input.Ingredients))
-	for i := range input.Ingredients {
-		id, err := txQueries.CreateIngredient(ctx, input.Ingredients[i].Name)
-		if err != nil {
-			return fmt.Errorf("create ingredient: %w", err)
-		}
-
-		ingredients[i].ID = int(id)
-		ingredients[i].Name = input.Ingredients[i].Name
-		ingredients[i].Order = int8(i)
-		ingredients[i].Quantity = input.Ingredients[i].Quantity
-		ingredients[i].Unit = input.Ingredients[i].Unit
+	ingredients, err := s.createOrGetIngredients(ctx, txQueries, input.Ingredients)
+	if err != nil {
+		return fmt.Errorf("create ingredients: %w", err)
 	}
 
-	tags := make([]Tag, len(input.Tags))
-	for i := range input.Tags {
-		id, err := txQueries.CreateTag(ctx, input.Tags[i])
-		if err != nil {
-			return fmt.Errorf("create tag: %w", err)
-		}
-
-		tags[i].Name = input.Tags[i]
-		tags[i].ID = int(id)
-		tags[i].Order = i
+	tags, err := s.createOrGetTags(ctx, txQueries, input.Tags)
+	if err != nil {
+		return fmt.Errorf("create tags: %w", err)
 	}
 
 	createRecipeParams := queries.CreateRecipeParams{
@@ -154,4 +139,178 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (err error) {
 	}
 
 	return nil
+}
+
+func (s *Service) createOrGetTags(
+	ctx context.Context,
+	txQueries *queries.Queries,
+	tags []string,
+) ([]Tag, error) {
+
+	existing, err := txQueries.AllTagsByNames(ctx, tags)
+	if err != nil {
+		return nil, fmt.Errorf("get ingredients: %w", err)
+	}
+
+	existingLookup := make(map[string]queries.Tag, len(existing))
+	for i := range existing {
+		existingLookup[existing[i].Name] = existing[i]
+	}
+
+	out := make([]Tag, len(tags))
+	for i := range tags {
+		var tagID int64
+		if value, ok := existingLookup[tags[i]]; ok {
+			tagID = value.ID
+		} else {
+			id, err := txQueries.CreateTag(ctx, tags[i])
+			if err != nil {
+				return nil, fmt.Errorf("create tag: %w", err)
+			}
+
+			tagID = id
+		}
+
+		out[i].Name = tags[i]
+		out[i].ID = int(tagID)
+		out[i].Order = i
+	}
+
+	return out, nil
+}
+
+func (s *Service) createOrGetIngredients(
+	ctx context.Context,
+	txQueries *queries.Queries,
+	ingredients []Ingredient,
+) ([]Ingredient, error) {
+
+	names := make([]string, len(ingredients))
+	for i := range ingredients {
+		names[i] = ingredients[i].Name
+	}
+
+	existingIngredients, err := txQueries.AllIngredientsByNames(ctx, names)
+	if err != nil {
+		return nil, fmt.Errorf("get ingredients: %w", err)
+	}
+
+	existingLookup := make(map[string]queries.Ingredient, len(existingIngredients))
+	for i := range existingIngredients {
+		existingLookup[existingIngredients[i].Name] = existingIngredients[i]
+	}
+
+	out := make([]Ingredient, len(ingredients))
+	for i := range ingredients {
+		var ingredientID int64
+		if value, ok := existingLookup[ingredients[i].Name]; ok {
+			ingredientID = value.ID
+		} else {
+			id, err := txQueries.CreateIngredient(ctx, ingredients[i].Name)
+			if err != nil {
+				return nil, fmt.Errorf("create ingredient: %w", err)
+			}
+
+			ingredientID = id
+		}
+
+		out[i].ID = int(ingredientID)
+		out[i].Name = ingredients[i].Name
+		out[i].Order = int8(i)
+		out[i].Quantity = ingredients[i].Quantity
+		out[i].Unit = ingredients[i].Unit
+	}
+
+	return out, nil
+}
+
+func (s *Service) AllPartial(ctx context.Context, input SearchInput) ([]Partial, error) {
+	recipes, err := s.queries.AllPartialRecipes(ctx, sql.NullString{
+		String: input.Query,
+		Valid:  input.Query != "",
+	})
+	if err != nil {
+		return []Partial{}, fmt.Errorf("get all recipes: %w", err)
+	}
+
+	recipeIDs := make([]int64, len(recipes))
+	out := make([]Partial, len(recipes))
+	for i := range recipes {
+		recipeIDs[i] = recipes[i].ID
+
+		out[i].ID = int(recipes[i].ID)
+		out[i].Name = recipes[i].Name
+		out[i].Description = recipes[i].Description
+
+		if recipes[i].ThumbnailUrl.Valid {
+			out[i].ThumbnailImageURL = recipes[i].ThumbnailUrl.String
+		}
+	}
+
+	tags, err := s.allTagsByRecipeIDs(ctx, recipeIDs)
+	if err != nil {
+		return []Partial{}, err
+	}
+
+	for i := range out {
+		recipeTags, ok := tags[int64(out[i].ID)]
+		if !ok {
+			continue
+		}
+
+		out[i].Tags = recipeTags
+	}
+
+	return out, nil
+}
+
+func (s *Service) allIngredientsByRecipeIDs(
+	ctx context.Context,
+	recipeIDs []int64,
+) (map[int64][]Ingredient, error) {
+	ingredients, err := s.queries.AllRecipeIngredients(ctx, recipeIDs)
+	if err != nil {
+		return nil, fmt.Errorf("get all ingredients by recipe ids = %+v: %w", recipeIDs, err)
+	}
+
+	out := make(map[int64][]Ingredient, len(ingredients))
+	for i := range ingredients {
+		if out[ingredients[i].RecipeID] == nil {
+			out[ingredients[i].RecipeID] = []Ingredient{}
+		}
+
+		out[ingredients[i].RecipeID] = append(out[ingredients[i].RecipeID], Ingredient{
+			Ingredient: ingredient.Ingredient{
+				ID:   int(ingredients[i].ID),
+				Name: ingredients[i].Name,
+			},
+			Order:    int8(ingredients[i].RecipeOrder),
+			Quantity: float32(ingredients[i].Quantity),
+			Unit:     ingredients[i].Unit,
+		})
+	}
+
+	return out, nil
+}
+
+func (s *Service) allTagsByRecipeIDs(ctx context.Context, recipeIDs []int64) (map[int64][]Tag, error) {
+	tags, err := s.queries.AllRecipeTags(ctx, recipeIDs)
+	if err != nil {
+		return nil, fmt.Errorf("get all tags by recipe ids = %+v: %w", recipeIDs, err)
+	}
+
+	out := make(map[int64][]Tag, len(tags))
+	for i := range tags {
+		if out[tags[i].RecipeID] == nil {
+			out[tags[i].RecipeID] = []Tag{}
+		}
+
+		out[tags[i].RecipeID] = append(out[tags[i].RecipeID], Tag{
+			ID:    int(tags[i].ID),
+			Order: int(tags[i].RecipeOrder),
+			Name:  tags[i].Name,
+		})
+	}
+
+	return out, nil
 }

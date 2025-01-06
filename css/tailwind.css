@@ -80,3 +80,20 @@
   }
 }
 
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-neutral-2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-6);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neutral-7);
+}

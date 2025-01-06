@@ -58,9 +58,14 @@ func (form CreateForm) ToInput() CreateInput {
 	}
 }
 
-type CreateFormModel struct {
+type CreateModel struct {
 	*share.Context
 	Form CreateForm
+}
+
+type ListModel struct {
+	*share.Context
+	Recipes []Partial
 }
 
 func RecipeCreateViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +77,7 @@ func RecipeCreateViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Req
 			panic(fmt.Errorf("could not get recipe template: %v", err))
 		}
 
-		model := CreateFormModel{
+		model := CreateModel{
 			Context: appCtx,
 			Form: CreateForm{
 				Ingredients: []Ingredient{
@@ -96,14 +101,35 @@ func RecipeCreateViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Req
 
 func RecipesViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		appCtx := share.MustGetContext(r.Context())
 		get, err := deps.templates.Get("recipe", "recipes")
 		if err != nil {
 			// TODO: proper err
 			panic(fmt.Errorf("could not get recipe template: %v", err))
 		}
 
-		err = get.View(w, appCtx)
+		recipePartials, err := deps.service.AllPartial(r.Context(), SearchInput{
+			Query: r.URL.Query().Get("query"),
+		})
+		if err != nil {
+			// TODO: proper err
+			panic(fmt.Errorf("could not get recipe partials: %v", err))
+		}
+
+		model := ListModel{
+			Context: share.MustGetContext(r.Context()),
+			Recipes: recipePartials,
+		}
+
+		if httpx.IsHTMXRequest(r) {
+			if err := get.Fragment(w, "recipes/list", model); err != nil {
+				// TODO: proper err
+				panic(fmt.Errorf("could not list recipes: %v", err))
+			}
+
+			return
+		}
+
+		err = get.View(w, model)
 		if err != nil {
 			panic(fmt.Errorf("could not get recipe template: %v", err))
 		}
@@ -117,7 +143,7 @@ func RecipesCreateHandler(deps *Deps) func(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
-		model := CreateFormModel{
+		model := CreateModel{
 			Context: share.MustGetContext(r.Context()),
 			Form:    NewRecipeForm(r.MultipartForm.Value),
 		}
@@ -142,6 +168,7 @@ func RecipesCreateHandler(deps *Deps) func(w http.ResponseWriter, r *http.Reques
 
 			return
 		}
+		println(fmt.Sprintf("could not create recipe template: %v", err))
 
 		get, err := deps.templates.Get("recipe", "recipe_create")
 		if err != nil {

@@ -39,7 +39,7 @@ CREATE TABLE recipe_tags
 (
     recipe_order INTEGER NOT NULL,
     recipe_id    INTEGER NOT NULL REFERENCES recipes (id),
-    tag_id       INTEGER NOT NULL REFERENCES ingredients (id),
+    tag_id       INTEGER NOT NULL REFERENCES tags (id),
 
     PRIMARY KEY (recipe_id, tag_id)
 );

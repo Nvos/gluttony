@@ -9,6 +9,11 @@ import (
 	"time"
 )
 
+type Ingredient struct {
+	ID   int64
+	Name string
+}
+
 type Recipe struct {
 	ID                     int64
 	Name                   string
@@ -21,4 +26,9 @@ type Recipe struct {
 	Source                 string
 	CreatedAt              time.Time
 	UpdatedAt              sql.NullTime
+}
+
+type Tag struct {
+	ID   int64
+	Name string
 }

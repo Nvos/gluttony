@@ -8,12 +8,313 @@ package queries
 import (
 	"context"
 	"database/sql"
+	"strings"
+	"time"
 )
+
+const allIngredientsByNames = `-- name: AllIngredientsByNames :many
+SELECT id, name
+FROM ingredients
+WHERE name in (/*SLICE:names*/?)
+`
+
+func (q *Queries) AllIngredientsByNames(ctx context.Context, names []string) ([]Ingredient, error) {
+	query := allIngredientsByNames
+	var queryParams []interface{}
+	if len(names) > 0 {
+		for _, v := range names {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:names*/?", strings.Repeat(",?", len(names))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:names*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Ingredient
+	for rows.Next() {
+		var i Ingredient
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const allPartialRecipes = `-- name: AllPartialRecipes :many
+SELECT id, name, description, thumbnail_url
+FROM recipes
+WHERE CAST(?1 as TEXT) IS NULL
+   OR lower(name) like '%' || lower(?1) || '%'
+ORDER BY id desc
+`
+
+type AllPartialRecipesRow struct {
+	ID           int64
+	Name         string
+	Description  string
+	ThumbnailUrl sql.NullString
+}
+
+func (q *Queries) AllPartialRecipes(ctx context.Context, search sql.NullString) ([]AllPartialRecipesRow, error) {
+	rows, err := q.db.QueryContext(ctx, allPartialRecipes, search)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AllPartialRecipesRow
+	for rows.Next() {
+		var i AllPartialRecipesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.ThumbnailUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const allRecipeIngredients = `-- name: AllRecipeIngredients :many
+SELECT id, name, recipe_order, recipe_id, ingredient_id, unit, quantity
+FROM ingredients
+         JOIN recipe_ingredients ri on ingredients.id = ri.ingredient_id
+WHERE recipe_id in (/*SLICE:ids*/?)
+ORDER BY recipe_id, recipe_order
+`
+
+type AllRecipeIngredientsRow struct {
+	ID           int64
+	Name         string
+	RecipeOrder  int64
+	RecipeID     int64
+	IngredientID int64
+	Unit         string
+	Quantity     int64
+}
+
+func (q *Queries) AllRecipeIngredients(ctx context.Context, ids []int64) ([]AllRecipeIngredientsRow, error) {
+	query := allRecipeIngredients
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AllRecipeIngredientsRow
+	for rows.Next() {
+		var i AllRecipeIngredientsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.RecipeOrder,
+			&i.RecipeID,
+			&i.IngredientID,
+			&i.Unit,
+			&i.Quantity,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const allRecipeTags = `-- name: AllRecipeTags :many
+SELECT id, name, recipe_order, recipe_id, tag_id
+FROM tags
+         JOIN recipe_tags rt on tags.id = rt.tag_id
+WHERE recipe_id in (/*SLICE:ids*/?)
+ORDER BY recipe_id, recipe_order
+`
+
+type AllRecipeTagsRow struct {
+	ID          int64
+	Name        string
+	RecipeOrder int64
+	RecipeID    int64
+	TagID       int64
+}
+
+func (q *Queries) AllRecipeTags(ctx context.Context, ids []int64) ([]AllRecipeTagsRow, error) {
+	query := allRecipeTags
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AllRecipeTagsRow
+	for rows.Next() {
+		var i AllRecipeTagsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.RecipeOrder,
+			&i.RecipeID,
+			&i.TagID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const allRecipes = `-- name: AllRecipes :many
+SELECT id, name, description, instructions_markdown, thumbnail_url, servings, cook_time_seconds, preparation_time_seconds, source, created_at, updated_at, recipe_id, calories, fat, carbs, protein
+FROM recipes
+         JOIN recipe_nutrition rn on recipes.id = rn.recipe_id
+`
+
+type AllRecipesRow struct {
+	ID                     int64
+	Name                   string
+	Description            string
+	InstructionsMarkdown   string
+	ThumbnailUrl           sql.NullString
+	Servings               int64
+	CookTimeSeconds        int64
+	PreparationTimeSeconds int64
+	Source                 string
+	CreatedAt              time.Time
+	UpdatedAt              sql.NullTime
+	RecipeID               int64
+	Calories               float64
+	Fat                    float64
+	Carbs                  float64
+	Protein                float64
+}
+
+func (q *Queries) AllRecipes(ctx context.Context) ([]AllRecipesRow, error) {
+	rows, err := q.db.QueryContext(ctx, allRecipes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AllRecipesRow
+	for rows.Next() {
+		var i AllRecipesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.InstructionsMarkdown,
+			&i.ThumbnailUrl,
+			&i.Servings,
+			&i.CookTimeSeconds,
+			&i.PreparationTimeSeconds,
+			&i.Source,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.RecipeID,
+			&i.Calories,
+			&i.Fat,
+			&i.Carbs,
+			&i.Protein,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const allTagsByNames = `-- name: AllTagsByNames :many
+SELECT id, name
+FROM tags
+WHERE name in (/*SLICE:names*/?)
+`
+
+func (q *Queries) AllTagsByNames(ctx context.Context, names []string) ([]Tag, error) {
+	query := allTagsByNames
+	var queryParams []interface{}
+	if len(names) > 0 {
+		for _, v := range names {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:names*/?", strings.Repeat(",?", len(names))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:names*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Tag
+	for rows.Next() {
+		var i Tag
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
 
 const createIngredient = `-- name: CreateIngredient :one
 INSERT INTO ingredients (name)
 VALUES (?)
-ON CONFLICT DO NOTHING
 RETURNING id
 `
 
@@ -125,7 +426,6 @@ func (q *Queries) CreateRecipeTag(ctx context.Context, arg CreateRecipeTagParams
 const createTag = `-- name: CreateTag :one
 INSERT INTO tags (name)
 VALUES (?)
-ON CONFLICT DO NOTHING
 RETURNING id
 `
 

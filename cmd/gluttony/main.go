@@ -49,7 +49,8 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 		return fmt.Errorf("os.Getwd: %w", err)
 	}
 
-	workDir := filepath.Join(wd, "work-directory")
+	// TODO: configurable
+	workDir := filepath.Clean("/mnt/c/Users/HARDPC/Documents/gluttony-workdir")
 
 	if err := os.MkdirAll(workDir, os.ModePerm); err != nil {
 		return err

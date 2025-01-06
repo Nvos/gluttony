@@ -6,6 +6,18 @@ import (
 	"time"
 )
 
+type Partial struct {
+	ID                int
+	Name              string
+	Description       string
+	ThumbnailImageURL string
+	Tags              []Tag
+}
+
+type SearchInput struct {
+	Query string
+}
+
 type Deps struct {
 	service    *Service
 	logger     *slog.Logger
