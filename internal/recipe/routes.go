@@ -6,8 +6,9 @@ import (
 
 func Routes(deps *Deps) func(r chi.Router) {
 	return func(r chi.Router) {
-		r.Get("/recipes/create", RecipeCreateViewHandler(deps))
-		r.Post("/recipes/create/form", RecipesCreateHandler(deps))
+		r.Get("/recipes/create", CreateViewHandler(deps))
+		r.Post("/recipes/create/form", CreateFormHandler(deps))
 		r.Get("/recipes", RecipesViewHandler(deps))
+		r.Get("/recipes/{recipe_id}", ViewHandler(deps))
 	}
 }

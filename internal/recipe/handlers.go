@@ -2,32 +2,16 @@ package recipe
 
 import (
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"gluttony/internal/ingredient"
 	"gluttony/internal/share"
 	"gluttony/x/httpx"
-	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 )
-
-type Ingredient struct {
-	ingredient.Ingredient
-
-	Order    int8
-	Quantity float32
-	// TODO: unit enum
-	Unit string
-}
-
-type Nutrition struct {
-	Calories float32
-	Fat      float32
-	Carbs    float32
-	Protein  float32
-}
 
 type CreateForm struct {
 	Name              string
@@ -68,7 +52,12 @@ type ListModel struct {
 	Recipes []Partial
 }
 
-func RecipeCreateViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) {
+type ViewModel struct {
+	*share.Context
+	Recipe Full
+}
+
+func CreateViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		appCtx := share.MustGetContext(r.Context())
 		get, err := deps.templates.Get("recipe", "recipe_create")
@@ -80,6 +69,7 @@ func RecipeCreateViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Req
 		model := CreateModel{
 			Context: appCtx,
 			Form: CreateForm{
+				Servings: 1,
 				Ingredients: []Ingredient{
 					{
 						Ingredient: ingredient.Ingredient{
@@ -136,7 +126,7 @@ func RecipesViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-func RecipesCreateHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) {
+func CreateFormHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseMultipartForm(1 << (10 * 2)); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -177,6 +167,38 @@ func RecipesCreateHandler(deps *Deps) func(w http.ResponseWriter, r *http.Reques
 		}
 
 		err = get.Fragment(w, "recipe-create/form", model)
+		if err != nil {
+			panic(fmt.Errorf("could not get recipe template: %v", err))
+		}
+	}
+}
+
+func ViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		get, err := deps.templates.Get("recipe", "recipe_view")
+		if err != nil {
+			// TODO: proper err
+			panic(fmt.Errorf("could not get recipe template: %v", err))
+		}
+
+		recipeIDRaw := chi.URLParam(r, "recipe_id")
+		recipeID, err := strconv.Atoi(recipeIDRaw)
+		if err != nil {
+			// TODO: handle err
+			panic(fmt.Errorf("could not parse recipe id: %v", err))
+		}
+
+		recipe, err := deps.service.GetFull(r.Context(), int64(recipeID))
+		if err != nil {
+			// TODO: proper err
+			panic(fmt.Errorf("could not get recipe partials: %v", err))
+		}
+		model := ViewModel{
+			Context: share.MustGetContext(r.Context()),
+			Recipe:  recipe,
+		}
+
+		err = get.View(w, model)
 		if err != nil {
 			panic(fmt.Errorf("could not get recipe template: %v", err))
 		}
@@ -243,8 +265,4 @@ func ParseFormDuration(value string) (time.Duration, error) {
 	}
 
 	return time.ParseDuration(fmt.Sprintf("%sh%sm", parts[0], parts[1]))
-}
-
-type MediaStore interface {
-	UploadImage(file io.Reader) (string, error)
 }

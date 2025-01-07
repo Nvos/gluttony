@@ -1,9 +1,11 @@
 package recipe
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/yuin/goldmark"
 	"gluttony/internal/ingredient"
 	"gluttony/internal/recipe/queries"
 	"io"
@@ -34,6 +36,7 @@ type Service struct {
 	db         *sql.DB
 	queries    *queries.Queries
 	mediaStore MediaStore
+	markdown   goldmark.Markdown
 }
 
 func NewService(db *sql.DB, mediaStore MediaStore) *Service {
@@ -45,7 +48,12 @@ func NewService(db *sql.DB, mediaStore MediaStore) *Service {
 		panic("mediaStore is nil")
 	}
 
-	return &Service{queries: queries.New(db), db: db, mediaStore: mediaStore}
+	return &Service{
+		queries:    queries.New(db),
+		db:         db,
+		mediaStore: mediaStore,
+		markdown:   goldmark.New(),
+	}
 }
 
 func (s *Service) Create(ctx context.Context, input CreateInput) (err error) {
@@ -260,6 +268,51 @@ func (s *Service) AllPartial(ctx context.Context, input SearchInput) ([]Partial,
 
 		out[i].Tags = recipeTags
 	}
+
+	return out, nil
+}
+
+func (s *Service) GetFull(ctx context.Context, recipeID int64) (Full, error) {
+	recipe, err := s.queries.GetFullRecipe(ctx, recipeID)
+	if err != nil {
+		return Full{}, fmt.Errorf("get recipe id=%d: %w", recipeID, err)
+	}
+
+	tags, err := s.allTagsByRecipeIDs(ctx, []int64{recipeID})
+	if err != nil {
+		return Full{}, fmt.Errorf("get all recipe tags for recipe id=%d: %w", recipeID, err)
+	}
+
+	ingredients, err := s.allIngredientsByRecipeIDs(ctx, []int64{recipeID})
+	if err != nil {
+		return Full{}, fmt.Errorf("get all ingredients for recipe id=%d: %w", recipeID, err)
+	}
+
+	out := Full{
+		ID:                int(recipeID),
+		Name:              recipe.Name,
+		Description:       recipe.Description,
+		ThumbnailImageURL: recipe.ThumbnailUrl.String,
+		Tags:              tags[recipeID],
+		Source:            recipe.Source,
+		Servings:          int8(recipe.Servings),
+		PreparationTime:   time.Duration(recipe.PreparationTimeSeconds) * time.Second,
+		CookTime:          time.Duration(recipe.CookTimeSeconds) * time.Second,
+		Ingredients:       ingredients[recipeID],
+		Nutrition: Nutrition{
+			Calories: float32(recipe.Calories),
+			Fat:      float32(recipe.Fat),
+			Carbs:    float32(recipe.Carbs),
+			Protein:  float32(recipe.Protein),
+		},
+	}
+
+	var htmlInstructions bytes.Buffer
+	if err := s.markdown.Convert([]byte(recipe.InstructionsMarkdown), &htmlInstructions); err != nil {
+		return Full{}, fmt.Errorf("convert markdown instructions to html: %w", err)
+	}
+
+	out.Instructions = htmlInstructions.String()
 
 	return out, nil
 }

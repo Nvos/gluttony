@@ -1,10 +1,28 @@
 package recipe
 
 import (
+	"gluttony/internal/ingredient"
 	"gluttony/internal/templates"
+	"io"
 	"log/slog"
 	"time"
 )
+
+type Ingredient struct {
+	ingredient.Ingredient
+
+	Order    int8
+	Quantity float32
+	// TODO: unit enum
+	Unit string
+}
+
+type Nutrition struct {
+	Calories float32
+	Fat      float32
+	Carbs    float32
+	Protein  float32
+}
 
 type Partial struct {
 	ID                int
@@ -14,8 +32,27 @@ type Partial struct {
 	Tags              []Tag
 }
 
+type Full struct {
+	ID                int
+	Name              string
+	Description       string
+	ThumbnailImageURL string
+	Tags              []Tag
+	Source            string
+	Instructions      string
+	Servings          int8
+	PreparationTime   time.Duration
+	CookTime          time.Duration
+	Ingredients       []Ingredient
+	Nutrition         Nutrition
+}
+
 type SearchInput struct {
 	Query string
+}
+
+type MediaStore interface {
+	UploadImage(file io.Reader) (string, error)
 }
 
 type Deps struct {

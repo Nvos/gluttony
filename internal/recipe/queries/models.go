@@ -4,28 +4,9 @@
 
 package queries
 
-import (
-	"database/sql"
-	"time"
-)
-
 type Ingredient struct {
 	ID   int64
 	Name string
-}
-
-type Recipe struct {
-	ID                     int64
-	Name                   string
-	Description            string
-	InstructionsMarkdown   string
-	ThumbnailUrl           sql.NullString
-	Servings               int64
-	CookTimeSeconds        int64
-	PreparationTimeSeconds int64
-	Source                 string
-	CreatedAt              time.Time
-	UpdatedAt              sql.NullTime
 }
 
 type Tag struct {

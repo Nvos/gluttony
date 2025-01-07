@@ -97,3 +97,14 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-neutral-7);
 }
+
+/*TODO: move to separate fil e*/
+.markdown {
+  h1 {
+    @apply text-xl mb-2;
+  }
+
+  ol {
+    @apply list-decimal marker:text-primary-9 pl-4 mb-4;
+  }
+}

@@ -1,13 +1,9 @@
--- name: GetRecipe :one
+-- name: GetFullRecipe :one
 SELECT *
 FROM recipes
-WHERE id = ?
+         JOIN main.recipe_nutrition rn on recipes.id = rn.recipe_id
+WHERE recipes.id = ?
 LIMIT 1;
-
--- name: AllRecipes :many
-SELECT *
-FROM recipes
-         JOIN recipe_nutrition rn on recipes.id = rn.recipe_id;
 
 -- name: AllPartialRecipes :many
 SELECT id, name, description, thumbnail_url
@@ -15,6 +11,7 @@ FROM recipes
 WHERE CAST(sqlc.narg('search') as TEXT) IS NULL
    OR lower(name) like '%' || lower(sqlc.narg('search')) || '%'
 ORDER BY id desc;
+
 -- name: AllRecipeTags :many
 SELECT *
 FROM tags

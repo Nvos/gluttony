@@ -208,71 +208,6 @@ func (q *Queries) AllRecipeTags(ctx context.Context, ids []int64) ([]AllRecipeTa
 	return items, nil
 }
 
-const allRecipes = `-- name: AllRecipes :many
-SELECT id, name, description, instructions_markdown, thumbnail_url, servings, cook_time_seconds, preparation_time_seconds, source, created_at, updated_at, recipe_id, calories, fat, carbs, protein
-FROM recipes
-         JOIN recipe_nutrition rn on recipes.id = rn.recipe_id
-`
-
-type AllRecipesRow struct {
-	ID                     int64
-	Name                   string
-	Description            string
-	InstructionsMarkdown   string
-	ThumbnailUrl           sql.NullString
-	Servings               int64
-	CookTimeSeconds        int64
-	PreparationTimeSeconds int64
-	Source                 string
-	CreatedAt              time.Time
-	UpdatedAt              sql.NullTime
-	RecipeID               int64
-	Calories               float64
-	Fat                    float64
-	Carbs                  float64
-	Protein                float64
-}
-
-func (q *Queries) AllRecipes(ctx context.Context) ([]AllRecipesRow, error) {
-	rows, err := q.db.QueryContext(ctx, allRecipes)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []AllRecipesRow
-	for rows.Next() {
-		var i AllRecipesRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.Description,
-			&i.InstructionsMarkdown,
-			&i.ThumbnailUrl,
-			&i.Servings,
-			&i.CookTimeSeconds,
-			&i.PreparationTimeSeconds,
-			&i.Source,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.RecipeID,
-			&i.Calories,
-			&i.Fat,
-			&i.Carbs,
-			&i.Protein,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const allTagsByNames = `-- name: AllTagsByNames :many
 SELECT id, name
 FROM tags
@@ -436,16 +371,36 @@ func (q *Queries) CreateTag(ctx context.Context, name string) (int64, error) {
 	return id, err
 }
 
-const getRecipe = `-- name: GetRecipe :one
-SELECT id, name, description, instructions_markdown, thumbnail_url, servings, cook_time_seconds, preparation_time_seconds, source, created_at, updated_at
+const getFullRecipe = `-- name: GetFullRecipe :one
+SELECT id, name, description, instructions_markdown, thumbnail_url, servings, cook_time_seconds, preparation_time_seconds, source, created_at, updated_at, recipe_id, calories, fat, carbs, protein
 FROM recipes
-WHERE id = ?
+         JOIN main.recipe_nutrition rn on recipes.id = rn.recipe_id
+WHERE recipes.id = ?
 LIMIT 1
 `
 
-func (q *Queries) GetRecipe(ctx context.Context, id int64) (Recipe, error) {
-	row := q.db.QueryRowContext(ctx, getRecipe, id)
-	var i Recipe
+type GetFullRecipeRow struct {
+	ID                     int64
+	Name                   string
+	Description            string
+	InstructionsMarkdown   string
+	ThumbnailUrl           sql.NullString
+	Servings               int64
+	CookTimeSeconds        int64
+	PreparationTimeSeconds int64
+	Source                 string
+	CreatedAt              time.Time
+	UpdatedAt              sql.NullTime
+	RecipeID               int64
+	Calories               float64
+	Fat                    float64
+	Carbs                  float64
+	Protein                float64
+}
+
+func (q *Queries) GetFullRecipe(ctx context.Context, id int64) (GetFullRecipeRow, error) {
+	row := q.db.QueryRowContext(ctx, getFullRecipe, id)
+	var i GetFullRecipeRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -458,6 +413,11 @@ func (q *Queries) GetRecipe(ctx context.Context, id int64) (Recipe, error) {
 		&i.Source,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.RecipeID,
+		&i.Calories,
+		&i.Fat,
+		&i.Carbs,
+		&i.Protein,
 	)
 	return i, err
 }

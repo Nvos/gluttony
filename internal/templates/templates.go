@@ -46,6 +46,9 @@ func (t *Templates) Get(scope, name string) (TemplateExecutor, error) {
 		"formatDuration": func(duration time.Duration) string {
 			return time.Unix(0, 0).UTC().Add(duration).Format("15:04")
 		},
+		"rawHTML": func(raw string) template.HTML {
+			return template.HTML(raw)
+		},
 	})
 
 	templ, err := templ.ParseFS(baseFS, "*.gohtml")
