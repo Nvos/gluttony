@@ -19,25 +19,27 @@ type LoginForm struct {
 	Password string
 }
 
-func LoginViewHandler(deps *Deps) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func LoginViewHandler(deps *Deps) httpx.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		t, err := deps.templates.Get("user", "login")
 		if err != nil {
-			panic(err)
+			return fmt.Errorf("login get template: %w", err)
 		}
 
 		model := LoginView{}
 		if err = t.View(w, model); err != nil {
-			panic(fmt.Errorf("expected template login to exist: %w", err))
+			return fmt.Errorf("expected template login to exist: %w", err)
 		}
+
+		return nil
 	}
 }
 
-func LoginHTMXFormHandler(deps *Deps) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func LoginHTMXFormHandler(deps *Deps) httpx.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		if err := r.ParseForm(); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			return
+			return nil
 		}
 
 		form := LoginForm{
@@ -49,7 +51,7 @@ func LoginHTMXFormHandler(deps *Deps) http.HandlerFunc {
 		if errors.Is(err, security.ErrInvalidCredentials) {
 			t, err := deps.templates.Get("user", "login")
 			if err != nil {
-				panic(fmt.Errorf("expected template login to exist: %w", err))
+				return fmt.Errorf("expected template login to exist: %w", err)
 			}
 
 			model := LoginView{
@@ -62,16 +64,19 @@ func LoginHTMXFormHandler(deps *Deps) http.HandlerFunc {
 			}
 
 			if err = t.Fragment(w, "login/form", model); err != nil {
-				panic(fmt.Errorf("expected template login/form to exist: %w", err))
+				return fmt.Errorf("expected template login/form to exist: %w", err)
 			}
 
-			return
+			return nil
 		}
+
 		if err != nil {
-			panic(fmt.Errorf("unexpected login error: %w", err))
+			return fmt.Errorf("login form: %w", err)
 		}
 
 		http.SetCookie(w, session.ToCookie())
 		httpx.HTMXRedirect(w, "/")
+
+		return nil
 	}
 }
