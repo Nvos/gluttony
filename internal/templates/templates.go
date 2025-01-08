@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"io"
 	"io/fs"
+	"net/url"
 	"time"
 )
 
@@ -48,6 +49,10 @@ func (t *Templates) Get(scope, name string) (TemplateExecutor, error) {
 		},
 		"rawHTML": func(raw string) template.HTML {
 			return template.HTML(raw)
+		},
+		"isURL": func(s string) bool {
+			_, err := url.ParseRequestURI(s)
+			return err == nil
 		},
 	})
 
