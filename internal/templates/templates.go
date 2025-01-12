@@ -19,12 +19,10 @@ type Executor struct {
 }
 
 func (e *Executor) View(w io.Writer, data interface{}) error {
-	println(e.template.DefinedTemplates())
 	return e.template.ExecuteTemplate(w, "base.gohtml", data)
 }
 
 func (e *Executor) Fragment(w io.Writer, name string, data interface{}) error {
-	println(e.template.DefinedTemplates())
 	return e.template.ExecuteTemplate(w, name, data)
 }
 

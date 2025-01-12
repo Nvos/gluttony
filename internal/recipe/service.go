@@ -5,12 +5,22 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/blevesearch/bleve"
 	"github.com/yuin/goldmark"
 	"gluttony/internal/ingredient"
 	"gluttony/internal/recipe/queries"
 	"io"
+	"os"
+	"path/filepath"
+	"strconv"
 	"time"
 )
+
+type indexEntry struct {
+	ID          int64
+	Name        string
+	Description string
+}
 
 type Tag struct {
 	ID    int
@@ -33,13 +43,14 @@ type CreateInput struct {
 }
 
 type Service struct {
-	db         *sql.DB
-	queries    *queries.Queries
-	mediaStore MediaStore
-	markdown   goldmark.Markdown
+	db          *sql.DB
+	queries     *queries.Queries
+	mediaStore  MediaStore
+	markdown    goldmark.Markdown
+	searchIndex bleve.Index
 }
 
-func NewService(db *sql.DB, mediaStore MediaStore) *Service {
+func NewService(db *sql.DB, mediaStore MediaStore, workDir string) *Service {
 	if db == nil {
 		panic("db is nil")
 	}
@@ -48,12 +59,81 @@ func NewService(db *sql.DB, mediaStore MediaStore) *Service {
 		panic("mediaStore is nil")
 	}
 
-	return &Service{
-		queries:    queries.New(db),
-		db:         db,
-		mediaStore: mediaStore,
-		markdown:   goldmark.New(),
+	mapping := bleve.NewIndexMapping()
+	var index bleve.Index
+
+	// TODO: proper initialization
+	indexPath := filepath.Join(workDir, "recipe-index.bleve")
+	file, err := os.Stat(indexPath)
+	if os.IsNotExist(err) {
+		index, err = bleve.New(indexPath, mapping)
+		if err != nil {
+			panic(fmt.Sprintf("bleve init failed: %v", err))
+		}
 	}
+	println(file.Name())
+
+	if err != nil {
+		panic(fmt.Sprintf("bleve init failed: %v", err))
+	}
+
+	if index == nil {
+		index, err = bleve.Open(indexPath)
+		if err != nil {
+			panic(fmt.Sprintf("bleve init failed: %v", err))
+		}
+	}
+
+	// TODO: close index
+	out := &Service{
+		queries:     queries.New(db),
+		db:          db,
+		mediaStore:  mediaStore,
+		markdown:    goldmark.New(),
+		searchIndex: index,
+	}
+
+	err = out.indexAll(context.Background())
+	if err != nil {
+		panic(fmt.Sprintf("reindex failed: %v", err))
+	}
+
+	return out
+}
+
+func (s *Service) index(value indexEntry) error {
+	err := s.searchIndex.Index(strconv.Itoa(int(value.ID)), value)
+	if err != nil {
+		return fmt.Errorf("search index failed: %v", err)
+	}
+
+	return nil
+}
+
+func (s *Service) indexAll(ctx context.Context) error {
+	partial, err := s.queries.AllPartialRecipes(ctx)
+	if err != nil {
+		return err
+	}
+
+	batch := s.searchIndex.NewBatch()
+	for i := range partial {
+		value := indexEntry{
+			ID:          partial[i].ID,
+			Name:        partial[i].Name,
+			Description: partial[i].Description,
+		}
+
+		if err := batch.Index(strconv.Itoa(int(value.ID)), value); err != nil {
+			return fmt.Errorf("index recipe, batch add: %w", err)
+		}
+	}
+
+	if err := s.searchIndex.Batch(batch); err != nil {
+		return fmt.Errorf("index recipes execute batch: %w", err)
+	}
+
+	return nil
 }
 
 func (s *Service) Create(ctx context.Context, input CreateInput) (err error) {
@@ -146,6 +226,15 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (err error) {
 		})
 	}
 
+	err = s.index(indexEntry{
+		ID:          recipeID,
+		Name:        input.Name,
+		Description: input.Description,
+	})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -233,19 +322,35 @@ func (s *Service) createOrGetIngredients(
 }
 
 func (s *Service) AllPartial(ctx context.Context, input SearchInput) ([]Partial, error) {
-	recipes, err := s.queries.AllPartialRecipes(ctx, sql.NullString{
-		String: input.Query,
-		Valid:  input.Query != "",
-	})
+	query := bleve.NewQueryStringQuery(input.Query)
+	searchRequest := bleve.NewSearchRequest(query)
+	searchRequest.Fields = []string{"ID", "Name", "Description"}
+	searchRequest.Explain = true
+	searchResult, err := s.searchIndex.Search(searchRequest)
+	if err != nil {
+		return nil, fmt.Errorf("search recipe index: %w", err)
+	}
+
+	println(searchResult.String())
+
+	recipeIDs := make([]int64, len(searchResult.Hits))
+	for i := range searchResult.Hits {
+		id, err := strconv.ParseInt(searchResult.Hits[i].ID, 10, 64)
+		if err != nil {
+			panic(fmt.Sprintf("unexpected recipe index id: %v", err))
+		}
+
+		recipeIDs[i] = id
+	}
+	println(fmt.Sprintf("recipe ids=%+v", recipeIDs))
+
+	recipes, err := s.queries.AllRecipeSummaryByIDs(ctx, recipeIDs)
 	if err != nil {
 		return []Partial{}, fmt.Errorf("get all recipes: %w", err)
 	}
 
-	recipeIDs := make([]int64, len(recipes))
 	out := make([]Partial, len(recipes))
 	for i := range recipes {
-		recipeIDs[i] = recipes[i].ID
-
 		out[i].ID = int(recipes[i].ID)
 		out[i].Name = recipes[i].Name
 		out[i].Description = recipes[i].Description
@@ -254,6 +359,17 @@ func (s *Service) AllPartial(ctx context.Context, input SearchInput) ([]Partial,
 			out[i].ThumbnailImageURL = recipes[i].ThumbnailUrl.String
 		}
 	}
+
+	sorted := make([]Partial, len(out))
+	for i := range recipeIDs {
+		for j := range out {
+			if int64(out[j].ID) == recipeIDs[i] {
+				sorted[i] = out[j]
+				break
+			}
+		}
+	}
+	out = sorted
 
 	tags, err := s.allTagsByRecipeIDs(ctx, recipeIDs)
 	if err != nil {

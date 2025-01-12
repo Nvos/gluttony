@@ -5,11 +5,14 @@ FROM recipes
 WHERE recipes.id = ?
 LIMIT 1;
 
+-- name: AllRecipeSummaryByIDs :many
+SELECT id, name, description, thumbnail_url
+FROM recipes
+WHERE id in (sqlc.slice('ids'));
+
 -- name: AllPartialRecipes :many
 SELECT id, name, description, thumbnail_url
 FROM recipes
-WHERE CAST(sqlc.narg('search') as TEXT) IS NULL
-   OR lower(name) like '%' || lower(sqlc.narg('search')) || '%'
 ORDER BY id desc;
 
 -- name: AllRecipeTags :many

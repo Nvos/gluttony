@@ -66,7 +66,7 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 	sessionStore := security.NewSessionStore()
 	userService := user.NewService(db, sessionStore)
 	mediaStore := media.NewStore(workDirFS)
-	recipeService := recipe.NewService(db, mediaStore)
+	recipeService := recipe.NewService(db, mediaStore, workDir)
 
 	reloader := reload.New()
 	if err := reloader.Watch(ctx, reload.WatchConfig{
