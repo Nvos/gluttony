@@ -1,0 +1,17 @@
+{{- /*gotype: gluttony/internal/recipe.CreateModel */ -}}
+{{ template "base" . }}
+{{ define "head" }}{{ end }}
+{{ define "title" }}Gluttony - Create recipe{{ end }}
+{{ define "view" }}
+  <div class="relative flex flex-1">
+    {{ template "sidebar" . }}
+    {{ template "sub-sidebar" . }}
+    <div class="bg-neutral-layer-2 w-full">
+      {{ template "recipe-create/header" . }}
+      <main class="flex p-8">
+        {{ template "recipe-create/form" . }}
+      </main>
+    </div>
+  </div>
+  {{ template "recipe-create/scripts" }}
+{{ end }}

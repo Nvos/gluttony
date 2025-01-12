@@ -3,20 +3,20 @@ package user
 import (
 	"context"
 	"gluttony/internal/security"
-	"gluttony/internal/templates"
+	"gluttony/internal/templating"
 	"log/slog"
 )
 
 type Deps struct {
 	service      *Service
 	sessionStore SessionStore
-	templates    *templates.Templates
+	templates    *templating.Templating
 	logger       *slog.Logger
 }
 
 func NewDeps(
 	sessionStore SessionStore,
-	templates *templates.Templates,
+	templates *templating.Templating,
 	logger *slog.Logger,
 	service *Service,
 ) *Deps {

@@ -1,4 +1,4 @@
-package templates
+package templating
 
 type AlertVariant string
 

@@ -4,14 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"gluttony/internal/security"
-	"gluttony/internal/templates"
+	"gluttony/internal/templating"
 	"gluttony/x/httpx"
 	"net/http"
 )
 
 type LoginView struct {
 	Form       LoginForm
-	LoginAlert templates.Alert
+	LoginAlert templating.Alert
 }
 
 type LoginForm struct {
@@ -21,17 +21,7 @@ type LoginForm struct {
 
 func LoginViewHandler(deps *Deps) httpx.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		t, err := deps.templates.Get("user", "login")
-		if err != nil {
-			return fmt.Errorf("login get template: %w", err)
-		}
-
-		model := LoginView{}
-		if err = t.View(w, model); err != nil {
-			return fmt.Errorf("expected template login to exist: %w", err)
-		}
-
-		return nil
+		return deps.templates.View(w, "login", LoginView{})
 	}
 }
 
@@ -49,25 +39,16 @@ func LoginHTMXFormHandler(deps *Deps) httpx.HandlerFunc {
 
 		session, err := deps.service.Login(r.Context(), form.Username, form.Password)
 		if errors.Is(err, security.ErrInvalidCredentials) {
-			t, err := deps.templates.Get("user", "login")
-			if err != nil {
-				return fmt.Errorf("expected template login to exist: %w", err)
-			}
-
 			model := LoginView{
 				Form: form,
-				LoginAlert: templates.NewAlert(
-					templates.AlertError,
+				LoginAlert: templating.NewAlert(
+					templating.AlertError,
 					"Invalid credentials",
 					"Username and password do not match.",
 				),
 			}
 
-			if err = t.Fragment(w, "login/form", model); err != nil {
-				return fmt.Errorf("expected template login/form to exist: %w", err)
-			}
-
-			return nil
+			return deps.templates.Fragment(w, "login/form", model)
 		}
 
 		if err != nil {

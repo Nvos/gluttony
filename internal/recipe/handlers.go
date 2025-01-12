@@ -59,15 +59,8 @@ type ViewModel struct {
 
 func CreateViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) error {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		appCtx := share.MustGetContext(r.Context())
-		get, err := deps.templates.Get("recipe", "recipe_create")
-		if err != nil {
-			// TODO: proper err
-			return fmt.Errorf("could not get recipe template: %w", err)
-		}
-
 		model := CreateModel{
-			Context: appCtx,
+			Context: share.MustGetContext(r.Context()),
 			Form: CreateForm{
 				Servings: 1,
 				Ingredients: []Ingredient{
@@ -82,21 +75,12 @@ func CreateViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) 
 			},
 		}
 
-		if err := get.View(w, model); err != nil {
-			return fmt.Errorf("could not get recipe template: %w", err)
-		}
-
-		return nil
+		return deps.templates.View(w, "recipe_create", model)
 	}
 }
 
 func RecipesViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) error {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		get, err := deps.templates.Get("recipe", "recipes")
-		if err != nil {
-			return fmt.Errorf("could not get recipe template: %w", err)
-		}
-
 		recipePartials, err := deps.service.AllPartial(r.Context(), SearchInput{
 			Query: r.URL.Query().Get("query"),
 		})
@@ -110,18 +94,10 @@ func RecipesViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request)
 		}
 
 		if httpx.IsHTMXRequest(r) {
-			if err := get.Fragment(w, "recipes/list", model); err != nil {
-				return fmt.Errorf("could not list recipes: %w", err)
-			}
-
-			return nil
+			return deps.templates.Fragment(w, "recipes/list", model)
 		}
 
-		if err := get.View(w, model); err != nil {
-			return fmt.Errorf("could not get recipe template: %w", err)
-		}
-
-		return nil
+		return deps.templates.View(w, "recipes", model)
 	}
 }
 
@@ -158,26 +134,12 @@ func CreateFormHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) 
 			return nil
 		}
 
-		get, err := deps.templates.Get("recipe", "recipe_create")
-		if err != nil {
-			return fmt.Errorf("could not get recipe template: %w", err)
-		}
-
-		if err = get.Fragment(w, "recipe-create/form", model); err != nil {
-			return fmt.Errorf("could not get recipe template: %w", err)
-		}
-
-		return nil
+		return deps.templates.Fragment(w, "recipe-create/form", model)
 	}
 }
 
 func ViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) error {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		get, err := deps.templates.Get("recipe", "recipe_view")
-		if err != nil {
-			return fmt.Errorf("could not get recipe template: %w", err)
-		}
-
 		recipeIDRaw := chi.URLParam(r, "recipe_id")
 		recipeID, err := strconv.Atoi(recipeIDRaw)
 		if err != nil {
@@ -195,11 +157,8 @@ func ViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) error 
 			Context: share.MustGetContext(r.Context()),
 			Recipe:  recipe,
 		}
-		if err = get.View(w, model); err != nil {
-			return fmt.Errorf("could not get recipe template: %w", err)
-		}
 
-		return nil
+		return deps.templates.View(w, "recipe", model)
 	}
 }
 

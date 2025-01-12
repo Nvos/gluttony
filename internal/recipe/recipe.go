@@ -2,7 +2,7 @@ package recipe
 
 import (
 	"gluttony/internal/ingredient"
-	"gluttony/internal/templates"
+	"gluttony/internal/templating"
 	"io"
 	"log/slog"
 	"time"
@@ -58,14 +58,14 @@ type MediaStore interface {
 type Deps struct {
 	service    *Service
 	logger     *slog.Logger
-	templates  *templates.Templates
+	templates  *templating.Templating
 	mediaStore MediaStore
 }
 
 func NewDeps(
 	service *Service,
 	logger *slog.Logger,
-	templateManager *templates.Templates,
+	templateManager *templating.Templating,
 	mediaStore MediaStore,
 ) *Deps {
 	if logger == nil {

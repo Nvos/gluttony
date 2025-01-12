@@ -1,4 +1,6 @@
 {{- /*gotype: gluttony/internal/recipe.ViewModel*/ -}}
+{{ template "base" . }}
+{{ define "head" }}{{ end }}
 {{ define "title" }}Gluttony - Recipe {{ .Recipe.Name }}{{ end }}
 {{ define "view" }}
   <div class="bg-neutral-layer-2 flex w-full flex-1">

@@ -11,11 +11,10 @@ import (
 	"gluttony/internal/recipe"
 	"gluttony/internal/security"
 	"gluttony/internal/share"
-	"gluttony/internal/templates"
+	"gluttony/internal/templating"
 	"gluttony/internal/user"
 	"gluttony/tools/reload"
 	"golang.org/x/sync/errgroup"
-	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
@@ -73,7 +72,7 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 		Extensions: []string{".gohtml", ".html", ".css", ".js"},
 		Directories: []string{
 			filepath.Join("assets"),
-			filepath.Clean(filepath.Join("internal/templates")),
+			filepath.Clean(filepath.Join("internal/templating/templates")),
 			filepath.Clean(filepath.Join("internal/user/templates")),
 			filepath.Clean(filepath.Join("internal/recipe/templates")),
 		},
@@ -81,11 +80,12 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 		return err
 	}
 
-	templateManager := templates.New(map[string]fs.FS{
-		"base":   os.DirFS(filepath.Join("internal/templates")),
-		"user":   os.DirFS(filepath.Join("internal/user/templates")),
-		"recipe": os.DirFS(filepath.Join("internal/recipe/templates")),
-	})
+	userTemplating := templating.New(
+		os.DirFS(filepath.Join("internal/user/templates")),
+	)
+	recipeTemplating := templating.New(
+		os.DirFS(filepath.Join("internal/recipe/templates")),
+	)
 
 	if err := userService.Create(ctx, "admin", "admin"); err != nil {
 		return err
@@ -113,10 +113,10 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 		router.Get("/media/*", mediaHandle)
 	})
 
-	userDeps := user.NewDeps(sessionStore, templateManager, logger, userService)
+	userDeps := user.NewDeps(sessionStore, userTemplating, logger, userService)
 	router.Group(user.Routes(userDeps))
 
-	recipeDeps := recipe.NewDeps(recipeService, logger, templateManager, mediaStore)
+	recipeDeps := recipe.NewDeps(recipeService, logger, recipeTemplating, mediaStore)
 	router.Group(recipe.Routes(recipeDeps))
 
 	httpServer := &http.Server{
