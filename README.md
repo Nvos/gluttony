@@ -5,12 +5,14 @@
 - [ ] Recipe ingredient note
 - [ ] Recipe edit
 - [ ] Authorization
-- [ ] Migrate chi to std router
-- [ ] Improve template handling
+- [ ] Migrate chi to std router (simplify error handling globally)
+- [x] Improve template handling
 - [ ] Improved logging
 - [x] Search via Bleve
 - [ ] Configuration
 - [ ] Prod/Dev modes
+- [ ] Move reload handling to sse (remove ws dependency)
+- [ ] Fix reload not working on templating due to base template cloning
 
 ## Phase 2
 

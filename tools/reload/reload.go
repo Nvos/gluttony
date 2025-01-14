@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
-	"github.com/gorilla/websocket"
 	"io/fs"
 	"net/http"
 	"path/filepath"
@@ -18,33 +17,30 @@ type WatchConfig struct {
 }
 
 type Reload struct {
-	upgrader websocket.Upgrader
-	cond     sync.Cond
+	cond sync.Cond
 }
 
 func New() *Reload {
 	return &Reload{
-		cond:     sync.Cond{L: &sync.Mutex{}},
-		upgrader: websocket.Upgrader{},
+		cond: sync.Cond{L: &sync.Mutex{}},
 	}
 }
 
-func (reload *Reload) Handle(w http.ResponseWriter, r *http.Request) {
+func (reload *Reload) Handle(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Expose-Headers", "Content-Type")
 
-	conn, err := reload.upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		// todo: handle err
-		panic(err)
-		return
-	}
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
 
 	// Block here until next reload event
 	reload.cond.L.Lock()
 	reload.cond.Wait()
 	reload.cond.L.Unlock()
 
-	conn.WriteMessage(websocket.TextMessage, []byte("reload"))
-	conn.Close()
+	_, _ = fmt.Fprintf(w, "data: reload\n\n")
+	w.(http.Flusher).Flush()
 }
 
 func (reload *Reload) Watch(ctx context.Context, cfg WatchConfig) error {
