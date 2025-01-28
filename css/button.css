@@ -40,7 +40,7 @@
 
     &.is-ghost-neutral {
         --button-background-color: color-mix(in srgb, var(--color-neutral-9), transparent 90%);
-        --button-text-color: var(--color-neutral-font-secondary);
+        --button-text-color: var(--color-neutral-font-contrast);
         --button-background-color-hover: color-mix(in srgb, var(--color-neutral-10), transparent 80%);
         --button-outline-color: var(--color-neutral-8);
     }

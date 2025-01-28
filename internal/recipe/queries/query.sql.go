@@ -51,47 +51,6 @@ func (q *Queries) AllIngredientsByNames(ctx context.Context, names []string) ([]
 	return items, nil
 }
 
-const allPartialRecipes = `-- name: AllPartialRecipes :many
-SELECT id, name, description, thumbnail_url
-FROM recipes
-ORDER BY id desc
-`
-
-type AllPartialRecipesRow struct {
-	ID           int64
-	Name         string
-	Description  string
-	ThumbnailUrl sql.NullString
-}
-
-func (q *Queries) AllPartialRecipes(ctx context.Context) ([]AllPartialRecipesRow, error) {
-	rows, err := q.db.QueryContext(ctx, allPartialRecipes)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []AllPartialRecipesRow
-	for rows.Next() {
-		var i AllPartialRecipesRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.Description,
-			&i.ThumbnailUrl,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const allRecipeIngredients = `-- name: AllRecipeIngredients :many
 SELECT id, name, recipe_order, recipe_id, ingredient_id, unit, quantity
 FROM ingredients
@@ -151,38 +110,50 @@ func (q *Queries) AllRecipeIngredients(ctx context.Context, ids []int64) ([]AllR
 	return items, nil
 }
 
-const allRecipeSummaryByIDs = `-- name: AllRecipeSummaryByIDs :many
+const allRecipeSummary = `-- name: AllRecipeSummary :many
 SELECT id, name, description, thumbnail_url
 FROM recipes
-WHERE id in (/*SLICE:ids*/?)
+WHERE (CAST(?1 as INTEGER) = FALSE OR id in (/*SLICE:ids*/?))
+ORDER BY id DESC
+LIMIT ?4 OFFSET ?3
 `
 
-type AllRecipeSummaryByIDsRow struct {
+type AllRecipeSummaryParams struct {
+	IsSearch int64
+	Ids      []int64
+	Offset   int64
+	Limit    int64
+}
+
+type AllRecipeSummaryRow struct {
 	ID           int64
 	Name         string
 	Description  string
 	ThumbnailUrl sql.NullString
 }
 
-func (q *Queries) AllRecipeSummaryByIDs(ctx context.Context, ids []int64) ([]AllRecipeSummaryByIDsRow, error) {
-	query := allRecipeSummaryByIDs
+func (q *Queries) AllRecipeSummary(ctx context.Context, arg AllRecipeSummaryParams) ([]AllRecipeSummaryRow, error) {
+	query := allRecipeSummary
 	var queryParams []interface{}
-	if len(ids) > 0 {
-		for _, v := range ids {
+	queryParams = append(queryParams, arg.IsSearch)
+	if len(arg.Ids) > 0 {
+		for _, v := range arg.Ids {
 			queryParams = append(queryParams, v)
 		}
-		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(arg.Ids))[1:], 1)
 	} else {
 		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
 	}
+	queryParams = append(queryParams, arg.Offset)
+	queryParams = append(queryParams, arg.Limit)
 	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []AllRecipeSummaryByIDsRow
+	var items []AllRecipeSummaryRow
 	for rows.Next() {
-		var i AllRecipeSummaryByIDsRow
+		var i AllRecipeSummaryRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,

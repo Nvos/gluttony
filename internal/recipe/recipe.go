@@ -24,7 +24,7 @@ type Nutrition struct {
 	Protein  float32
 }
 
-type Partial struct {
+type Summary struct {
 	ID                int
 	Name              string
 	Description       string
@@ -48,7 +48,24 @@ type Full struct {
 }
 
 type SearchInput struct {
-	Query string
+	Search    string
+	RecipeIDs []int64
+	Page      int64
+	Limit     int64
+}
+
+type SearchResult struct {
+	IsSearch   bool
+	TotalCount uint64
+	IDs        []int64
+}
+
+func (sr SearchResult) IsSearchCondition() int64 {
+	if sr.IsSearch {
+		return 1
+	}
+
+	return 0
 }
 
 type MediaStore interface {

@@ -5,15 +5,12 @@ FROM recipes
 WHERE recipes.id = ?
 LIMIT 1;
 
--- name: AllRecipeSummaryByIDs :many
+-- name: AllRecipeSummary :many
 SELECT id, name, description, thumbnail_url
 FROM recipes
-WHERE id in (sqlc.slice('ids'));
-
--- name: AllPartialRecipes :many
-SELECT id, name, description, thumbnail_url
-FROM recipes
-ORDER BY id desc;
+WHERE (CAST(sqlc.arg('is_search') as INTEGER) = FALSE OR id in (sqlc.slice('ids')))
+ORDER BY id DESC
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
 -- name: AllRecipeTags :many
 SELECT *

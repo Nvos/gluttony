@@ -9,6 +9,7 @@ require (
 	github.com/gen2brain/webp v0.5.2
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/google/uuid v1.6.0
+	github.com/jmoiron/sqlx v1.4.0
 	github.com/pressly/goose/v3 v3.22.1
 	github.com/spf13/afero v1.11.0
 	github.com/urfave/cli/v2 v2.27.5

@@ -49,7 +49,7 @@ type CreateModel struct {
 
 type ListModel struct {
 	*share.Context
-	Recipes []Partial
+	Recipes []Summary
 }
 
 type ViewModel struct {
@@ -81,8 +81,23 @@ func CreateViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) 
 
 func RecipesViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) error {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		recipePartials, err := deps.service.AllPartial(r.Context(), SearchInput{
-			Query: r.URL.Query().Get("query"),
+		search := r.URL.Query().Get("search")
+		pageParam := r.URL.Query().Get("page")
+		limit := 20
+
+		page := 0
+		if pageParam != "" {
+			pageInt, err := strconv.Atoi(pageParam)
+			if err != nil {
+				return fmt.Errorf("parse page to int: %w", err)
+			}
+			page = pageInt
+		}
+
+		recipePartials, err := deps.service.AllSummaries(r.Context(), SearchInput{
+			Search: search,
+			Page:   int64(page),
+			Limit:  int64(limit),
 		})
 		if err != nil {
 			return fmt.Errorf("could not get recipe partials: %w", err)

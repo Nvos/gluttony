@@ -5,11 +5,11 @@ CREATE TABLE recipes
     name                     TEXT UNIQUE NOT NULL,
     description              TEXT        NOT NULL DEFAULT '',
     instructions_markdown    TEXT        NOT NULL,
-    thumbnail_url            TEXT,
+    thumbnail_url            TEXT        NOT NULL DEFAULT '',
     servings                 INTEGER     NOT NULL DEFAULT 1,
     cook_time_seconds        INTEGER     NOT NULL DEFAULT 0,
     preparation_time_seconds INTEGER     NOT NULL DEFAULT 0,
-    source                   TEXT        NOT NULL,
+    source                   TEXT        NOT NULL DEFAULT '',
     created_at               DATETIME             DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at               DATETIME,
 

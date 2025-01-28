@@ -48,6 +48,7 @@ type Service struct {
 	mediaStore  MediaStore
 	markdown    goldmark.Markdown
 	searchIndex bleve.Index
+	store       *Store
 }
 
 func NewService(db *sql.DB, mediaStore MediaStore, workDir string) *Service {
@@ -58,6 +59,8 @@ func NewService(db *sql.DB, mediaStore MediaStore, workDir string) *Service {
 	if mediaStore == nil {
 		panic("mediaStore is nil")
 	}
+
+	store := &Store{db: db}
 
 	mapping := bleve.NewIndexMapping()
 	var index bleve.Index
@@ -91,6 +94,7 @@ func NewService(db *sql.DB, mediaStore MediaStore, workDir string) *Service {
 		mediaStore:  mediaStore,
 		markdown:    goldmark.New(),
 		searchIndex: index,
+		store:       store,
 	}
 
 	err = out.indexAll(context.Background())
@@ -111,7 +115,10 @@ func (s *Service) index(value indexEntry) error {
 }
 
 func (s *Service) indexAll(ctx context.Context) error {
-	partial, err := s.queries.AllPartialRecipes(ctx)
+	partial, err := s.store.AllRecipeSummaries(ctx, SearchInput{
+		Limit: 9999,
+		Page:  0,
+	})
 	if err != nil {
 		return err
 	}
@@ -119,7 +126,7 @@ func (s *Service) indexAll(ctx context.Context) error {
 	batch := s.searchIndex.NewBatch()
 	for i := range partial {
 		value := indexEntry{
-			ID:          partial[i].ID,
+			ID:          int64(partial[i].ID),
 			Name:        partial[i].Name,
 			Description: partial[i].Description,
 		}
@@ -321,71 +328,83 @@ func (s *Service) createOrGetIngredients(
 	return out, nil
 }
 
-func (s *Service) AllPartial(ctx context.Context, input SearchInput) ([]Partial, error) {
-	query := bleve.NewQueryStringQuery(input.Query)
-	searchRequest := bleve.NewSearchRequest(query)
-	searchRequest.Fields = []string{"ID", "Name", "Description"}
-	searchRequest.Explain = true
-	searchResult, err := s.searchIndex.Search(searchRequest)
-	if err != nil {
-		return nil, fmt.Errorf("search recipe index: %w", err)
+func (s *Service) search(input SearchInput) (SearchResult, error) {
+	if input.Search == "" {
+		return SearchResult{}, nil
 	}
 
-	println(searchResult.String())
-
+	query := bleve.NewQueryStringQuery(input.Search)
+	offset := input.Page * input.Limit
+	searchRequest := bleve.NewSearchRequestOptions(query, int(input.Limit), int(offset), false)
+	searchResult, err := s.searchIndex.Search(searchRequest)
+	if err != nil {
+		return SearchResult{}, fmt.Errorf("search recipe index: %w", err)
+	}
 	recipeIDs := make([]int64, len(searchResult.Hits))
 	for i := range searchResult.Hits {
 		id, err := strconv.ParseInt(searchResult.Hits[i].ID, 10, 64)
 		if err != nil {
+			// All indexed ids are int64, any other id is unexpected and shouldn't happen
 			panic(fmt.Sprintf("unexpected recipe index id: %v", err))
 		}
 
 		recipeIDs[i] = id
 	}
-	println(fmt.Sprintf("recipe ids=%+v", recipeIDs))
 
-	recipes, err := s.queries.AllRecipeSummaryByIDs(ctx, recipeIDs)
+	return SearchResult{
+		IsSearch:   true,
+		TotalCount: searchResult.Total,
+		IDs:        recipeIDs,
+	}, nil
+}
+
+func (s *Service) AllSummaries(ctx context.Context, input SearchInput) ([]Summary, error) {
+	searchResult, err := s.search(input)
 	if err != nil {
-		return []Partial{}, fmt.Errorf("get all recipes: %w", err)
+		return nil, fmt.Errorf("search: %w", err)
 	}
 
-	out := make([]Partial, len(recipes))
-	for i := range recipes {
-		out[i].ID = int(recipes[i].ID)
-		out[i].Name = recipes[i].Name
-		out[i].Description = recipes[i].Description
-
-		if recipes[i].ThumbnailUrl.Valid {
-			out[i].ThumbnailImageURL = recipes[i].ThumbnailUrl.String
-		}
+	if searchResult.IsSearch && searchResult.TotalCount == 0 {
+		return nil, nil
 	}
 
-	sorted := make([]Partial, len(out))
-	for i := range recipeIDs {
-		for j := range out {
-			if int64(out[j].ID) == recipeIDs[i] {
-				sorted[i] = out[j]
-				break
+	recipes, err := s.store.AllRecipeSummaries(ctx, SearchInput{
+		Page:      input.Page,
+		Limit:     input.Limit,
+		RecipeIDs: searchResult.IDs,
+	})
+	if err != nil {
+		return []Summary{}, fmt.Errorf("get all recipes: %w", err)
+	}
+
+	if searchResult.IsSearch {
+		sorted := make([]Summary, len(recipes))
+		for i := range searchResult.IDs {
+			for j := range recipes {
+				if int64(recipes[j].ID) == searchResult.IDs[i] {
+					sorted[i] = recipes[j]
+					break
+				}
 			}
 		}
+		recipes = sorted
 	}
-	out = sorted
 
-	tags, err := s.allTagsByRecipeIDs(ctx, recipeIDs)
+	tags, err := s.allTagsByRecipeIDs(ctx, searchResult.IDs)
 	if err != nil {
-		return []Partial{}, err
+		return []Summary{}, err
 	}
 
-	for i := range out {
-		recipeTags, ok := tags[int64(out[i].ID)]
+	for i := range recipes {
+		recipeTags, ok := tags[int64(recipes[i].ID)]
 		if !ok {
 			continue
 		}
 
-		out[i].Tags = recipeTags
+		recipes[i].Tags = recipeTags
 	}
 
-	return out, nil
+	return recipes, nil
 }
 
 func (s *Service) GetFull(ctx context.Context, recipeID int64) (Full, error) {
