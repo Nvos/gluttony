@@ -7,16 +7,14 @@ require (
 	github.com/blevesearch/bleve v1.0.14
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/gen2brain/webp v0.5.2
-	github.com/go-chi/chi/v5 v5.1.0
 	github.com/google/uuid v1.6.0
-	github.com/jmoiron/sqlx v1.4.0
 	github.com/pressly/goose/v3 v3.22.1
 	github.com/spf13/afero v1.11.0
 	github.com/urfave/cli/v2 v2.27.5
 	github.com/yuin/goldmark v1.4.13
 	golang.org/x/image v0.18.0
-	golang.org/x/sync v0.8.0
-	modernc.org/sqlite v1.33.1
+	golang.org/x/sync v0.10.0
+	modernc.org/sqlite v1.34.5
 )
 
 require (

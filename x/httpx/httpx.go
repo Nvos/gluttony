@@ -21,40 +21,62 @@ func (r *Problem) Error() string {
 }
 
 type HandlerFunc func(http.ResponseWriter, *http.Request) error
+type MiddlewareFunc func(HandlerFunc) HandlerFunc
 
-func ToHandlerFunc(h HandlerFunc, logger *slog.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		err := h(w, r)
-		if err == nil {
-			return
-		}
-
-		var problem *Problem
-		if !errors.As(err, &problem) {
-			problem = &Problem{
-				Status: http.StatusInternalServerError,
-				Title:  http.StatusText(http.StatusInternalServerError),
-				err:    err,
+func NewErrorMiddleware(logger *slog.Logger) MiddlewareFunc {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) error {
+			routeErr := next(w, r)
+			if routeErr == nil {
+				return nil
 			}
-		}
 
-		w.Header().Set("Content-Type", "application/problem+json; charset=utf-8")
-		w.WriteHeader(problem.Status)
-		problemJSON, err := json.Marshal(problem)
-		if err != nil {
-			panic(fmt.Sprintf("marshalling problem json: %s", err))
-		}
-		_, _ = w.Write(problemJSON)
+			var problem *Problem
+			if !errors.As(routeErr, &problem) {
+				problem = &Problem{
+					Status: http.StatusInternalServerError,
+					Title:  http.StatusText(http.StatusInternalServerError),
+					err:    routeErr,
+				}
+			}
 
-		if !(problem.Status == http.StatusInternalServerError) {
-			return
-		}
+			w.Header().Set("Content-Type", "application/problem+json; charset=utf-8")
+			w.WriteHeader(problem.Status)
 
-		logger.Error(
-			"Route handler unexpected failure",
-			slog.String("method", r.Method),
-			slog.String("url", r.URL.String()),
-			slog.String("err", problem.err.Error()),
-		)
+			problemJSON, err := json.Marshal(problem)
+			if err != nil {
+				panic(fmt.Sprintf("marshalling problem json: %s", err))
+			}
+			_, _ = w.Write(problemJSON)
+
+			if problem.Status != http.StatusInternalServerError {
+				return nil
+			}
+
+			logger.Error(
+				"Route handler unexpected failure",
+				slog.String("method", r.Method),
+				slog.String("url", r.URL.String()),
+				slog.String("routeErr", routeErr.Error()),
+			)
+
+			return nil
+		}
+	}
+}
+
+func Apply(handler HandlerFunc, middlewares ...MiddlewareFunc) http.HandlerFunc {
+	for i := range middlewares {
+		handler = middlewares[i](handler)
+	}
+
+	return toStd(handler)
+}
+
+func toStd(handler HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := handler(w, r); err != nil {
+			panic(fmt.Sprintf("unhandled http request error: %v", err))
+		}
 	}
 }

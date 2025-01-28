@@ -1,15 +1,13 @@
 package recipe
 
 import (
-	"github.com/go-chi/chi/v5"
 	"gluttony/x/httpx"
+	"net/http"
 )
 
-func Routes(deps *Deps) func(r chi.Router) {
-	return func(r chi.Router) {
-		r.Get("/recipes/create", httpx.ToHandlerFunc(CreateViewHandler(deps), deps.logger))
-		r.Post("/recipes/create/form", httpx.ToHandlerFunc(CreateFormHandler(deps), deps.logger))
-		r.Get("/recipes", httpx.ToHandlerFunc(RecipesViewHandler(deps), deps.logger))
-		r.Get("/recipes/{recipe_id}", httpx.ToHandlerFunc(ViewHandler(deps), deps.logger))
-	}
+func Routes(deps *Deps, mux *http.ServeMux, middlewares ...httpx.MiddlewareFunc) {
+	mux.HandleFunc("GET /recipes/create", httpx.Apply(CreateViewHandler(deps), middlewares...))
+	mux.HandleFunc("POST /recipes/create/form", httpx.Apply(CreateFormHandler(deps), middlewares...))
+	mux.HandleFunc("GET /recipes", httpx.Apply(RecipesViewHandler(deps), middlewares...))
+	mux.HandleFunc("GET /recipes/{recipe_id}", httpx.Apply(ViewHandler(deps), middlewares...))
 }

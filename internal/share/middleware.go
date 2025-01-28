@@ -3,6 +3,7 @@ package share
 import (
 	"context"
 	"gluttony/internal/security"
+	"gluttony/x/httpx"
 	"net/http"
 )
 
@@ -17,8 +18,8 @@ func MustGetContext(ctx context.Context) *Context {
 	return got
 }
 
-func ContextMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func ContextMiddleware(next httpx.HandlerFunc) httpx.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		session, ok := security.GetSession(r.Context())
 
 		ctx := &Context{
@@ -34,6 +35,6 @@ func ContextMiddleware(next http.Handler) http.Handler {
 		}
 
 		nextCtx := context.WithValue(r.Context(), contextID, ctx)
-		next.ServeHTTP(w, r.WithContext(nextCtx))
-	})
+		return next(w, r.WithContext(nextCtx))
+	}
 }

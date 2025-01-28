@@ -1,13 +1,11 @@
 package user
 
 import (
-	"github.com/go-chi/chi/v5"
 	"gluttony/x/httpx"
+	"net/http"
 )
 
-func Routes(deps *Deps) func(r chi.Router) {
-	return func(r chi.Router) {
-		r.Get("/login", httpx.ToHandlerFunc(LoginViewHandler(deps), deps.logger))
-		r.Post("/login/form", httpx.ToHandlerFunc(LoginHTMXFormHandler(deps), deps.logger))
-	}
+func Routes(deps *Deps, mux *http.ServeMux, middlewares ...httpx.MiddlewareFunc) {
+	mux.HandleFunc("GET /login", httpx.Apply(LoginViewHandler(deps), middlewares...))
+	mux.HandleFunc("POST /login/form", httpx.Apply(LoginHTMXFormHandler(deps), middlewares...))
 }

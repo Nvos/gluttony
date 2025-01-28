@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/go-chi/chi/v5"
 	"github.com/spf13/afero"
 	"gluttony/internal/database"
 	"gluttony/internal/media"
@@ -14,6 +13,7 @@ import (
 	"gluttony/internal/templating"
 	"gluttony/internal/user"
 	"gluttony/tools/reload"
+	"gluttony/x/httpx"
 	"golang.org/x/sync/errgroup"
 	"log/slog"
 	"net/http"
@@ -100,24 +100,23 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 		http.StripPrefix("/media", http.FileServerFS(os.DirFS(workDir))).ServeHTTP(w, r)
 	}
 
-	router := chi.NewRouter()
-	router.Use(
-		security.AuthenticationMiddleware(logger, sessionStore),
+	router := http.NewServeMux()
+	middlewares := []httpx.MiddlewareFunc{
+		security.NewAuthenticationMiddleware(sessionStore),
 		share.ContextMiddleware,
-	)
+		httpx.NewErrorMiddleware(logger),
+	}
 
-	router.HandleFunc("/reload", reloader.Handle)
+	router.HandleFunc("GET /reload", reloader.Handle)
 	// Public
-	router.Group(func(r chi.Router) {
-		router.Get("/assets/*", assetHandle)
-		router.Get("/media/*", mediaHandle)
-	})
+	router.HandleFunc("GET /assets/{pathname...}", assetHandle)
+	router.HandleFunc("GET /media/{pathname...}", mediaHandle)
 
 	userDeps := user.NewDeps(sessionStore, userTemplating, logger, userService)
-	router.Group(user.Routes(userDeps))
+	user.Routes(userDeps, router, middlewares...)
 
 	recipeDeps := recipe.NewDeps(recipeService, logger, recipeTemplating, mediaStore)
-	router.Group(recipe.Routes(recipeDeps))
+	recipe.Routes(recipeDeps, router, middlewares...)
 
 	httpServer := &http.Server{
 		// TODO: cfg

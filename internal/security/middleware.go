@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
+	"gluttony/x/httpx"
 	"net/http"
 )
 
@@ -15,26 +15,12 @@ type ReadOnlySessionStore interface {
 	Get(ctx context.Context, sessionID string) (Session, error)
 }
 
-func AuthenticationMiddleware(
-	logger *slog.Logger,
-	store ReadOnlySessionStore,
-) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func NewAuthenticationMiddleware(store ReadOnlySessionStore) httpx.MiddlewareFunc {
+	return func(next httpx.HandlerFunc) httpx.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) error {
 			session, err := resolveSession(r, store)
-			if errors.Is(err, ErrSessionNotFound) || errors.Is(err, http.ErrNoCookie) {
-				next.ServeHTTP(w, r)
-				return
-			}
-
 			if err != nil {
-				logger.Error(
-					"Failed to resolve session",
-					slog.String("error", err.Error()),
-				)
-
-				next.ServeHTTP(w, r)
-				return
+				return next(w, r)
 			}
 
 			if r.URL.Path == "/login" || r.URL.Path == "/" {
@@ -42,8 +28,8 @@ func AuthenticationMiddleware(
 			}
 
 			nextCtx := context.WithValue(r.Context(), sessionID, session)
-			next.ServeHTTP(w, r.WithContext(nextCtx))
-		})
+			return next(w, r.WithContext(nextCtx))
+		}
 	}
 }
 

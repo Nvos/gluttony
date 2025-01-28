@@ -2,7 +2,6 @@ package recipe
 
 import (
 	"fmt"
-	"github.com/go-chi/chi/v5"
 	"gluttony/internal/ingredient"
 	"gluttony/internal/share"
 	"gluttony/x/httpx"
@@ -155,7 +154,7 @@ func CreateFormHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) 
 
 func ViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) error {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		recipeIDRaw := chi.URLParam(r, "recipe_id")
+		recipeIDRaw := r.PathValue("recipe_id")
 		recipeID, err := strconv.Atoi(recipeIDRaw)
 		if err != nil {
 			// TODO: likely should return template or 404
