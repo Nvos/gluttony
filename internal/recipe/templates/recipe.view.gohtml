@@ -129,13 +129,9 @@
       <a href="/recipes" class="button is-ghost-neutral">Go back to recipes</a>
     </div>
     <div class="flex gap-4">
-      <button
-        class="button is-solid-primary"
-        type="submit"
-        form="recipe-create-form"
-      >
-        Edit Recipe
-      </button>
+      <a href="/recipes/{{ .Recipe.ID }}/edit" class="button is-solid-primary">
+        Edit
+      </a>
     </div>
   </header>
 {{ end }}

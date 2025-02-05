@@ -10,12 +10,14 @@ import (
 	"time"
 )
 
+// TODO: optimize template handling for prod (need to embed, and parse at startup)
+
 type Templating struct {
-	baseTemplate *template.Template
-	template     fs.FS
+	baseTemplateFn func() (*template.Template, error)
+	template       fs.FS
 }
 
-func New(fsys fs.FS) *Templating {
+func newBase() (*template.Template, error) {
 	baseTemplates := os.DirFS("internal/templating/templates")
 
 	baseTemplate := template.New("")
@@ -33,19 +35,21 @@ func New(fsys fs.FS) *Templating {
 	})
 	baseTemplate, err := baseTemplate.ParseFS(baseTemplates, "*.fragment.gohtml")
 	if err != nil {
-		// TODO: handle err
-		panic(fmt.Sprintf("error parsing templates: %v", err))
+		return nil, fmt.Errorf("parsing templates: %v", err)
 	}
 
+	return baseTemplate, nil
+}
+
+func New(fsys fs.FS) *Templating {
 	return &Templating{
-		template:     fsys,
-		baseTemplate: baseTemplate,
+		template:       fsys,
+		baseTemplateFn: newBase,
 	}
 }
 
-// TODO: optimize for prod (need to embed, and parse at startup)
 func (t *Templating) View(w io.Writer, name string, data interface{}) error {
-	out, err := t.baseTemplate.Clone()
+	out, err := t.baseTemplateFn()
 	if err != nil {
 		return fmt.Errorf("cloning templates: %v", err)
 	}
@@ -72,7 +76,7 @@ func (t *Templating) View(w io.Writer, name string, data interface{}) error {
 }
 
 func (t *Templating) Fragment(w io.Writer, name string, data interface{}) error {
-	out, err := t.baseTemplate.Clone()
+	out, err := t.baseTemplateFn()
 	if err != nil {
 		return fmt.Errorf("cloning templates: %v", err)
 	}

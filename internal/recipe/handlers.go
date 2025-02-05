@@ -12,7 +12,8 @@ import (
 	"time"
 )
 
-type CreateForm struct {
+type Form struct {
+	ID                int64
 	Name              string
 	Description       string
 	Source            string
@@ -26,7 +27,7 @@ type CreateForm struct {
 	Nutrition         Nutrition
 }
 
-func (form CreateForm) ToInput() CreateInput {
+func (form Form) ToInput() CreateInput {
 	return CreateInput{
 		Name:            form.Name,
 		Description:     form.Description,
@@ -43,7 +44,12 @@ func (form CreateForm) ToInput() CreateInput {
 
 type CreateModel struct {
 	*share.Context
-	Form CreateForm
+	Form Form
+}
+
+type EditModel struct {
+	*share.Context
+	Form Form
 }
 
 type ListModel struct {
@@ -60,7 +66,7 @@ func CreateViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) 
 	return func(w http.ResponseWriter, r *http.Request) error {
 		model := CreateModel{
 			Context: share.MustGetContext(r.Context()),
-			Form: CreateForm{
+			Form: Form{
 				Servings: 1,
 				Ingredients: []Ingredient{
 					{
@@ -75,6 +81,48 @@ func CreateViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) 
 		}
 
 		return deps.templates.View(w, "recipe_create", model)
+	}
+}
+
+func EditViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) error {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		recipeIDPathParam := r.PathValue("recipe_id")
+		recipeID, err := strconv.ParseInt(recipeIDPathParam, 10, 64)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return nil
+		}
+
+		recipe, err := deps.service.GetFull(r.Context(), recipeID)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return nil
+		}
+
+		tags := make([]string, 0, len(recipe.Tags))
+		for _, tag := range recipe.Tags {
+			tags = append(tags, tag.Name)
+		}
+
+		model := EditModel{
+			Context: share.MustGetContext(r.Context()),
+			Form: Form{
+				ID:                int64(recipe.ID),
+				Name:              recipe.Name,
+				Description:       recipe.Description,
+				Source:            recipe.Source,
+				Instructions:      recipe.Instructions,
+				ThumbnailImageURL: recipe.ThumbnailImageURL,
+				Servings:          recipe.Servings,
+				PreparationTime:   recipe.PreparationTime,
+				CookTime:          recipe.CookTime,
+				Tags:              tags,
+				Ingredients:       recipe.Ingredients,
+				Nutrition:         recipe.Nutrition,
+			},
+		}
+
+		return deps.templates.View(w, "recipe_edit", model)
 	}
 }
 
@@ -123,9 +171,15 @@ func CreateFormHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) 
 			return nil
 		}
 
+		form, err := NewRecipeForm(r.MultipartForm.Value)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return nil
+		}
+
 		model := CreateModel{
 			Context: share.MustGetContext(r.Context()),
-			Form:    NewRecipeForm(r.MultipartForm.Value),
+			Form:    form,
 		}
 
 		input := model.Form.ToInput()
@@ -142,13 +196,13 @@ func CreateFormHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) 
 			input.ThumbnailImage = file
 		}
 
-		err := deps.service.Create(r.Context(), input)
+		err = deps.service.Create(r.Context(), input)
 		if err == nil {
 			httpx.HTMXRedirect(w, "/recipes")
 			return nil
 		}
 
-		return deps.templates.Fragment(w, "recipe-create/form", model)
+		return deps.templates.Fragment(w, "recipe/form", model)
 	}
 }
 
@@ -167,6 +221,12 @@ func ViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) error 
 			return fmt.Errorf("could not get recipe partials: %w", err)
 		}
 
+		instructionsHTML, err := deps.markdown.ConvertToHTML(recipe.Instructions)
+		if err != nil {
+			return fmt.Errorf("could not convert instructions to HTML: %w", err)
+		}
+
+		recipe.Instructions = instructionsHTML
 		model := ViewModel{
 			Context: share.MustGetContext(r.Context()),
 			Recipe:  recipe,
@@ -176,7 +236,7 @@ func ViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) error 
 	}
 }
 
-func NewRecipeForm(values url.Values) CreateForm {
+func NewRecipeForm(values url.Values) (Form, error) {
 	ingredients := make([]Ingredient, len(values["ingredient"]))
 
 	quantities := values["quantity"]
@@ -184,8 +244,7 @@ func NewRecipeForm(values url.Values) CreateForm {
 	for i, name := range values["ingredient"] {
 		quantity, err := strconv.ParseFloat(quantities[i], 32)
 		if err != nil {
-			// TODO: handle
-			panic(err)
+			return Form{}, fmt.Errorf("parse quantity: %w", err)
 		}
 
 		ingredients[i].Order = int8(i)
@@ -196,8 +255,7 @@ func NewRecipeForm(values url.Values) CreateForm {
 
 	servings, err := strconv.ParseInt(values.Get("servings"), 10, 8)
 	if err != nil {
-		// TODO: handle
-		panic(err)
+		return Form{}, fmt.Errorf("parse servings: %w", err)
 	}
 
 	// TODO: handle errors
@@ -208,7 +266,7 @@ func NewRecipeForm(values url.Values) CreateForm {
 	fat, _ := strconv.ParseFloat(values.Get("fat"), 32)
 	carbs, _ := strconv.ParseFloat(values.Get("carbs"), 32)
 
-	return CreateForm{
+	return Form{
 		Name:              values.Get("name"),
 		Description:       values.Get("description"),
 		Source:            values.Get("source"),
@@ -225,7 +283,7 @@ func NewRecipeForm(values url.Values) CreateForm {
 			Carbs:    float32(carbs),
 			Protein:  float32(protein),
 		},
-	}
+	}, nil
 }
 
 // TODO: move to some time utils

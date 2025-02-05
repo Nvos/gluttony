@@ -129,7 +129,7 @@ type AllRecipeSummaryRow struct {
 	ID           int64
 	Name         string
 	Description  string
-	ThumbnailUrl sql.NullString
+	ThumbnailUrl string
 }
 
 func (q *Queries) AllRecipeSummary(ctx context.Context, arg AllRecipeSummaryParams) ([]AllRecipeSummaryRow, error) {
@@ -315,7 +315,7 @@ type CreateRecipeParams struct {
 	Name                   string
 	Description            string
 	InstructionsMarkdown   string
-	ThumbnailUrl           sql.NullString
+	ThumbnailUrl           string
 	CookTimeSeconds        int64
 	PreparationTimeSeconds int64
 	Source                 string
@@ -391,6 +391,28 @@ func (q *Queries) CreateTag(ctx context.Context, name string) (int64, error) {
 	return id, err
 }
 
+const deleteRecipeIngredients = `-- name: DeleteRecipeIngredients :exec
+DELETE
+FROM recipe_ingredients
+WHERE recipe_id = ?1
+`
+
+func (q *Queries) DeleteRecipeIngredients(ctx context.Context, recipeID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteRecipeIngredients, recipeID)
+	return err
+}
+
+const deleteRecipeTags = `-- name: DeleteRecipeTags :exec
+DELETE
+FROM recipe_tags
+WHERE recipe_id = ?1
+`
+
+func (q *Queries) DeleteRecipeTags(ctx context.Context, recipeID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteRecipeTags, recipeID)
+	return err
+}
+
 const getFullRecipe = `-- name: GetFullRecipe :one
 SELECT id, name, description, instructions_markdown, thumbnail_url, servings, cook_time_seconds, preparation_time_seconds, source, created_at, updated_at, recipe_id, calories, fat, carbs, protein
 FROM recipes
@@ -404,7 +426,7 @@ type GetFullRecipeRow struct {
 	Name                   string
 	Description            string
 	InstructionsMarkdown   string
-	ThumbnailUrl           sql.NullString
+	ThumbnailUrl           string
 	Servings               int64
 	CookTimeSeconds        int64
 	PreparationTimeSeconds int64

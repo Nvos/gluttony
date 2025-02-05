@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"gluttony/internal/database"
+	"gluttony/internal/recipe/queries"
 	"strings"
 	"text/template"
 )
@@ -27,12 +29,21 @@ var allRecipesQuery = template.Must(
 )
 
 type Store struct {
-	db *sql.DB
+	db      database.DBTX
+	queries *queries.Queries
 }
 
-func NewStore(db *sql.DB) *Store {
+func NewStore(db database.DBTX) *Store {
 	return &Store{
-		db: db,
+		db:      db,
+		queries: queries.New(db),
+	}
+}
+
+func (s *Store) WithTx(tx *sql.Tx) *Store {
+	return &Store{
+		db:      tx,
+		queries: queries.New(tx),
 	}
 }
 

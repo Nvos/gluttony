@@ -2,25 +2,25 @@ package recipe
 
 import (
 	"bytes"
-
+	"fmt"
 	"github.com/yuin/goldmark"
 )
 
-type MarkdownPreview struct {
+type Markdown struct {
 	md goldmark.Markdown
 }
 
-func NewMarkdownPreview() *MarkdownPreview {
-	return &MarkdownPreview{md: goldmark.New()}
+func NewMarkdown() *Markdown {
+	return &Markdown{
+		md: goldmark.New(),
+	}
 }
 
-func (m *MarkdownPreview) Preview(content string) (string, error) {
-	var buf bytes.Buffer
-
-	err := m.md.Convert([]byte(content), &buf)
-	if err != nil {
-		return "", err
+func (m *Markdown) ConvertToHTML(markdown string) (string, error) {
+	var out bytes.Buffer
+	if err := m.md.Convert([]byte(markdown), &out); err != nil {
+		return "", fmt.Errorf("convert markdown to html: %w", err)
 	}
 
-	return buf.String(), nil
+	return out.String(), nil
 }

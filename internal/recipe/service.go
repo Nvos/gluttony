@@ -1,17 +1,16 @@
 package recipe
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
 	"github.com/blevesearch/bleve"
-	"github.com/yuin/goldmark"
 	"gluttony/internal/ingredient"
 	"gluttony/internal/recipe/queries"
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"time"
 )
@@ -28,6 +27,10 @@ type Tag struct {
 	Name  string
 }
 
+type UpdateInput struct {
+	ID int64
+	CreateInput
+}
 type CreateInput struct {
 	Name            string
 	Description     string
@@ -46,7 +49,6 @@ type Service struct {
 	db          *sql.DB
 	queries     *queries.Queries
 	mediaStore  MediaStore
-	markdown    goldmark.Markdown
 	searchIndex bleve.Index
 	store       *Store
 }
@@ -67,14 +69,13 @@ func NewService(db *sql.DB, mediaStore MediaStore, workDir string) *Service {
 
 	// TODO: proper initialization
 	indexPath := filepath.Join(workDir, "recipe-index.bleve")
-	file, err := os.Stat(indexPath)
+	_, err := os.Stat(indexPath)
 	if os.IsNotExist(err) {
 		index, err = bleve.New(indexPath, mapping)
 		if err != nil {
 			panic(fmt.Sprintf("bleve init failed: %v", err))
 		}
 	}
-	println(file.Name())
 
 	if err != nil {
 		panic(fmt.Sprintf("bleve init failed: %v", err))
@@ -92,7 +93,6 @@ func NewService(db *sql.DB, mediaStore MediaStore, workDir string) *Service {
 		queries:     queries.New(db),
 		db:          db,
 		mediaStore:  mediaStore,
-		markdown:    goldmark.New(),
 		searchIndex: index,
 		store:       store,
 	}
@@ -108,7 +108,7 @@ func NewService(db *sql.DB, mediaStore MediaStore, workDir string) *Service {
 func (s *Service) index(value indexEntry) error {
 	err := s.searchIndex.Index(strconv.Itoa(int(value.ID)), value)
 	if err != nil {
-		return fmt.Errorf("search index failed: %v", err)
+		return fmt.Errorf("search index failed: %w", err)
 	}
 
 	return nil
@@ -188,12 +188,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (err error) {
 		CookTimeSeconds:        int64(input.CookTime.Seconds()),
 		PreparationTimeSeconds: int64(input.PreparationTime.Seconds()),
 		Source:                 input.Source,
-	}
-	if thumbnailImageURL != "" {
-		createRecipeParams.ThumbnailUrl = sql.NullString{
-			String: thumbnailImageURL,
-			Valid:  true,
-		}
+		ThumbnailUrl:           thumbnailImageURL,
 	}
 
 	recipeID, err := txQueries.CreateRecipe(ctx, createRecipeParams)
@@ -227,7 +222,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (err error) {
 		err = txQueries.CreateRecipeIngredient(ctx, queries.CreateRecipeIngredientParams{
 			RecipeOrder:  int64(ingredients[i].Order),
 			RecipeID:     recipeID,
-			IngredientID: int64(ingredients[i].ID),
+			IngredientID: int64(ingredients[i].Ingredient.ID),
 			Unit:         ingredients[i].Unit,
 			Quantity:     int64(ingredients[i].Quantity),
 		})
@@ -318,8 +313,8 @@ func (s *Service) createOrGetIngredients(
 			ingredientID = id
 		}
 
-		out[i].ID = int(ingredientID)
-		out[i].Name = ingredients[i].Name
+		out[i].Ingredient.ID = int(ingredientID)
+		out[i].Ingredient.Name = ingredients[i].Name
 		out[i].Order = int8(i)
 		out[i].Quantity = ingredients[i].Quantity
 		out[i].Unit = ingredients[i].Unit
@@ -356,6 +351,42 @@ func (s *Service) search(input SearchInput) (SearchResult, error) {
 		TotalCount: searchResult.Total,
 		IDs:        recipeIDs,
 	}, nil
+}
+
+func (s *Service) Update(ctx context.Context, input UpdateInput) error {
+	current, err := s.GetFull(ctx, input.ID)
+	if err != nil {
+		return err
+	}
+
+	tags := make([]string, 0, len(current.Tags))
+	for i := range current.Tags {
+		tags = append(tags, current.Tags[i].Name)
+	}
+	isTagsChanged := !slices.Equal(tags, input.Tags)
+
+	var isIngredientsChanged = !slices.EqualFunc(
+		current.Ingredients, input.Ingredients,
+		func(i Ingredient, i2 Ingredient) bool {
+			return i.ID == i2.ID
+		},
+	) // TODO: tx
+	db := s.queries
+	if isTagsChanged && len(input.Tags) > 0 {
+		if err := db.DeleteRecipeTags(ctx, input.ID); err != nil {
+			return fmt.Errorf("delete recipe id=%d tags: %w", input.ID, err)
+		}
+		// TODO: remove and create
+	}
+	if isIngredientsChanged && len(input.Ingredients) > 0 {
+		// TODO: remove ans create
+		if err := db.DeleteRecipeIngredients(ctx, input.ID); err != nil {
+			return fmt.Errorf("delete recipe id=%d ingredients: %w", input.ID, err)
+		}
+
+	}
+
+	return nil
 }
 
 func (s *Service) AllSummaries(ctx context.Context, input SearchInput) ([]Summary, error) {
@@ -427,7 +458,8 @@ func (s *Service) GetFull(ctx context.Context, recipeID int64) (Full, error) {
 		ID:                int(recipeID),
 		Name:              recipe.Name,
 		Description:       recipe.Description,
-		ThumbnailImageURL: recipe.ThumbnailUrl.String,
+		Instructions:      recipe.InstructionsMarkdown,
+		ThumbnailImageURL: recipe.ThumbnailUrl,
 		Tags:              tags[recipeID],
 		Source:            recipe.Source,
 		Servings:          int8(recipe.Servings),
@@ -441,13 +473,6 @@ func (s *Service) GetFull(ctx context.Context, recipeID int64) (Full, error) {
 			Protein:  float32(recipe.Protein),
 		},
 	}
-
-	var htmlInstructions bytes.Buffer
-	if err := s.markdown.Convert([]byte(recipe.InstructionsMarkdown), &htmlInstructions); err != nil {
-		return Full{}, fmt.Errorf("convert markdown instructions to html: %w", err)
-	}
-
-	out.Instructions = htmlInstructions.String()
 
 	return out, nil
 }

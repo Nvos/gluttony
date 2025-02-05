@@ -9,12 +9,13 @@ import (
 )
 
 type Ingredient struct {
-	ingredient.Ingredient
-
+	ID       int64
 	Order    int8
 	Quantity float32
 	// TODO: unit enum
 	Unit string
+
+	ingredient.Ingredient
 }
 
 type Nutrition struct {
@@ -77,6 +78,7 @@ type Deps struct {
 	logger     *slog.Logger
 	templates  *templating.Templating
 	mediaStore MediaStore
+	markdown   *Markdown
 }
 
 func NewDeps(
@@ -106,6 +108,7 @@ func NewDeps(
 		logger:     logger,
 		templates:  templateManager,
 		mediaStore: mediaStore,
+		markdown:   NewMarkdown(),
 	}
 }
 

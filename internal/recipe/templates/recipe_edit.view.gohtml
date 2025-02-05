@@ -7,7 +7,7 @@
     {{ template "sidebar" . }}
     {{ template "sub-sidebar" . }}
     <div class="bg-neutral-layer-2 w-full">
-      {{ template "recipe-create/header" . }}
+      {{ template "recipe-edit/header" . }}
       <main class="flex p-8">
         {{ template "recipe/form" . }}
       </main>
@@ -16,16 +16,18 @@
   {{ template "recipe-create/scripts" }}
 {{ end }}
 
-{{ define "recipe-create/header" }}
+{{ define "recipe-edit/header" }}
   <header
     class="border-neutral-border-1 bg-neutral-layer-2/80 sticky top-0 z-50 flex h-[72px] items-center justify-between border-b px-8 backdrop-blur-md"
   >
     <div class="form-control">
-      <a href="/recipes" class="button is-ghost-neutral">Go back to recipes</a>
+      <a href="/recipes/{{ .Form.ID }}" class="button is-ghost-neutral"
+        >Cancel</a
+      >
     </div>
     <div class="flex gap-4">
       <button class="button is-solid-primary" type="submit" form="recipe-form">
-        Create
+        Save
       </button>
     </div>
   </header>

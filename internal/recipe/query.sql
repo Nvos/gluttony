@@ -64,3 +64,13 @@ VALUES (?, ?, ?, ?, ?);
 -- name: CreateRecipeTag :exec
 INSERT INTO recipe_tags (recipe_order, recipe_id, tag_id)
 VALUES (?, ?, ?);
+
+-- name: DeleteRecipeTags :exec
+DELETE
+FROM recipe_tags
+WHERE recipe_id = sqlc.arg('recipe_id');
+
+-- name: DeleteRecipeIngredients :exec
+DELETE
+FROM recipe_ingredients
+WHERE recipe_id = sqlc.arg('recipe_id');

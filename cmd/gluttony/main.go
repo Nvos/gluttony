@@ -135,7 +135,7 @@ func Run(ctx context.Context, group *errgroup.Group, logger *slog.Logger) error 
 	group.Go(func() error {
 		<-ctx.Done()
 
-		shutdownCtx, cancelFn := context.WithTimeout(context.Background(), 30*time.Second)
+		shutdownCtx, cancelFn := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancelFn()
 
 		if err := httpServer.Shutdown(shutdownCtx); err != nil {
