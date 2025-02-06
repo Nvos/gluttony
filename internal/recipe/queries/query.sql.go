@@ -463,3 +463,71 @@ func (q *Queries) GetFullRecipe(ctx context.Context, id int64) (GetFullRecipeRow
 	)
 	return i, err
 }
+
+const updateNutrition = `-- name: UpdateNutrition :exec
+UPDATE recipe_nutrition
+SET calories = ?,
+    fat      = ?,
+    carbs    = ?,
+    protein  = ?
+WHERE recipe_id = ?
+`
+
+type UpdateNutritionParams struct {
+	Calories float64
+	Fat      float64
+	Carbs    float64
+	Protein  float64
+	RecipeID int64
+}
+
+func (q *Queries) UpdateNutrition(ctx context.Context, arg UpdateNutritionParams) error {
+	_, err := q.db.ExecContext(ctx, updateNutrition,
+		arg.Calories,
+		arg.Fat,
+		arg.Carbs,
+		arg.Protein,
+		arg.RecipeID,
+	)
+	return err
+}
+
+const updateRecipe = `-- name: UpdateRecipe :exec
+UPDATE recipes
+SET name                     = ?,
+    description              = ?,
+    instructions_markdown    = ?,
+    thumbnail_url            = ?,
+    cook_time_seconds        = ?,
+    preparation_time_seconds = ?,
+    source                   = ?,
+    updated_at               = ?
+WHERE id = ?
+`
+
+type UpdateRecipeParams struct {
+	Name                   string
+	Description            string
+	InstructionsMarkdown   string
+	ThumbnailUrl           string
+	CookTimeSeconds        int64
+	PreparationTimeSeconds int64
+	Source                 string
+	UpdatedAt              sql.NullTime
+	ID                     int64
+}
+
+func (q *Queries) UpdateRecipe(ctx context.Context, arg UpdateRecipeParams) error {
+	_, err := q.db.ExecContext(ctx, updateRecipe,
+		arg.Name,
+		arg.Description,
+		arg.InstructionsMarkdown,
+		arg.ThumbnailUrl,
+		arg.CookTimeSeconds,
+		arg.PreparationTimeSeconds,
+		arg.Source,
+		arg.UpdatedAt,
+		arg.ID,
+	)
+	return err
+}

@@ -47,7 +47,7 @@ type CreateModel struct {
 	Form Form
 }
 
-type EditModel struct {
+type UpdateModel struct {
 	*share.Context
 	Form Form
 }
@@ -104,7 +104,7 @@ func EditViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) er
 			tags = append(tags, tag.Name)
 		}
 
-		model := EditModel{
+		model := UpdateModel{
 			Context: share.MustGetContext(r.Context()),
 			Form: Form{
 				ID:                int64(recipe.ID),
@@ -206,6 +206,52 @@ func CreateFormHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+func UpdateFormHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) error {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		// TODO: extract max memory to const
+		if err := r.ParseMultipartForm(1 << (10 * 2)); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return nil
+		}
+
+		form, err := NewRecipeForm(r.MultipartForm.Value)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return nil
+		}
+
+		model := UpdateModel{
+			Context: share.MustGetContext(r.Context()),
+			Form:    form,
+		}
+
+		input := model.Form.ToInput()
+
+		coverImage := r.MultipartForm.File["thumbnail-image"]
+		if len(coverImage) == 1 {
+			file, err := coverImage[0].Open()
+			if err != nil {
+				// TODO: handle err
+				panic(fmt.Errorf("could not open cover image: %w", err))
+			}
+			defer file.Close()
+
+			input.ThumbnailImage = file
+		}
+
+		err = deps.service.Update(r.Context(), UpdateInput{
+			ID:          form.ID,
+			CreateInput: input,
+		})
+		if err == nil {
+			httpx.HTMXRedirect(w, fmt.Sprintf("/recipes/%d", form.ID))
+			return nil
+		}
+
+		return deps.templates.Fragment(w, "recipe/form", model)
+	}
+}
+
 func ViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) error {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		recipeIDRaw := r.PathValue("recipe_id")
@@ -266,7 +312,13 @@ func NewRecipeForm(values url.Values) (Form, error) {
 	fat, _ := strconv.ParseFloat(values.Get("fat"), 32)
 	carbs, _ := strconv.ParseFloat(values.Get("carbs"), 32)
 
+	id, err := strconv.ParseInt(values.Get("id"), 10, 64)
+	if err != nil {
+		return Form{}, fmt.Errorf("parse id: %w", err)
+	}
+
 	return Form{
+		ID:                id,
 		Name:              values.Get("name"),
 		Description:       values.Get("description"),
 		Source:            values.Get("source"),

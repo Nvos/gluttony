@@ -171,16 +171,6 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (err error) {
 
 	txQueries := s.queries.WithTx(tx)
 
-	ingredients, err := s.createOrGetIngredients(ctx, txQueries, input.Ingredients)
-	if err != nil {
-		return fmt.Errorf("create ingredients: %w", err)
-	}
-
-	tags, err := s.createOrGetTags(ctx, txQueries, input.Tags)
-	if err != nil {
-		return fmt.Errorf("create tags: %w", err)
-	}
-
 	createRecipeParams := queries.CreateRecipeParams{
 		Name:                   input.Name,
 		Description:            input.Description,
@@ -207,17 +197,36 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (err error) {
 		return fmt.Errorf("create nutrition: %w", err)
 	}
 
-	for i := range tags {
-		err = txQueries.CreateRecipeTag(ctx, queries.CreateRecipeTagParams{
-			RecipeOrder: int64(tags[i].Order),
-			RecipeID:    recipeID,
-			TagID:       int64(tags[i].ID),
-		})
-		if err != nil {
-			return fmt.Errorf("create recipe tag: %w", err)
-		}
+	if err := s.createRecipeTags(ctx, txQueries, recipeID, input.Tags); err != nil {
+		return fmt.Errorf("create recipe tags: %w", err)
 	}
 
+	if err := s.createRecipeIngredients(ctx, txQueries, recipeID, input.Ingredients); err != nil {
+		return fmt.Errorf("create recipe ingredients: %w", err)
+	}
+
+	err = s.index(indexEntry{
+		ID:          recipeID,
+		Name:        input.Name,
+		Description: input.Description,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) createRecipeIngredients(
+	ctx context.Context,
+	txQueries *queries.Queries,
+	recipeID int64,
+	recipeIngredients []Ingredient,
+) error {
+	ingredients, err := s.createOrGetIngredients(ctx, txQueries, recipeIngredients)
+	if err != nil {
+		return fmt.Errorf("create ingredients: %w", err)
+	}
 	for i := range ingredients {
 		err = txQueries.CreateRecipeIngredient(ctx, queries.CreateRecipeIngredientParams{
 			RecipeOrder:  int64(ingredients[i].Order),
@@ -228,13 +237,28 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (err error) {
 		})
 	}
 
-	err = s.index(indexEntry{
-		ID:          recipeID,
-		Name:        input.Name,
-		Description: input.Description,
-	})
+	return nil
+}
+
+func (s *Service) createRecipeTags(
+	ctx context.Context,
+	txQueries *queries.Queries,
+	recipeID int64,
+	tagNames []string,
+) error {
+	tags, err := s.createOrGetTags(ctx, txQueries, tagNames)
 	if err != nil {
-		return err
+		return fmt.Errorf("create tags: %w", err)
+	}
+	for i := range tags {
+		err = txQueries.CreateRecipeTag(ctx, queries.CreateRecipeTagParams{
+			RecipeOrder: int64(tags[i].Order),
+			RecipeID:    recipeID,
+			TagID:       int64(tags[i].ID),
+		})
+		if err != nil {
+			return fmt.Errorf("create recipe tag: %w", err)
+		}
 	}
 
 	return nil
@@ -370,20 +394,64 @@ func (s *Service) Update(ctx context.Context, input UpdateInput) error {
 		func(i Ingredient, i2 Ingredient) bool {
 			return i.ID == i2.ID
 		},
-	) // TODO: tx
-	db := s.queries
+	)
+
+	// TODO: tx
+	txQueries := s.queries
 	if isTagsChanged && len(input.Tags) > 0 {
-		if err := db.DeleteRecipeTags(ctx, input.ID); err != nil {
+		if err := txQueries.DeleteRecipeTags(ctx, input.ID); err != nil {
 			return fmt.Errorf("delete recipe id=%d tags: %w", input.ID, err)
 		}
-		// TODO: remove and create
+
+		if err := s.createRecipeTags(ctx, txQueries, input.ID, input.Tags); err != nil {
+			return fmt.Errorf("create tags: %w", err)
+		}
 	}
 	if isIngredientsChanged && len(input.Ingredients) > 0 {
-		// TODO: remove ans create
-		if err := db.DeleteRecipeIngredients(ctx, input.ID); err != nil {
+		if err := txQueries.DeleteRecipeIngredients(ctx, input.ID); err != nil {
 			return fmt.Errorf("delete recipe id=%d ingredients: %w", input.ID, err)
 		}
 
+		if err := s.createRecipeIngredients(ctx, txQueries, input.ID, input.Ingredients); err != nil {
+			return fmt.Errorf("create ingredients: %w", err)
+		}
+	}
+
+	err = txQueries.UpdateNutrition(ctx, queries.UpdateNutritionParams{
+		Calories: float64(input.Nutrition.Calories),
+		Fat:      float64(input.Nutrition.Fat),
+		Carbs:    float64(input.Nutrition.Carbs),
+		Protein:  float64(input.Nutrition.Protein),
+		RecipeID: input.ID,
+	})
+	if err != nil {
+		return fmt.Errorf("update nutrition: %w", err)
+	}
+
+	thumbnailImageURL := current.ThumbnailImageURL
+	if input.ThumbnailImage != nil {
+		thumbnailImageURL, err = s.mediaStore.UploadImage(input.ThumbnailImage)
+		if err != nil {
+			return fmt.Errorf("upload thumbnail image: %w", err)
+		}
+	}
+
+	err = txQueries.UpdateRecipe(ctx, queries.UpdateRecipeParams{
+		Name:                   input.Name,
+		Description:            input.Description,
+		InstructionsMarkdown:   input.Instructions,
+		ThumbnailUrl:           thumbnailImageURL,
+		CookTimeSeconds:        int64(input.CookTime),
+		PreparationTimeSeconds: int64(input.PreparationTime),
+		Source:                 input.Source,
+		UpdatedAt: sql.NullTime{
+			Valid: true,
+			Time:  time.Now().UTC(),
+		},
+		ID: input.ID,
+	})
+	if err != nil {
+		return fmt.Errorf("update recipe: %w", err)
 	}
 
 	return nil

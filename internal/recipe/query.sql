@@ -33,9 +33,29 @@ INSERT INTO recipes (name, description, instructions_markdown, thumbnail_url,
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING id;
 
+-- name: UpdateRecipe :exec
+UPDATE recipes
+SET name                     = ?,
+    description              = ?,
+    instructions_markdown    = ?,
+    thumbnail_url            = ?,
+    cook_time_seconds        = ?,
+    preparation_time_seconds = ?,
+    source                   = ?,
+    updated_at               = ?
+WHERE id = ?;
+
 -- name: CreateNutrition :exec
 INSERT INTO recipe_nutrition (recipe_id, calories, fat, carbs, protein)
 VALUES (?, ?, ?, ?, ?);
+
+-- name: UpdateNutrition :exec
+UPDATE recipe_nutrition
+SET calories = ?,
+    fat      = ?,
+    carbs    = ?,
+    protein  = ?
+WHERE recipe_id = ?;
 
 -- name: AllTagsByNames :many
 SELECT id, name
