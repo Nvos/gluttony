@@ -13,14 +13,14 @@ import (
 //go:embed migrations/*.sql
 var embedMigrations embed.FS
 
-func New(workDir string) (*sql.DB, error) {
+func NewSqlite(workDir string) (*sql.DB, error) {
 	dbPath := filepath.Join(workDir, "sqlite.db")
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
 		create, err := os.Create(dbPath)
 		if err != nil {
 			return nil, err
 		}
-		
+
 		if err := create.Close(); err != nil {
 			return nil, err
 		}
@@ -41,6 +41,7 @@ func New(workDir string) (*sql.DB, error) {
 }
 
 func migrate(db *sql.DB) error {
+	goose.SetLogger(goose.NopLogger())
 	goose.SetBaseFS(embedMigrations)
 	if err := goose.SetDialect("sqlite"); err != nil {
 		return fmt.Errorf("goose set dialect: %w", err)

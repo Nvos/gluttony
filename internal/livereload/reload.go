@@ -1,10 +1,11 @@
-package reload
+package livereload
 
 import (
 	"context"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"io/fs"
+	"log/slog"
 	"net/http"
 	"path/filepath"
 	"sync"
@@ -16,17 +17,19 @@ type WatchConfig struct {
 	Extensions  []string
 }
 
-type Reload struct {
-	cond sync.Cond
+type LiveReload struct {
+	cond   sync.Cond
+	logger *slog.Logger
 }
 
-func New() *Reload {
-	return &Reload{
-		cond: sync.Cond{L: &sync.Mutex{}},
+func New(logger *slog.Logger) *LiveReload {
+	return &LiveReload{
+		cond:   sync.Cond{L: &sync.Mutex{}},
+		logger: logger,
 	}
 }
 
-func (reload *Reload) Handle(w http.ResponseWriter, _ *http.Request) {
+func (reload *LiveReload) Handle(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Expose-Headers", "Content-Type")
 
@@ -43,14 +46,14 @@ func (reload *Reload) Handle(w http.ResponseWriter, _ *http.Request) {
 	w.(http.Flusher).Flush()
 }
 
-func (reload *Reload) Watch(ctx context.Context, cfg WatchConfig) error {
+func (reload *LiveReload) Watch(ctx context.Context, cfg WatchConfig) error {
 	if cfg.Directories == nil {
-		panic("reload: watch Directories not set")
+		return fmt.Errorf("no watch directories provided")
 	}
 
 	w, err := fsnotify.NewWatcher()
 	if err != nil {
-		return fmt.Errorf("reload: create new watcher: %w", err)
+		return fmt.Errorf("create new directory watcher: %w", err)
 	}
 
 	for i := range cfg.Directories {
@@ -61,7 +64,7 @@ func (reload *Reload) Watch(ctx context.Context, cfg WatchConfig) error {
 
 		for _, directory := range directories {
 			if err := w.Add(directory); err != nil {
-				return fmt.Errorf("reload: add watch directory: %w", err)
+				return fmt.Errorf("add watch directory: %w", err)
 			}
 		}
 	}
@@ -84,7 +87,7 @@ func (reload *Reload) Watch(ctx context.Context, cfg WatchConfig) error {
 		switch {
 		case e.Has(fsnotify.Create):
 			if err := w.Add(e.Name); err != nil {
-				return fmt.Errorf("reload: add watch directory: %w", err)
+				return fmt.Errorf("watch handle create: %w", err)
 			}
 
 			debounce(reload.cond.Broadcast)
@@ -93,41 +96,57 @@ func (reload *Reload) Watch(ctx context.Context, cfg WatchConfig) error {
 		case e.Has(fsnotify.Remove), e.Has(fsnotify.Rename):
 			directories, err := collectDirectories(e.Name)
 			if err != nil {
-				return fmt.Errorf("reload: collect Directories: %w", err)
+				return fmt.Errorf("watch handle remove/rename: %w", err)
 			}
 
 			for _, v := range directories {
-				w.Remove(v)
+				if err := w.Remove(v); err != nil {
+					reload.logger.WarnContext(
+						ctx,
+						"Remove watch directory",
+						slog.String("err", err.Error()),
+					)
+				}
 			}
 
-			w.Remove(e.Name)
+			if err := w.Remove(e.Name); err != nil {
+				reload.logger.WarnContext(
+					ctx,
+					"Remove watch file",
+					slog.String("err", err.Error()),
+				)
+			}
 		}
 
 		return nil
 	}
 
-	go func() {
-		defer w.Close()
+	defer w.Close()
 
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case err := <-w.Errors:
-				// todo: proper log
-				if err != nil {
-					println(err.Error())
-				}
-			case e := <-w.Events:
-				if err := handleEvent(e); err != nil {
-					// todo: proper log
-					println(err.Error())
-				}
+	for {
+		select {
+		case <-ctx.Done():
+			// Free SSE lock
+			reload.cond.Broadcast()
+			return nil
+		case err := <-w.Errors:
+			if err != nil {
+				reload.logger.ErrorContext(
+					ctx,
+					"File watcher error",
+					slog.String("err", err.Error()),
+				)
+			}
+		case e := <-w.Events:
+			if err := handleEvent(e); err != nil {
+				reload.logger.WarnContext(
+					ctx,
+					"File watcher handle event failed",
+					slog.String("err", err.Error()),
+				)
 			}
 		}
-	}()
-
-	return nil
+	}
 }
 
 func collectDirectories(dirPath string) ([]string, error) {

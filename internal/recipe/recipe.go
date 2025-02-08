@@ -74,23 +74,13 @@ type MediaStore interface {
 }
 
 type Deps struct {
-	service    *Service
-	logger     *slog.Logger
-	templates  *templating.Templating
-	mediaStore MediaStore
-	markdown   *Markdown
+	service   *Service
+	logger    *slog.Logger
+	templates *templating.Templating
+	markdown  *Markdown
 }
 
-func NewDeps(
-	service *Service,
-	logger *slog.Logger,
-	templateManager *templating.Templating,
-	mediaStore MediaStore,
-) *Deps {
-	if logger == nil {
-		panic("logger must not be nil")
-	}
-
+func NewDeps(service *Service, templateManager *templating.Templating) *Deps {
 	if service == nil {
 		panic("service must not be nil")
 	}
@@ -99,16 +89,10 @@ func NewDeps(
 		panic("templateManager must not be nil")
 	}
 
-	if mediaStore == nil {
-		panic("mediaStore must not be nil")
-	}
-
 	return &Deps{
-		service:    service,
-		logger:     logger,
-		templates:  templateManager,
-		mediaStore: mediaStore,
-		markdown:   NewMarkdown(),
+		service:   service,
+		templates: templateManager,
+		markdown:  NewMarkdown(),
 	}
 }
 

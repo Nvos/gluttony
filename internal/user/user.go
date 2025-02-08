@@ -15,21 +15,11 @@ type Deps struct {
 }
 
 func NewDeps(
-	sessionStore SessionStore,
 	templates *templating.Templating,
-	logger *slog.Logger,
 	service *Service,
 ) *Deps {
 	if service == nil {
 		panic("nil service")
-	}
-
-	if logger == nil {
-		panic("nil logger")
-	}
-
-	if sessionStore == nil {
-		panic("nil sessionStore")
 	}
 
 	if templates == nil {
@@ -37,10 +27,8 @@ func NewDeps(
 	}
 
 	return &Deps{
-		sessionStore: sessionStore,
-		templates:    templates,
-		logger:       logger,
-		service:      service,
+		templates: templates,
+		service:   service,
 	}
 }
 

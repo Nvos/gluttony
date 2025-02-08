@@ -8,8 +8,6 @@ import (
 	"gluttony/internal/ingredient"
 	"gluttony/internal/recipe/queries"
 	"io"
-	"os"
-	"path/filepath"
 	"slices"
 	"strconv"
 	"time"
@@ -53,56 +51,28 @@ type Service struct {
 	store       *Store
 }
 
-func NewService(db *sql.DB, mediaStore MediaStore, workDir string) *Service {
+func (s *Service) Stop() error {
+	return s.searchIndex.Close()
+}
+
+func NewService(db *sql.DB, mediaStore MediaStore, searchIndex bleve.Index) (*Service, error) {
 	if db == nil {
-		panic("db is nil")
+		return nil, fmt.Errorf("db is nil")
 	}
 
 	if mediaStore == nil {
-		panic("mediaStore is nil")
+		return nil, fmt.Errorf("mediaStore is nil")
 	}
 
 	store := &Store{db: db}
 
-	mapping := bleve.NewIndexMapping()
-	var index bleve.Index
-
-	// TODO: proper initialization
-	indexPath := filepath.Join(workDir, "recipe-index.bleve")
-	_, err := os.Stat(indexPath)
-	if os.IsNotExist(err) {
-		index, err = bleve.New(indexPath, mapping)
-		if err != nil {
-			panic(fmt.Sprintf("bleve init failed: %v", err))
-		}
-	}
-
-	if err != nil {
-		panic(fmt.Sprintf("bleve init failed: %v", err))
-	}
-
-	if index == nil {
-		index, err = bleve.Open(indexPath)
-		if err != nil {
-			panic(fmt.Sprintf("bleve init failed: %v", err))
-		}
-	}
-
-	// TODO: close index
-	out := &Service{
+	return &Service{
 		queries:     queries.New(db),
 		db:          db,
 		mediaStore:  mediaStore,
-		searchIndex: index,
+		searchIndex: searchIndex,
 		store:       store,
-	}
-
-	err = out.indexAll(context.Background())
-	if err != nil {
-		panic(fmt.Sprintf("reindex failed: %v", err))
-	}
-
-	return out
+	}, nil
 }
 
 func (s *Service) index(value indexEntry) error {
