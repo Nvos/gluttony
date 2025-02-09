@@ -6,6 +6,7 @@ import (
 	"gluttony/internal/config"
 	"gluttony/internal/database"
 	"gluttony/internal/livereload"
+	"gluttony/internal/log"
 	"gluttony/internal/media"
 	"gluttony/internal/recipe"
 	"gluttony/internal/security"
@@ -27,9 +28,12 @@ type App struct {
 }
 
 func NewApp(cfg config.Config) (*App, error) {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: cfg.LogLevel,
-	}))
+	logFile, err := os.Create(cfg.LogFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("create log file: %w", err)
+	}
+
+	logger := log.New(cfg.Mode, cfg.LogLevel, logFile)
 
 	rootFS := afero.NewBasePathFs(afero.NewOsFs(), cfg.WorkDirectoryPath)
 	if err := os.MkdirAll(cfg.WorkDirectoryPath, os.ModePerm); err != nil {

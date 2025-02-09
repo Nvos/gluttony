@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gluttony/x/httpx"
+	"gluttony/internal/httputil"
 	"net/http"
 )
 
@@ -15,8 +15,8 @@ type ReadOnlySessionStore interface {
 	Get(ctx context.Context, sessionID string) (Session, error)
 }
 
-func NewAuthenticationMiddleware(store ReadOnlySessionStore) httpx.MiddlewareFunc {
-	return func(next httpx.HandlerFunc) httpx.HandlerFunc {
+func NewAuthenticationMiddleware(store ReadOnlySessionStore) httputil.MiddlewareFunc {
+	return func(next httputil.HandlerFunc) httputil.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) error {
 			session, err := resolveSession(r, store)
 			if err != nil {

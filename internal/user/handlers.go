@@ -3,9 +3,9 @@ package user
 import (
 	"errors"
 	"fmt"
+	"gluttony/internal/httputil"
 	"gluttony/internal/security"
 	"gluttony/internal/templating"
-	"gluttony/x/httpx"
 	"net/http"
 )
 
@@ -19,13 +19,13 @@ type LoginForm struct {
 	Password string
 }
 
-func LoginViewHandler(deps *Deps) httpx.HandlerFunc {
+func LoginViewHandler(deps *Deps) httputil.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		return deps.templates.View(w, "login", LoginView{})
 	}
 }
 
-func LoginHTMXFormHandler(deps *Deps) httpx.HandlerFunc {
+func LoginHTMXFormHandler(deps *Deps) httputil.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		if err := r.ParseForm(); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -56,7 +56,7 @@ func LoginHTMXFormHandler(deps *Deps) httpx.HandlerFunc {
 		}
 
 		http.SetCookie(w, session.ToCookie())
-		httpx.HTMXRedirect(w, "/")
+		httputil.HTMXRedirect(w, "/")
 
 		return nil
 	}

@@ -28,6 +28,7 @@ type Config struct {
 	Mode              Mode
 	LogLevel          slog.Level
 	WorkDirectoryPath string
+	LogFilePath       string
 	WebPort           int
 	WebHost           string
 }
@@ -39,6 +40,7 @@ func New() (Config, error) {
 
 	logLevelRaw := os.Getenv("GLUTTONY_LOG_LEVEL")
 	workDirectoryPath := os.Getenv("GLUTTONY_WORK_DIRECTORY_PATH")
+	logFilePath := os.Getenv("GLUTTONY_LOG_FILE_PATH")
 	modeRaw := os.Getenv("GLUTTONY_MODE")
 	webPortRaw := os.Getenv("GLUTTONY_WEB_PORT")
 	webHostRaw := os.Getenv("GLUTTONY_WEB_HOST")
@@ -50,6 +52,10 @@ func New() (Config, error) {
 
 	if !filepath.IsAbs(workDirectoryPath) {
 		return Config{}, fmt.Errorf("work directory path must be absolute env=GLUTTONY_WORK_DIRECTORY_PATH")
+	}
+
+	if !filepath.IsAbs(logFilePath) {
+		return Config{}, fmt.Errorf("log path must be absolute env=GLUTTONY_LOG_FILE_PATH")
 	}
 
 	mode, err := newMode(modeRaw)
@@ -68,5 +74,6 @@ func New() (Config, error) {
 		WorkDirectoryPath: workDirectoryPath,
 		WebPort:           webPort,
 		WebHost:           webHostRaw,
+		LogFilePath:       logFilePath,
 	}, nil
 }

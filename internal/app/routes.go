@@ -3,13 +3,13 @@ package app
 import (
 	"github.com/spf13/afero"
 	"gluttony/internal/config"
+	"gluttony/internal/httputil"
 	"gluttony/internal/livereload"
 	"gluttony/internal/recipe"
 	"gluttony/internal/security"
 	"gluttony/internal/share"
 	"gluttony/internal/templating"
 	"gluttony/internal/user"
-	"gluttony/x/httpx"
 	"log/slog"
 	"net/http"
 	"os"
@@ -30,10 +30,10 @@ func MountWebRoutes(
 		os.DirFS(filepath.Join("internal/recipe/templates")),
 	)
 
-	middlewares := []httpx.MiddlewareFunc{
+	middlewares := []httputil.MiddlewareFunc{
 		security.NewAuthenticationMiddleware(sessionStore),
 		share.ContextMiddleware,
-		httpx.NewErrorMiddleware(logger),
+		httputil.NewErrorMiddleware(logger),
 	}
 
 	userDeps := user.NewDeps(userTemplating, userService)

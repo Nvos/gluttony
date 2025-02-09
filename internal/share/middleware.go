@@ -2,8 +2,8 @@ package share
 
 import (
 	"context"
+	"gluttony/internal/httputil"
 	"gluttony/internal/security"
-	"gluttony/x/httpx"
 	"net/http"
 )
 
@@ -18,7 +18,7 @@ func MustGetContext(ctx context.Context) *Context {
 	return got
 }
 
-func ContextMiddleware(next httpx.HandlerFunc) httpx.HandlerFunc {
+func ContextMiddleware(next httputil.HandlerFunc) httputil.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		session, ok := security.GetSession(r.Context())
 

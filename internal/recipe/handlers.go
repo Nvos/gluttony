@@ -2,9 +2,9 @@ package recipe
 
 import (
 	"fmt"
+	"gluttony/internal/httputil"
 	"gluttony/internal/ingredient"
 	"gluttony/internal/share"
-	"gluttony/x/httpx"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -155,7 +155,7 @@ func RecipesViewHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request)
 			Recipes: recipePartials,
 		}
 
-		if httpx.IsHTMXRequest(r) {
+		if httputil.IsHTMXRequest(r) {
 			return deps.templates.Fragment(w, "recipes/list", model)
 		}
 
@@ -198,7 +198,7 @@ func CreateFormHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) 
 
 		err = deps.service.Create(r.Context(), input)
 		if err == nil {
-			httpx.HTMXRedirect(w, "/recipes")
+			httputil.HTMXRedirect(w, "/recipes")
 			return nil
 		}
 
@@ -244,7 +244,7 @@ func UpdateFormHandler(deps *Deps) func(w http.ResponseWriter, r *http.Request) 
 			CreateInput: input,
 		})
 		if err == nil {
-			httpx.HTMXRedirect(w, fmt.Sprintf("/recipes/%d", form.ID))
+			httputil.HTMXRedirect(w, fmt.Sprintf("/recipes/%d", form.ID))
 			return nil
 		}
 
