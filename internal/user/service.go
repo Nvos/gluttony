@@ -6,17 +6,16 @@ import (
 	"errors"
 	"fmt"
 	"gluttony/internal/security"
-	"gluttony/internal/user/queries"
 )
 
 type Service struct {
-	db      *queries.Queries
+	db      *Store
 	session SessionStore
 }
 
 func NewService(db *sql.DB, sessionStore SessionStore) *Service {
 	return &Service{
-		db:      queries.New(db),
+		db:      NewStore(db),
 		session: sessionStore,
 	}
 }
@@ -27,10 +26,7 @@ func (s *Service) Create(ctx context.Context, username, password string) error {
 		return fmt.Errorf("hash password: %w", err)
 	}
 
-	_, err = s.db.CreateUser(ctx, queries.CreateUserParams{
-		Username: username,
-		Password: passwordHash,
-	})
+	_, err = s.db.Create(ctx, username, passwordHash)
 
 	if err != nil {
 		return fmt.Errorf("create user: %w", err)
@@ -53,7 +49,7 @@ func (s *Service) Logout(ctx context.Context) error {
 }
 
 func (s *Service) Login(ctx context.Context, username, password string) (security.Session, error) {
-	user, err := s.db.GetUser(ctx, username)
+	user, err := s.db.GetByUsername(ctx, username)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		return security.Session{}, security.ErrInvalidCredentials
 	}
@@ -78,7 +74,7 @@ func (s *Service) Login(ctx context.Context, username, password string) (securit
 
 	session.UserID = user.ID
 	session.Username = user.Username
-	session.Role = security.Role(user.Role)
+	session.Role = user.Role
 
 	if err := s.session.Save(ctx, session); err != nil {
 		return security.Session{}, fmt.Errorf("save session: %w", err)

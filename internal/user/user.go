@@ -9,6 +9,8 @@ import (
 type User struct {
 	ID       int64
 	Username string
+	Role     security.Role
+	Password string
 }
 type Deps struct {
 	service      *Service

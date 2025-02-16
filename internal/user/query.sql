@@ -8,4 +8,4 @@ LIMIT 1;
 INSERT INTO users (username, password)
 VALUES (?, ?)
 ON CONFLICT (username) DO UPDATE SET username=EXCLUDED.username
-RETURNING *;
+RETURNING id;
