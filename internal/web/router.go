@@ -7,8 +7,9 @@ import (
 )
 
 type Router struct {
-	mux      *http.ServeMux
-	renderer *html.Renderer
+	mux         *http.ServeMux
+	middlewares []Middleware
+	renderer    *html.Renderer
 }
 
 func NewRouter(renderer *html.Renderer) *Router {
@@ -19,10 +20,24 @@ func (r *Router) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	r.mux.ServeHTTP(rw, req)
 }
 
+func (r *Router) Use(middlewares ...Middleware) {
+	r.middlewares = append(middlewares, r.middlewares...)
+}
+
 func (r *Router) Post(pattern string, handler HandlerFunc, middlewares ...Middleware) {
-	r.mux.HandleFunc(fmt.Sprintf("POST %v", pattern), r.toHttpHandler(handler, middlewares...))
+	r.method("POST", pattern, handler, middlewares...)
 }
 
 func (r *Router) Get(pattern string, handler HandlerFunc, middlewares ...Middleware) {
-	r.mux.HandleFunc(fmt.Sprintf("GET %v", pattern), r.toHttpHandler(handler, middlewares...))
+	r.method("GET", pattern, handler, middlewares...)
+}
+
+func (r *Router) method(method string, pattern string, handler HandlerFunc, middlewares ...Middleware) {
+	nextMiddlewares := middlewares
+	nextMiddlewares = append(nextMiddlewares, r.middlewares...)
+
+	r.mux.HandleFunc(
+		fmt.Sprintf("%v %v", method, pattern),
+		r.toHttpHandler(handler, nextMiddlewares...),
+	)
 }

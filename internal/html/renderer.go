@@ -81,7 +81,6 @@ func (r *Renderer) RenderTemplate(name TemplateName, w io.Writer, data any) erro
 		}
 	}
 
-	println(t.ref.Load().DefinedTemplates())
 	return t.ref.Load().ExecuteTemplate(w, "base.gohtml", data)
 }
 

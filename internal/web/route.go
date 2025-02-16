@@ -9,11 +9,11 @@ type HandlerFunc func(*Context) error
 type Middleware func(HandlerFunc) HandlerFunc
 
 func (r *Router) toHttpHandler(h HandlerFunc, middlewares ...Middleware) http.HandlerFunc {
-	return func(rw http.ResponseWriter, req *http.Request) {
-		for i := range middlewares {
-			h = middlewares[i](h)
-		}
+	for i := range middlewares {
+		h = middlewares[i](h)
+	}
 
+	return func(rw http.ResponseWriter, req *http.Request) {
 		ctx := Context{
 			Response: rw,
 			Request:  req,

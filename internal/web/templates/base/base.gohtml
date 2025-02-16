@@ -1,17 +1,17 @@
 <!doctype html>
 <html lang="en">
-<head>
+  <head>
     <title>{{ template "title" . }}</title>
     <link rel="stylesheet" href="/assets/css/tailwind.css" />
 
     {{/* TODO: serve locally */}}
     <script
-            defer
-            src="https://cdn.jsdelivr.net/npm/@alpinejs/focus@3.x.x/dist/cdn.min.js"
+      defer
+      src="https://cdn.jsdelivr.net/npm/@alpinejs/focus@3.x.x/dist/cdn.min.js"
     ></script>
     <script
-            defer
-            src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
     ></script>
     <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
     <script>
@@ -45,23 +45,22 @@
         } else {
           document.documentElement.classList.remove('dark');
         }
-      } catch (_) {
-      }
+      } catch (_) {}
     </script>
     {{ template "head" . }}
-</head>
-<body
-        class="bg-neutral-layer-1 text-neutral-font flex h-dvh flex-col antialiased"
->
-{{ template "view" . }}
-<script>
-  const es = new EventSource('/reload');
-  es.onmessage = (e) => {
-    console.log(e);
-    if (e.data === 'reload') {
-      window.location.reload();
-    }
-  };
-</script>
-</body>
+  </head>
+  <body
+    class="bg-neutral-layer-1 text-neutral-font flex h-dvh flex-col antialiased"
+  >
+    {{ template "view" . }}
+    <script>
+      const es = new EventSource('/reload');
+      es.onmessage = (e) => {
+        console.log(e);
+        if (e.data === 'reload') {
+          window.location.reload();
+        }
+      };
+    </script>
+  </body>
 </html>

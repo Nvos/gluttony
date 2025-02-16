@@ -74,6 +74,13 @@ func NewApp(cfg config.Config) (*App, error) {
 		return nil, fmt.Errorf("create html renderer: %w", err)
 	}
 	mux := web.NewRouter(renderer)
+
+	middlewares := []web.Middleware{
+		web.AuthenticationMiddleware(sessionStore),
+		web.ErrorMiddleware(logger),
+	}
+	
+	mux.Use(middlewares...)
 	MountRoutes(mux, cfg.Mode, liveReload, directories)
 	MountWebRoutes(mux, logger, sessionStore, userService, recipeService)
 

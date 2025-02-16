@@ -10,23 +10,33 @@ import (
 )
 
 type LoginForm struct {
-	Username string
-	Password string
+	Username    string
+	Password    string
+	RedirectURL string
 }
 
 const loginView = "views/login"
 const loginForm = "login/form"
 
 func (r *Routes) LoginViewHandler(c *web.Context) error {
-	c.Data["Form"] = LoginForm{}
+	redirectURL := "/recipes"
+	next := c.Request.URL.Query().Get("next")
+	if next != "" {
+		redirectURL = next
+	}
+
+	c.Data["Form"] = LoginForm{
+		RedirectURL: redirectURL,
+	}
 
 	return c.RenderView(loginView, http.StatusOK)
 }
 
 func (r *Routes) LoginHTMXFormHandler(c *web.Context) error {
 	form := LoginForm{
-		Username: c.FormValue("username"),
-		Password: c.FormValue("password"),
+		Username:    c.FormValue("username"),
+		Password:    c.FormValue("password"),
+		RedirectURL: c.FormValue("redirect_url"),
 	}
 
 	session, err := r.service.Login(c.Context(), form.Username, form.Password)
@@ -46,7 +56,7 @@ func (r *Routes) LoginHTMXFormHandler(c *web.Context) error {
 	}
 
 	c.SetCookie(session.ToCookie())
-	c.HTMXRedirect("/")
+	c.HTMXRedirect(form.RedirectURL)
 
 	return nil
 }

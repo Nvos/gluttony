@@ -1,5 +1,4 @@
 {{ define "login/form" }}
-  {{/* gotype: gluttony/internal/user.LoginView */}}
   <form
     class="card w-[400px]"
     hx-target="this"
@@ -14,9 +13,14 @@
     {{ template "base/alert" .LoginAlert }}
     <label class="form-control">
       <span class="label">
-        <span class="label-text">Username 1</span>
+        <span class="label-text">Username</span>
       </span>
-      <input class="input" name="username" value="{{ .Form.Username }}" />
+      <input
+        autofocus
+        class="input"
+        name="username"
+        value="{{ .Form.Username }}"
+      />
     </label>
     <label class="form-control">
       <span class="label">
@@ -29,6 +33,7 @@
         value="{{ .Form.Password }}"
       />
     </label>
+    <input type="hidden" name="redirect_url" value="{{ .Form.RedirectURL }}" />
     <button type="submit" class="button is-solid-primary mt-3">Login</button>
   </form>
 {{ end }}

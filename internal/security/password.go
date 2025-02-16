@@ -5,8 +5,6 @@ import (
 	"github.com/alexedwards/argon2id"
 )
 
-var defaultArgonParams = argon2id.DefaultParams
-
 func HashPassword(password string) (string, error) {
 	return argon2id.CreateHash(password, argon2id.DefaultParams)
 }

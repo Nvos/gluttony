@@ -1,72 +1,71 @@
-{{- /*gotype: gluttony/internal/recipe.ListModel */ -}}
 {{ define "head" }}{{ end }}
 {{ define "title" }}Gluttony - Create recipe{{ end }}
 {{ define "view" }}
-    <div class="flex flex-1">
-        {{ template "sidebar" . }}
-        {{ template "sub-sidebar" . }}
-        <div class="bg-neutral-layer-2 w-full">
-            {{ template "recipes/header" . }}
-            <main class="flex p-8">
-                {{ template "recipes/list" . }}
-            </main>
-        </div>
+  <div class="flex flex-1">
+    {{ template "sidebar" . }}
+    {{ template "sub-sidebar" . }}
+    <div class="bg-neutral-layer-2 w-full">
+      {{ template "recipes/header" . }}
+      <main class="flex p-8">
+        {{ template "recipes/list" . }}
+      </main>
     </div>
+  </div>
 {{ end }}
 
 {{ define "sub-sidebar" }}
-    <div class="sidebar">
-        <div class="border-b-neutral-border-1 flex h-18 items-center border-b px-2">
-            <a class="link" href="/recipes/create">
-                {{ template "icons/plus" }}
-                <span>New Recipe Draft</span>
-            </a>
-        </div>
-        <nav class="px-2">
-            <ul>
-                <li>
-                    <a
-                            title="Butter Curry Very Spicy"
-                            class="link w-full overflow-hidden"
-                            href="recipe/create/draft/1"
-                    >
-                        <span class="tag is-ghost-neutral">Draft</span>
-                        <span class="truncate">Butter Curry Very Spicy</span>
-                    </a>
-                </li>
-                <li>
-                    <a class="link w-full overflow-hidden" href="recipe/create/draft/1">
-                        <span class="tag is-ghost-neutral">Draft</span>
-                        <span class="truncate">Apple Pie</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
+  <div class="sidebar">
+    <div class="border-b-neutral-border-1 flex h-18 items-center border-b px-2">
+      <a class="link" href="/recipes/create">
+        {{ template "icons/plus" }}
+        <span>New Recipe Draft</span>
+      </a>
     </div>
+    <nav class="px-2">
+      <ul>
+        <li>
+          <a
+            title="Butter Curry Very Spicy"
+            class="link w-full overflow-hidden"
+            href="recipe/create/draft/1"
+          >
+            <span class="tag is-ghost-neutral">Draft</span>
+            <span class="truncate">Butter Curry Very Spicy</span>
+          </a>
+        </li>
+        <li>
+          <a class="link w-full overflow-hidden" href="recipe/create/draft/1">
+            <span class="tag is-ghost-neutral">Draft</span>
+            <span class="truncate">Apple Pie</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
 {{ end }}
 
 {{ define "recipes/header" }}
-    <header
-            class="border-neutral-border-1 bg-neutral-layer-2 flex h-[72px] items-center justify-between border-b px-8"
+  <header
+    class="border-neutral-border-1 bg-neutral-layer-2 flex h-[72px] items-center justify-between border-b px-8"
+  >
+    <form
+      hx-get="/recipes"
+      hx-push-url="true"
+      hx-trigger="submit"
+      hx-swap="innerHTML"
+      hx-target="#recipe-list"
     >
-        <form
-                hx-get="/recipes"
-                hx-push-url="true"
-                hx-trigger="submit"
-                hx-swap="innerHTML"
-                hx-target="#recipe-list"
-        >
-            <div class="form-control">
-                <input
-                        name="search"
-                        class="input"
-                        placeholder="Search recipe"
-                        aria-label="Recipe search text field"
-                />
-            </div>
-        </form>
-    </header>
-    <script>
-      const click = (event) => console.log(event);
-    </script>
+      <div class="form-control">
+        <input
+          name="search"
+          class="input"
+          placeholder="Search recipe"
+          aria-label="Recipe search text field"
+        />
+      </div>
+    </form>
+  </header>
+  <script>
+    const click = (event) => console.log(event);
+  </script>
 {{ end }}

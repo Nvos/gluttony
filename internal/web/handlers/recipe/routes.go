@@ -3,6 +3,7 @@ package recipe
 import (
 	"github.com/yuin/goldmark"
 	"gluttony/internal/recipe"
+	"gluttony/internal/security"
 	"gluttony/internal/web"
 )
 
@@ -21,7 +22,7 @@ func NewRoutes(service *recipe.Service) (*Routes, error) {
 }
 
 func (r *Routes) Mount(router *web.Router) {
-	router.Get("/recipes/create", r.CreateViewHandler)
+	router.Get("/recipes/create", r.CreateViewHandler, web.AuthorizationMiddleware(security.User))
 	router.Post("/recipes/create/form", r.CreateFormHandler)
 	router.Get("/recipes/{recipe_id}", r.DetailsViewHandler)
 	router.Get("/recipes", r.ListViewHandler)

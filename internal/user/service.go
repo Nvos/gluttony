@@ -78,6 +78,7 @@ func (s *Service) Login(ctx context.Context, username, password string) (securit
 
 	session.UserID = user.ID
 	session.Username = user.Username
+	session.Role = security.Role(user.Role)
 
 	if err := s.session.Save(ctx, session); err != nil {
 		return security.Session{}, fmt.Errorf("save session: %w", err)

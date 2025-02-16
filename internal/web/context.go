@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"gluttony/internal/html"
+	"gluttony/internal/security"
 	"net/http"
 )
 
@@ -12,6 +13,11 @@ type Context struct {
 	Request  *http.Request
 	Data     map[string]any
 	renderer *html.Renderer
+	Doer     *security.Session
+}
+
+func (c *Context) IsAuthenticated() bool {
+	return c.Doer != nil
 }
 
 func (c *Context) Context() context.Context {
@@ -47,6 +53,10 @@ func (c *Context) SetCookie(cookie *http.Cookie) {
 
 func (c *Context) HTMXRedirect(url string) {
 	c.Response.Header().Set("HX-Redirect", url)
+}
+
+func (c *Context) Redirect(url string, code int) {
+	http.Redirect(c.Response, c.Request, url, code)
 }
 
 func (c *Context) RenderView(name html.TemplateName, code int) error {
