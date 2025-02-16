@@ -18,7 +18,7 @@ type Directories struct {
 
 func GetAssets(mode config.Mode) (fs.FS, error) {
 	if mode == config.Prod {
-		return assets.Assets, nil
+		return assets.Embedded, nil
 	}
 
 	wd, err := os.Getwd()

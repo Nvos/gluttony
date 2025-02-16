@@ -3,58 +3,50 @@ package app
 import (
 	"github.com/spf13/afero"
 	"gluttony/internal/config"
-	"gluttony/internal/httputil"
 	"gluttony/internal/livereload"
 	"gluttony/internal/recipe"
 	"gluttony/internal/security"
-	"gluttony/internal/share"
-	"gluttony/internal/templating"
 	"gluttony/internal/user"
+	"gluttony/internal/web"
+	"gluttony/internal/web/handlers"
+	recipehandlers "gluttony/internal/web/handlers/recipe"
 	"log/slog"
 	"net/http"
-	"os"
-	"path/filepath"
 )
 
 func MountWebRoutes(
-	mux *http.ServeMux,
+	mux *web.Router,
 	logger *slog.Logger,
 	sessionStore *security.SessionStore,
 	userService *user.Service,
 	recipeService *recipe.Service,
 ) {
-	userTemplating := templating.New(
-		os.DirFS(filepath.Join("internal/user/templates")),
-	)
-	recipeTemplating := templating.New(
-		os.DirFS(filepath.Join("internal/recipe/templates")),
-	)
-
-	middlewares := []httputil.MiddlewareFunc{
-		security.NewAuthenticationMiddleware(sessionStore),
-		share.ContextMiddleware,
-		httputil.NewErrorMiddleware(logger),
+	recipeRoutes, err := recipehandlers.NewRoutes(recipeService)
+	if err != nil {
+		panic(err)
 	}
 
-	userDeps := user.NewDeps(userTemplating, userService)
-	user.Routes(userDeps, mux, middlewares...)
+	userRouter, err := handlers.NewRoutes(userService, sessionStore)
+	if err != nil {
+		panic(err)
+	}
 
-	recipeDeps := recipe.NewDeps(recipeService, recipeTemplating)
-	recipe.Routes(recipeDeps, mux, middlewares...)
+	userRouter.Mount(mux)
+	recipeRoutes.Mount(mux)
 }
 
 func MountRoutes(
-	mux *http.ServeMux,
+	mux *web.Router,
 	mode config.Mode,
 	liveReload *livereload.LiveReload,
 	directories *Directories,
 ) {
 	if mode == config.Dev {
-		mux.HandleFunc("GET /reload", liveReload.Handle)
+		mux.Get("/reload", web.WrapHandlerFunc(liveReload.Handle))
 	}
 
-	mux.HandleFunc("GET /assets/{pathname...}", handleAssets(mode, directories))
-	mux.HandleFunc("GET /media/{pathname...}", handleMedia(directories))
+	mux.Get("/assets/{pathname...}", web.WrapHandlerFunc(handleAssets(mode, directories)))
+	mux.Get("/media/{pathname...}", web.WrapHandlerFunc(handleMedia(directories)))
 }
 
 func handleAssets(mode config.Mode, directories *Directories) func(w http.ResponseWriter, r *http.Request) {

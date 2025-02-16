@@ -49,6 +49,7 @@ type Service struct {
 	mediaStore  MediaStore
 	searchIndex bleve.Index
 	store       *Store
+	markdown    *Markdown
 }
 
 func (s *Service) Stop() error {
@@ -72,6 +73,7 @@ func NewService(db *sql.DB, mediaStore MediaStore, searchIndex bleve.Index) (*Se
 		mediaStore:  mediaStore,
 		searchIndex: searchIndex,
 		store:       store,
+		markdown:    NewMarkdown(),
 	}, nil
 }
 
@@ -492,18 +494,24 @@ func (s *Service) GetFull(ctx context.Context, recipeID int64) (Full, error) {
 		return Full{}, fmt.Errorf("get all ingredients for recipe id=%d: %w", recipeID, err)
 	}
 
+	html, err := s.markdown.ConvertToHTML(recipe.InstructionsMarkdown)
+	if err != nil {
+		return Full{}, fmt.Errorf("convert instructions to HTML: %w", err)
+	}
+
 	out := Full{
-		ID:                int(recipeID),
-		Name:              recipe.Name,
-		Description:       recipe.Description,
-		Instructions:      recipe.InstructionsMarkdown,
-		ThumbnailImageURL: recipe.ThumbnailUrl,
-		Tags:              tags[recipeID],
-		Source:            recipe.Source,
-		Servings:          int8(recipe.Servings),
-		PreparationTime:   time.Duration(recipe.PreparationTimeSeconds) * time.Second,
-		CookTime:          time.Duration(recipe.CookTimeSeconds) * time.Second,
-		Ingredients:       ingredients[recipeID],
+		ID:                   int(recipeID),
+		Name:                 recipe.Name,
+		Description:          recipe.Description,
+		InstructionsMarkdown: recipe.InstructionsMarkdown,
+		InstructionsHTML:     html,
+		ThumbnailImageURL:    recipe.ThumbnailUrl,
+		Tags:                 tags[recipeID],
+		Source:               recipe.Source,
+		Servings:             int8(recipe.Servings),
+		PreparationTime:      time.Duration(recipe.PreparationTimeSeconds) * time.Second,
+		CookTime:             time.Duration(recipe.CookTimeSeconds) * time.Second,
+		Ingredients:          ingredients[recipeID],
 		Nutrition: Nutrition{
 			Calories: float32(recipe.Calories),
 			Fat:      float32(recipe.Fat),

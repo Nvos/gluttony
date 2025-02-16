@@ -1,4 +1,4 @@
-package templating
+package html
 
 type AlertVariant string
 

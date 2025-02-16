@@ -22,9 +22,7 @@ func (app *App) Start(ctx context.Context, group *errgroup.Group) error {
 			Extensions: []string{".gohtml", ".html", ".css", ".js"},
 			Directories: []string{
 				filepath.Join("assets"),
-				filepath.Clean(filepath.Join("internal/templating/templates")),
-				filepath.Clean(filepath.Join("internal/user/templates")),
-				filepath.Clean(filepath.Join("internal/recipe/templates")),
+				filepath.Clean(filepath.Join("internal/web/templates")),
 			},
 		}); err != nil {
 			return fmt.Errorf("start livereload watch: %w", err)

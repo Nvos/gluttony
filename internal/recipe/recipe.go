@@ -2,9 +2,7 @@ package recipe
 
 import (
 	"gluttony/internal/ingredient"
-	"gluttony/internal/templating"
 	"io"
-	"log/slog"
 	"time"
 )
 
@@ -34,18 +32,19 @@ type Summary struct {
 }
 
 type Full struct {
-	ID                int
-	Name              string
-	Description       string
-	ThumbnailImageURL string
-	Tags              []Tag
-	Source            string
-	Instructions      string
-	Servings          int8
-	PreparationTime   time.Duration
-	CookTime          time.Duration
-	Ingredients       []Ingredient
-	Nutrition         Nutrition
+	ID                   int
+	Name                 string
+	Description          string
+	ThumbnailImageURL    string
+	Tags                 []Tag
+	Source               string
+	InstructionsMarkdown string
+	InstructionsHTML     string
+	Servings             int8
+	PreparationTime      time.Duration
+	CookTime             time.Duration
+	Ingredients          []Ingredient
+	Nutrition            Nutrition
 }
 
 type SearchInput struct {
@@ -71,29 +70,6 @@ func (sr SearchResult) IsSearchCondition() int64 {
 
 type MediaStore interface {
 	UploadImage(file io.Reader) (string, error)
-}
-
-type Deps struct {
-	service   *Service
-	logger    *slog.Logger
-	templates *templating.Templating
-	markdown  *Markdown
-}
-
-func NewDeps(service *Service, templateManager *templating.Templating) *Deps {
-	if service == nil {
-		panic("service must not be nil")
-	}
-
-	if templateManager == nil {
-		panic("templateManager must not be nil")
-	}
-
-	return &Deps{
-		service:   service,
-		templates: templateManager,
-		markdown:  NewMarkdown(),
-	}
 }
 
 type CreateRecipeInput struct {

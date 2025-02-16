@@ -3,33 +3,17 @@ package user
 import (
 	"context"
 	"gluttony/internal/security"
-	"gluttony/internal/templating"
 	"log/slog"
 )
 
+type User struct {
+	ID       int64
+	Username string
+}
 type Deps struct {
 	service      *Service
 	sessionStore SessionStore
-	templates    *templating.Templating
 	logger       *slog.Logger
-}
-
-func NewDeps(
-	templates *templating.Templating,
-	service *Service,
-) *Deps {
-	if service == nil {
-		panic("nil service")
-	}
-
-	if templates == nil {
-		panic("nil templates")
-	}
-
-	return &Deps{
-		templates: templates,
-		service:   service,
-	}
 }
 
 type SessionStore interface {

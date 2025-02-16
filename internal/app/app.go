@@ -5,12 +5,15 @@ import (
 	"github.com/spf13/afero"
 	"gluttony/internal/config"
 	"gluttony/internal/database"
+	"gluttony/internal/html"
 	"gluttony/internal/livereload"
 	"gluttony/internal/log"
 	"gluttony/internal/media"
 	"gluttony/internal/recipe"
 	"gluttony/internal/security"
 	"gluttony/internal/user"
+	"gluttony/internal/web"
+	"gluttony/internal/web/templates"
 	"log/slog"
 	"net/http"
 	"os"
@@ -64,10 +67,16 @@ func NewApp(cfg config.Config) (*App, error) {
 	}
 
 	liveReload := livereload.New(logger)
-
-	mux := http.NewServeMux()
+	renderer, err := html.NewRenderer(templates.GetTemplates(cfg.Mode), html.RendererOptions{
+		IsReloadEnabled: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create html renderer: %w", err)
+	}
+	mux := web.NewRouter(renderer)
 	MountRoutes(mux, cfg.Mode, liveReload, directories)
 	MountWebRoutes(mux, logger, sessionStore, userService, recipeService)
+
 	httpServer := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", cfg.WebHost, cfg.WebPort),
 		Handler: mux,
