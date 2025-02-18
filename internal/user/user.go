@@ -12,6 +12,7 @@ type User struct {
 	Role     security.Role
 	Password string
 }
+
 type Deps struct {
 	service      *Service
 	sessionStore SessionStore

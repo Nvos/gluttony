@@ -24,27 +24,28 @@ type Nutrition struct {
 }
 
 type Summary struct {
-	ID                int
+	ID                int64
 	Name              string
 	Description       string
 	ThumbnailImageURL string
 	Tags              []Tag
 }
 
-type Full struct {
-	ID                   int
+type Recipe struct {
+	ID                   int64
 	Name                 string
 	Description          string
 	ThumbnailImageURL    string
-	Tags                 []Tag
 	Source               string
 	InstructionsMarkdown string
 	InstructionsHTML     string
 	Servings             int8
 	PreparationTime      time.Duration
 	CookTime             time.Duration
-	Ingredients          []Ingredient
-	Nutrition            Nutrition
+
+	Tags        []Tag
+	Ingredients []Ingredient
+	Nutrition   Nutrition
 }
 
 type SearchInput struct {
@@ -72,8 +73,20 @@ type MediaStore interface {
 	UploadImage(file io.Reader) (string, error)
 }
 
-type CreateRecipeInput struct {
-	Name      string
-	Steps     string
-	CreatedAt time.Time
+type CreateRecipe struct {
+	Name                 string
+	Description          string
+	ThumbnailImageURL    string
+	Source               string
+	InstructionsMarkdown string
+	Servings             int8
+	PreparationTime      time.Duration
+	CookTime             time.Duration
+}
+
+type UpdateRecipe struct {
+	ID        int64
+	UpdatedAt time.Time
+
+	CreateRecipe
 }

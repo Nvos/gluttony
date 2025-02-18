@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.28.0
 
-package queries
+package sqlite
 
 type Ingredient struct {
 	ID   int64

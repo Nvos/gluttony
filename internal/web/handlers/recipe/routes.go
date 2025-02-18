@@ -26,7 +26,6 @@ func (r *Routes) Mount(router *web.Router) {
 	router.Post("/recipes/create/form", r.CreateFormHandler)
 	router.Get("/recipes/{recipe_id}", r.DetailsViewHandler)
 	router.Get("/recipes", r.ListViewHandler)
-	// TODO: use consistent naming - update instead edit
-	router.Get("/recipes/{recipe_id}/edit", r.UpdateViewHandler)
-	router.Get("/recipes/{recipe_id}/edit/form", r.UpdateFormHandler)
+	router.Get("/recipes/{recipe_id}/update", r.UpdateViewHandler)
+	router.Post("/recipes/{recipe_id}/update/form", r.UpdateFormHandler)
 }

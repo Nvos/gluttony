@@ -5,16 +5,16 @@ import (
 	"database/sql"
 	"gluttony/internal/database"
 	"gluttony/internal/security"
-	"gluttony/internal/user/queries"
+	"gluttony/internal/user/sqlite"
 )
 
 type Store struct {
-	queries *queries.Queries
+	queries *sqlite.Queries
 }
 
 func NewStore(db database.DBTX) *Store {
 	return &Store{
-		queries: queries.New(db),
+		queries: sqlite.New(db),
 	}
 }
 
@@ -39,7 +39,7 @@ func (s *Store) GetByUsername(ctx context.Context, username string) (User, error
 }
 
 func (s *Store) Create(ctx context.Context, username string, password string) (int64, error) {
-	userID, err := s.queries.CreateUser(ctx, queries.CreateUserParams{
+	userID, err := s.queries.CreateUser(ctx, sqlite.CreateUserParams{
 		Username: username,
 		Password: password,
 	})

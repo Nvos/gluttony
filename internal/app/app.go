@@ -61,7 +61,7 @@ func NewApp(cfg config.Config) (*App, error) {
 		return nil, fmt.Errorf("create recipe search index: %w", err)
 	}
 
-	recipeService, err := recipe.NewService(db, mediaStore, recipeSearchIndex)
+	recipeService, err := recipe.NewService(db, mediaStore, recipeSearchIndex, logger)
 	if err != nil {
 		return nil, fmt.Errorf("create recipe service: %w", err)
 	}
@@ -79,7 +79,7 @@ func NewApp(cfg config.Config) (*App, error) {
 		web.AuthenticationMiddleware(sessionStore),
 		web.ErrorMiddleware(logger),
 	}
-	
+
 	mux.Use(middlewares...)
 	MountRoutes(mux, cfg.Mode, liveReload, directories)
 	MountWebRoutes(mux, logger, sessionStore, userService, recipeService)

@@ -49,7 +49,7 @@ func (r *Routes) UpdateViewHandler(c *web.Context) error {
 }
 
 func (r *Routes) UpdateFormHandler(c *web.Context) error {
-	if err := c.Request.ParseForm(); err != nil {
+	if err := c.FormParse(); err != nil {
 		return c.Error(http.StatusBadRequest, err)
 	}
 

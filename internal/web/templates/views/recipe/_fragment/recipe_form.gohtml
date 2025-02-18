@@ -8,7 +8,7 @@
     {{ if eq .Form.ID 0 }}
       hx-post="/recipes/create/form"
     {{ else }}
-      hx-post="/recipes/edit/form"
+      hx-post="/recipes/{{ .Form.ID }}/update/form"
     {{ end }}
   >
     <input type="hidden" name="id" value="{{ .Form.ID }}" />
