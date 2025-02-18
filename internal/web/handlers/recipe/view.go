@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	detailsView = "views/recipe/view"
+	detailsView = "view/recipe/view"
 )
 
 func (r *Routes) DetailsViewHandler(c *web.Context) error {

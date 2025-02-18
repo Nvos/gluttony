@@ -81,7 +81,7 @@ func (r *Renderer) RenderTemplate(name TemplateName, w io.Writer, data any) erro
 		}
 	}
 
-	return t.ref.Load().ExecuteTemplate(w, "base.gohtml", data)
+	return t.ref.Load().ExecuteTemplate(w, "index.gohtml", data)
 }
 
 func (r *Renderer) RenderFragment(name TemplateName, fragment FragmentName, w io.Writer, data any) error {

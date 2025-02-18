@@ -15,7 +15,7 @@ type LoginForm struct {
 	RedirectURL string
 }
 
-const loginView = "views/login"
+const loginView = "view/login"
 const loginForm = "login/form"
 
 func (r *Routes) LoginViewHandler(c *web.Context) error {

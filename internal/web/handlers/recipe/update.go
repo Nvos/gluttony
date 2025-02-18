@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	updateView = "views/recipe/update"
+	updateView = "view/recipe/update"
 	updateForm = "recipe/form"
 )
 

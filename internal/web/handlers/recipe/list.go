@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	listView    = "views/recipe/list"
+	listView    = "view/recipe/list"
 	listContent = "recipes/list"
 )
 

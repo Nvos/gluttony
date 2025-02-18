@@ -10,7 +10,7 @@ import (
 func collectViewRoutes(f fs.FS) ([]string, error) {
 	var matches []string
 
-	roots, err := fs.Glob(f, "views/*")
+	roots, err := fs.Glob(f, "view/*")
 	if err != nil {
 		return nil, fmt.Errorf("glob view roots: %v", err)
 	}

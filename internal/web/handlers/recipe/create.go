@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	createView = "views/recipe/create"
+	createView = "view/recipe/create"
 	createForm = "recipe/form"
 )
 
