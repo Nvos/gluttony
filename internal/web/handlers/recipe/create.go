@@ -39,7 +39,7 @@ func (r *Routes) CreateFormHandler(c *web.Context) error {
 		return c.Error(http.StatusBadRequest, err)
 	}
 
-	input := form.ToInput()
+	input := form.ToInput(c.Doer.UserID)
 
 	coverImage := c.Request.MultipartForm.File["thumbnail-image"]
 	if len(coverImage) == 1 {

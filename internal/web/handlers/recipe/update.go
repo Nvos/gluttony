@@ -58,7 +58,7 @@ func (r *Routes) UpdateFormHandler(c *web.Context) error {
 		return c.Error(http.StatusBadRequest, err)
 	}
 
-	input := form.ToInput()
+	input := form.ToInput(c.Doer.UserID)
 
 	coverImage := c.Request.MultipartForm.File["thumbnail-image"]
 	if len(coverImage) == 1 {
@@ -82,5 +82,5 @@ func (r *Routes) UpdateFormHandler(c *web.Context) error {
 	}
 
 	c.Data["Form"] = form
-	return c.RenderViewFragment(updateView, updateForm, http.StatusOK)
+	return c.RenderViewFragment(updateView, updateForm, http.StatusBadRequest)
 }

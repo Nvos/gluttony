@@ -306,8 +306,8 @@ func (q *Queries) CreateNutrition(ctx context.Context, arg CreateNutritionParams
 
 const createRecipe = `-- name: CreateRecipe :one
 INSERT INTO recipes (name, description, instructions_markdown, thumbnail_url,
-                     cook_time_seconds, preparation_time_seconds, source, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                     cook_time_seconds, preparation_time_seconds, source, owner_id, servings)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING id
 `
 
@@ -319,7 +319,8 @@ type CreateRecipeParams struct {
 	CookTimeSeconds        int64
 	PreparationTimeSeconds int64
 	Source                 string
-	UpdatedAt              sql.NullTime
+	OwnerID                int64
+	Servings               int64
 }
 
 func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (int64, error) {
@@ -331,7 +332,8 @@ func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (int
 		arg.CookTimeSeconds,
 		arg.PreparationTimeSeconds,
 		arg.Source,
-		arg.UpdatedAt,
+		arg.OwnerID,
+		arg.Servings,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -414,7 +416,7 @@ func (q *Queries) DeleteRecipeTags(ctx context.Context, recipeID int64) error {
 }
 
 const getFullRecipe = `-- name: GetFullRecipe :one
-SELECT id, name, description, instructions_markdown, thumbnail_url, servings, cook_time_seconds, preparation_time_seconds, source, created_at, updated_at, recipe_id, calories, fat, carbs, protein
+SELECT id, name, description, instructions_markdown, thumbnail_url, servings, cook_time_seconds, preparation_time_seconds, source, created_at, updated_at, owner_id, recipe_id, calories, fat, carbs, protein
 FROM recipes
          JOIN main.recipe_nutrition rn on recipes.id = rn.recipe_id
 WHERE recipes.id = ?
@@ -433,6 +435,7 @@ type GetFullRecipeRow struct {
 	Source                 string
 	CreatedAt              time.Time
 	UpdatedAt              sql.NullTime
+	OwnerID                int64
 	RecipeID               int64
 	Calories               float64
 	Fat                    float64
@@ -455,6 +458,7 @@ func (q *Queries) GetFullRecipe(ctx context.Context, id int64) (GetFullRecipeRow
 		&i.Source,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OwnerID,
 		&i.RecipeID,
 		&i.Calories,
 		&i.Fat,
@@ -501,7 +505,8 @@ SET name                     = ?,
     cook_time_seconds        = ?,
     preparation_time_seconds = ?,
     source                   = ?,
-    updated_at               = ?
+    updated_at               = ?,
+    servings                 = ?
 WHERE id = ?
 `
 
@@ -514,6 +519,7 @@ type UpdateRecipeParams struct {
 	PreparationTimeSeconds int64
 	Source                 string
 	UpdatedAt              sql.NullTime
+	Servings               int64
 	ID                     int64
 }
 
@@ -527,6 +533,7 @@ func (q *Queries) UpdateRecipe(ctx context.Context, arg UpdateRecipeParams) erro
 		arg.PreparationTimeSeconds,
 		arg.Source,
 		arg.UpdatedAt,
+		arg.Servings,
 		arg.ID,
 	)
 	return err

@@ -275,6 +275,8 @@ func (s *Store) CreateRecipe(ctx context.Context, input CreateRecipe) (int64, er
 		PreparationTimeSeconds: int64(input.PreparationTime.Seconds()),
 		Source:                 input.Source,
 		ThumbnailUrl:           input.ThumbnailImageURL,
+		OwnerID:                input.OwnerID,
+		Servings:               int64(input.Servings),
 	}
 
 	id, err := s.queries.CreateRecipe(ctx, createRecipeParams)
@@ -378,6 +380,7 @@ func (s *Store) UpdateRecipe(ctx context.Context, input UpdateRecipe) error {
 			Valid: true,
 			Time:  input.UpdatedAt,
 		},
+		Servings: int64(input.Servings),
 	}
 
 	if err := s.queries.UpdateRecipe(ctx, params); err != nil {

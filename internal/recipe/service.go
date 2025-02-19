@@ -42,6 +42,7 @@ type CreateInput struct {
 	Nutrition       Nutrition
 	ThumbnailImage  io.Reader
 	ThumbnailURL    string
+	OwnerID         int64
 }
 
 type Service struct {
@@ -163,6 +164,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (err error) {
 		Servings:             input.Servings,
 		PreparationTime:      input.PreparationTime,
 		CookTime:             input.PreparationTime,
+		OwnerID:              input.OwnerID,
 	}
 	recipeID, err := txStore.CreateRecipe(ctx, params)
 	if err != nil {
@@ -238,8 +240,8 @@ func (s *Service) Update(ctx context.Context, input UpdateInput) error {
 
 	isIngredientsChanged := !slices.EqualFunc(
 		current.Ingredients, input.Ingredients,
-		func(i Ingredient, i2 Ingredient) bool {
-			return i.ID == i2.ID
+		func(v1, v2 Ingredient) bool {
+			return v1 == v2
 		},
 	)
 

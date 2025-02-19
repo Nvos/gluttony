@@ -29,8 +29,8 @@ ORDER BY recipe_id, recipe_order;
 
 -- name: CreateRecipe :one
 INSERT INTO recipes (name, description, instructions_markdown, thumbnail_url,
-                     cook_time_seconds, preparation_time_seconds, source, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                     cook_time_seconds, preparation_time_seconds, source, owner_id, servings)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING id;
 
 -- name: UpdateRecipe :exec
@@ -42,7 +42,8 @@ SET name                     = ?,
     cook_time_seconds        = ?,
     preparation_time_seconds = ?,
     source                   = ?,
-    updated_at               = ?
+    updated_at               = ?,
+    servings                 = ?
 WHERE id = ?;
 
 -- name: CreateNutrition :exec

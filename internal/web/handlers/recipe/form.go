@@ -24,7 +24,7 @@ type Form struct {
 	Nutrition         recipe.Nutrition
 }
 
-func (form Form) ToInput() recipe.CreateInput {
+func (form Form) ToInput(ownerID int64) recipe.CreateInput {
 	return recipe.CreateInput{
 		Name:            form.Name,
 		Description:     form.Description,
@@ -36,6 +36,7 @@ func (form Form) ToInput() recipe.CreateInput {
 		Tags:            form.Tags,
 		Ingredients:     form.Ingredients,
 		Nutrition:       form.Nutrition,
+		OwnerID:         ownerID,
 	}
 }
 

@@ -12,6 +12,7 @@ CREATE TABLE recipes
     source                   TEXT        NOT NULL DEFAULT '',
     created_at               DATETIME             DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at               DATETIME,
+    owner_id                 INTEGER     NOT NULL REFERENCES users (id),
 
     PRIMARY KEY (id)
 );

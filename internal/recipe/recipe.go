@@ -82,6 +82,7 @@ type CreateRecipe struct {
 	Servings             int8
 	PreparationTime      time.Duration
 	CookTime             time.Duration
+	OwnerID              int64
 }
 
 type UpdateRecipe struct {
