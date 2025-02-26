@@ -7,9 +7,9 @@ import (
 )
 
 type Ingredient struct {
-	ID       int64
 	Order    int8
 	Quantity float32
+	Note     string
 	// TODO: unit enum
 	Unit string
 

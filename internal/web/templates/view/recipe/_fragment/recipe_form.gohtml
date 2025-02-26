@@ -282,37 +282,6 @@
   </form>
 {{ end }}
 
-{{ define "sub-sidebar" }}
-  <div class="sidebar">
-    <div class="border-b-neutral-border-1 flex h-18 items-center border-b px-2">
-      <a class="link w-full" href="/recipes/create">
-        {{ template "icons/plus" }}
-        <span>New Recipe Draft</span>
-      </a>
-    </div>
-    <nav class="px-2">
-      <ul>
-        <li>
-          <a
-            title="Butter Curry Very Spicy"
-            class="link w-full overflow-hidden"
-            href="recipe/create/draft/1"
-          >
-            <span class="tag is-ghost-neutral">Draft</span>
-            <span class="truncate">Butter Curry Very Spicy</span>
-          </a>
-        </li>
-        <li>
-          <a class="link w-full overflow-hidden" href="recipe/create/draft/1">
-            <span class="tag is-ghost-neutral">Draft</span>
-            <span class="truncate">Apple Pie</span>
-          </a>
-        </li>
-      </ul>
-    </nav>
-  </div>
-{{ end }}
-
 {{ define "recipe-create/ingredient-row" }}
   <div class="flex w-full flex-1 gap-4">
     <div class="flex w-96 max-w-96 gap-4">
@@ -327,8 +296,8 @@
           required
           name="quantity"
           type="number"
-          min="1"
-          step="1"
+          min="0"
+          step="0.25"
           value="{{ .Quantity }}"
         />
       </label>
@@ -379,7 +348,7 @@
         </select>
       </label>
     </div>
-    <div class="flex w-124 max-w-124 gap-4">
+    <div class="flex w-60 max-w-60 gap-4">
       <label class="form-control w-full">
         {{ if eq .Order 0 }}
           <span class="label">
@@ -395,6 +364,16 @@
           autocomplete="off"
           value="{{ .Name }}"
         />
+      </label>
+    </div>
+    <div class="flex w-60 max-w-60 gap-4">
+      <label class="form-control w-full">
+        {{ if eq .Order 0 }}
+          <span class="label">
+            <span class="label-text">Note</span>
+          </span>
+        {{ end }}
+        <input class="input w-full" name="note" value="{{ .Note }}" />
       </label>
     </div>
   </div>

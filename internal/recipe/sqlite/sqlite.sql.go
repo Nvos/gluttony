@@ -52,7 +52,7 @@ func (q *Queries) AllIngredientsByNames(ctx context.Context, names []string) ([]
 }
 
 const allRecipeIngredients = `-- name: AllRecipeIngredients :many
-SELECT id, name, recipe_order, recipe_id, ingredient_id, unit, quantity
+SELECT id, name, recipe_order, recipe_id, ingredient_id, unit, quantity, note
 FROM ingredients
          JOIN recipe_ingredients ri on ingredients.id = ri.ingredient_id
 WHERE recipe_id in (/*SLICE:ids*/?)
@@ -66,7 +66,8 @@ type AllRecipeIngredientsRow struct {
 	RecipeID     int64
 	IngredientID int64
 	Unit         string
-	Quantity     int64
+	Quantity     float64
+	Note         string
 }
 
 func (q *Queries) AllRecipeIngredients(ctx context.Context, ids []int64) ([]AllRecipeIngredientsRow, error) {
@@ -96,6 +97,7 @@ func (q *Queries) AllRecipeIngredients(ctx context.Context, ids []int64) ([]AllR
 			&i.IngredientID,
 			&i.Unit,
 			&i.Quantity,
+			&i.Note,
 		); err != nil {
 			return nil, err
 		}
@@ -341,8 +343,8 @@ func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (int
 }
 
 const createRecipeIngredient = `-- name: CreateRecipeIngredient :exec
-INSERT INTO recipe_ingredients (recipe_order, recipe_id, ingredient_id, unit, quantity)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO recipe_ingredients (recipe_order, recipe_id, ingredient_id, unit, quantity, note)
+VALUES (?, ?, ?, ?, ?, ?)
 `
 
 type CreateRecipeIngredientParams struct {
@@ -350,7 +352,8 @@ type CreateRecipeIngredientParams struct {
 	RecipeID     int64
 	IngredientID int64
 	Unit         string
-	Quantity     int64
+	Quantity     float64
+	Note         string
 }
 
 func (q *Queries) CreateRecipeIngredient(ctx context.Context, arg CreateRecipeIngredientParams) error {
@@ -360,6 +363,7 @@ func (q *Queries) CreateRecipeIngredient(ctx context.Context, arg CreateRecipeIn
 		arg.IngredientID,
 		arg.Unit,
 		arg.Quantity,
+		arg.Note,
 	)
 	return err
 }

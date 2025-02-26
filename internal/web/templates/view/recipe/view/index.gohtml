@@ -142,10 +142,17 @@
   <ul class="marker:text-primary-9 list-disc pl-4">
     {{ range $val := .Ingredients }}
       <li class="pb-1">
-        {{ if eq $val.Unit "count" }}
-          {{ $val.Quantity }}{{ " " }}{{ " " }}{{ $val.Ingredient.Name }}
-        {{ else }}
-          {{ $val.Quantity }}{{ " " }}{{ $val.Unit }}{{ " " }}{{ $val.Ingredient.Name }}
+        <div>
+          {{ if eq $val.Unit "count" }}
+            {{ $val.Quantity }}{{ " " }}{{ " " }}{{ $val.Ingredient.Name }}
+          {{ else }}
+            {{ $val.Quantity }}{{ " " }}{{ $val.Unit }}{{ " " }}{{ $val.Ingredient.Name }}
+          {{ end }}
+        </div>
+        {{ if ne $val.Note "" }}
+          <div class="text-neutral-11 text-sm">
+            {{ $val.Note }}
+          </div>
         {{ end }}
       </li>
     {{ end }}

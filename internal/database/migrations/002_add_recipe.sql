@@ -31,7 +31,8 @@ CREATE TABLE recipe_ingredients
     recipe_id     INTEGER NOT NULL REFERENCES recipes (id),
     ingredient_id INTEGER NOT NULL REFERENCES ingredients (id),
     unit          TEXT    NOT NULL DEFAULT 'g',
-    quantity      INTEGER NOT NULL,
+    quantity      REAL    NOT NULL,
+    note          TEXT    NOT NULL DEFAULT '',
 
     PRIMARY KEY (recipe_id, ingredient_id)
 );

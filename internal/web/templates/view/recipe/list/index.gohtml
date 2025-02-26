@@ -4,7 +4,6 @@
 {{ define "view" }}
   <div class="flex flex-1">
     {{ template "sidebar" . }}
-    {{ template "sub-sidebar" . }}
     <div class="bg-neutral-layer-2 w-full">
       {{ template "recipes/header" . }}
       <main class="flex p-8">
@@ -65,6 +64,11 @@
         />
       </div>
     </form>
+
+    <a class="button is-solid-primary" href="/recipes/create">
+      {{ template "icons/plus" }}
+      <span>New Recipe</span>
+    </a>
   </header>
   <script>
     const click = (event) => console.log(event);

@@ -1,19 +1,19 @@
 .link {
-    @apply px-4 gap-4 h-10 items-center flex text-neutral-font-secondary rounded-md;
+  @apply text-neutral-font-secondary flex h-10 items-center gap-4 rounded-md px-4;
 
-    &:hover {
-        @apply text-neutral-font bg-neutral-9/10;
-    }
+  &:hover {
+    @apply text-neutral-font bg-neutral-9/10;
+  }
 
-    &.active {
-        @apply text-neutral-font;
-    }
+  &.active {
+    @apply text-neutral-font;
+  }
 }
 
 .sidebar {
-    @apply h-dvh overflow-y-auto overscroll-contain top-0 sticky min-w-64 flex flex-col bg-neutral-layer-1 shadow-sm border-r border-neutral-border-1;
+  @apply bg-neutral-layer-1 border-neutral-border-1 sticky top-0 flex h-dvh min-w-64 flex-col overflow-y-auto overscroll-contain border-r shadow-sm;
 
-    nav {
-        @apply py-4;
-    }
+  nav {
+    @apply py-4;
+  }
 }

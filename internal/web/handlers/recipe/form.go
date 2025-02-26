@@ -44,6 +44,7 @@ func NewRecipeForm(values url.Values) (Form, error) {
 	ingredients := make([]recipe.Ingredient, len(values["ingredient"]))
 
 	quantities := values["quantity"]
+	notes := values["note"]
 	units := values["unit"]
 	for i, name := range values["ingredient"] {
 		quantity, err := strconv.ParseFloat(quantities[i], 32)
@@ -55,6 +56,7 @@ func NewRecipeForm(values url.Values) (Form, error) {
 		ingredients[i].Quantity = float32(quantity)
 		ingredients[i].Unit = units[i]
 		ingredients[i].Name = name
+		ingredients[i].Note = notes[i]
 	}
 
 	servings, err := strconv.ParseInt(values.Get("servings"), 10, 8)

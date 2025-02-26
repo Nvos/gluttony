@@ -176,13 +176,14 @@ func (s *Store) AllIngredientsByRecipeIDs(
 		}
 
 		out[ingredients[i].RecipeID] = append(out[ingredients[i].RecipeID], Ingredient{
+			Order:    int8(ingredients[i].RecipeOrder),
+			Quantity: float32(ingredients[i].Quantity),
+			Note:     ingredients[i].Note,
+			Unit:     ingredients[i].Unit,
 			Ingredient: ingredient.Ingredient{
 				ID:   int(ingredients[i].ID),
 				Name: ingredients[i].Name,
 			},
-			Order:    int8(ingredients[i].RecipeOrder),
-			Quantity: float32(ingredients[i].Quantity),
-			Unit:     ingredients[i].Unit,
 		})
 	}
 
@@ -229,6 +230,7 @@ func (s *Store) CreateRecipeIngredients(
 		savedIngredients[i].Order = int8(i)
 		savedIngredients[i].Quantity = ingredients[i].Quantity
 		savedIngredients[i].Unit = ingredients[i].Unit
+		savedIngredients[i].Note = ingredients[i].Note
 	}
 
 	for i := range savedIngredients {
@@ -237,7 +239,8 @@ func (s *Store) CreateRecipeIngredients(
 			RecipeID:     recipeID,
 			IngredientID: int64(savedIngredients[i].Ingredient.ID),
 			Unit:         savedIngredients[i].Unit,
-			Quantity:     int64(savedIngredients[i].Quantity),
+			Quantity:     float64(savedIngredients[i].Quantity),
+			Note:         savedIngredients[i].Note,
 		})
 		if err != nil {
 			return fmt.Errorf("create recipe ingredient: %w", err)

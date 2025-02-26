@@ -79,8 +79,8 @@ VALUES (?)
 RETURNING id;
 
 -- name: CreateRecipeIngredient :exec
-INSERT INTO recipe_ingredients (recipe_order, recipe_id, ingredient_id, unit, quantity)
-VALUES (?, ?, ?, ?, ?);
+INSERT INTO recipe_ingredients (recipe_order, recipe_id, ingredient_id, unit, quantity, note)
+VALUES (?, ?, ?, ?, ?, ?);
 
 -- name: CreateRecipeTag :exec
 INSERT INTO recipe_tags (recipe_order, recipe_id, tag_id)
