@@ -1,18 +1,33 @@
 version: "2"
 sql:
-  - engine: "sqlite"
-    queries: "internal/user/sqlite.sql"
+  - engine: "postgresql"
+    queries: "internal/recipe/postgres.sql"
     schema: "internal/database/migrations"
     gen:
       go:
-        package: "sqlite"
-        out: "internal/user/sqlite"
+        package: "postgres"
+        sql_package: "pgx/v5"
+        out: "internal/recipe/postgres"
         omit_unused_structs: true
-  - engine: "sqlite"
-    queries: "internal/recipe/sqlite.sql"
+        emit_empty_slices: true
+        emit_prepared_queries: false
+        overrides:
+          - db_type: "timestamptz"
+            go_type:
+              type: "time.Time"
+          - db_type: "timestamptz"
+            nullable: true
+            go_type:
+              type: "*time.Time"
+  - engine: "postgresql"
+    queries: "internal/user/postgres.sql"
     schema: "internal/database/migrations"
     gen:
       go:
-        package: "sqlite"
-        out: "internal/recipe/sqlite"
+        package: "postgres"
+        sql_package: "pgx/v5"
+        out: "internal/user/postgres"
         omit_unused_structs: true
+        emit_empty_slices: true
+        emit_prepared_queries: false
+

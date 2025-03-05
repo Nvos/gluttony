@@ -2,11 +2,11 @@
 // versions:
 //   sqlc v1.28.0
 
-package sqlite
+package postgres
 
 type User struct {
-	ID       int64
+	ID       int32
 	Username string
 	Password string
-	Role     int64
+	Role     int32
 }

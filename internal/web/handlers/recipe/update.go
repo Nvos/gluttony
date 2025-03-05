@@ -15,34 +15,34 @@ const (
 
 func (r *Routes) UpdateViewHandler(c *web.Context) error {
 	recipeIDPathParam := c.Request.PathValue("recipe_id")
-	recipeID, err := strconv.ParseInt(recipeIDPathParam, 10, 64)
+	recipeID, err := strconv.ParseInt(recipeIDPathParam, 10, 32)
 	if err != nil {
 		return c.Error(http.StatusNotFound, err)
 	}
 
-	recipe, err := r.service.GetFull(c.Context(), recipeID)
+	fullRecipe, err := r.service.GetFull(c.Context(), int32(recipeID))
 	if err != nil {
 		return c.Error(http.StatusNotFound, err)
 	}
 
-	tags := make([]string, 0, len(recipe.Tags))
-	for _, tag := range recipe.Tags {
+	tags := make([]string, 0, len(fullRecipe.Tags))
+	for _, tag := range fullRecipe.Tags {
 		tags = append(tags, tag.Name)
 	}
 
 	c.Data["Form"] = Form{
-		ID:                int64(recipe.ID),
-		Name:              recipe.Name,
-		Description:       recipe.Description,
-		Source:            recipe.Source,
-		Instructions:      recipe.InstructionsMarkdown,
-		ThumbnailImageURL: recipe.ThumbnailImageURL,
-		Servings:          recipe.Servings,
-		PreparationTime:   recipe.PreparationTime,
-		CookTime:          recipe.CookTime,
+		ID:                fullRecipe.ID,
+		Name:              fullRecipe.Name,
+		Description:       fullRecipe.Description,
+		Source:            fullRecipe.Source,
+		Instructions:      fullRecipe.InstructionsMarkdown,
+		ThumbnailImageURL: fullRecipe.ThumbnailImageURL,
+		Servings:          fullRecipe.Servings,
+		PreparationTime:   fullRecipe.PreparationTime,
+		CookTime:          fullRecipe.CookTime,
 		Tags:              tags,
-		Ingredients:       recipe.Ingredients,
-		Nutrition:         recipe.Nutrition,
+		Ingredients:       fullRecipe.Ingredients,
+		Nutrition:         fullRecipe.Nutrition,
 	}
 
 	return c.RenderView(updateView, http.StatusOK)

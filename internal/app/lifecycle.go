@@ -14,7 +14,7 @@ import (
 func (app *App) Start(ctx context.Context, group *errgroup.Group) error {
 	// TODO: move to cmd, left for now as it is convenient
 	if err := app.userService.Create(ctx, "admin", "admin"); err != nil {
-		return err
+		return fmt.Errorf("create initial admin user: %w", err)
 	}
 
 	group.Go(func() error {

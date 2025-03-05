@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"github.com/spf13/afero"
 	"gluttony/internal/config"
@@ -48,7 +49,9 @@ func NewApp(cfg config.Config) (*App, error) {
 		return nil, fmt.Errorf("create directories: %w", err)
 	}
 
-	db, err := database.NewSqlite(cfg.WorkDirectoryPath)
+	// TODO: move to config
+	dbURL := "postgres://postgres:postgres@localhost:5432/gluttony?sslmode=disable"
+	db, err := database.NewPostgres(context.Background(), dbURL)
 	if err != nil {
 		return nil, fmt.Errorf("create database: %w", err)
 	}

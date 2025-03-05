@@ -29,8 +29,8 @@ func (r *Routes) ListViewHandler(c *web.Context) error {
 
 	recipePartials, err := r.service.AllSummaries(c.Context(), recipe.SearchInput{
 		Search: search,
-		Page:   int64(page),
-		Limit:  int64(limit),
+		Page:   int32(page),
+		Limit:  int32(limit),
 	})
 	if err != nil {
 		return fmt.Errorf("could not get recipe partials: %w", err)

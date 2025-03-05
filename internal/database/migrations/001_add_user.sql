@@ -1,7 +1,7 @@
 -- +goose Up
 CREATE TABLE users
 (
-    id       INTEGER     NOT NULL,
+    id       SERIAL      NOT NULL,
     username TEXT UNIQUE NOT NULL,
     password TEXT        NOT NULL,
     role     INTEGER     NOT NULL DEFAULT 1,

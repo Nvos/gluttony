@@ -24,7 +24,7 @@ type Nutrition struct {
 }
 
 type Summary struct {
-	ID                int64
+	ID                int32
 	Name              string
 	Description       string
 	ThumbnailImageURL string
@@ -32,7 +32,7 @@ type Summary struct {
 }
 
 type Recipe struct {
-	ID                   int64
+	ID                   int32
 	Name                 string
 	Description          string
 	ThumbnailImageURL    string
@@ -50,18 +50,19 @@ type Recipe struct {
 
 type SearchInput struct {
 	Search    string
-	RecipeIDs []int64
-	Page      int64
-	Limit     int64
+	RecipeIDs []int32
+	Page      int32
+	Limit     int32
 }
 
 type SearchResult struct {
 	IsSearch   bool
-	TotalCount uint64
-	IDs        []int64
+	TotalCount uint32
+	IDs        []int32
 }
 
-func (sr SearchResult) IsSearchCondition() int64 {
+// TODO: change to bool (sqlite needed integer)
+func (sr SearchResult) IsSearchCondition() int32 {
 	if sr.IsSearch {
 		return 1
 	}
@@ -82,11 +83,11 @@ type CreateRecipe struct {
 	Servings             int8
 	PreparationTime      time.Duration
 	CookTime             time.Duration
-	OwnerID              int64
+	OwnerID              int32
 }
 
 type UpdateRecipe struct {
-	ID        int64
+	ID        int32
 	UpdatedAt time.Time
 
 	CreateRecipe

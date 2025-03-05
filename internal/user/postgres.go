@@ -2,23 +2,22 @@ package user
 
 import (
 	"context"
-	"database/sql"
-	"gluttony/internal/database"
+	"github.com/jackc/pgx/v5"
 	"gluttony/internal/security"
-	"gluttony/internal/user/sqlite"
+	"gluttony/internal/user/postgres"
 )
 
 type Store struct {
-	queries *sqlite.Queries
+	queries *postgres.Queries
 }
 
-func NewStore(db database.DBTX) *Store {
+func NewStore(db postgres.DBTX) *Store {
 	return &Store{
-		queries: sqlite.New(db),
+		queries: postgres.New(db),
 	}
 }
 
-func (s *Store) WithTx(tx *sql.Tx) *Store {
+func (s *Store) WithTx(tx pgx.Tx) *Store {
 	return &Store{
 		queries: s.queries.WithTx(tx),
 	}
@@ -38,8 +37,8 @@ func (s *Store) GetByUsername(ctx context.Context, username string) (User, error
 	}, nil
 }
 
-func (s *Store) Create(ctx context.Context, username string, password string) (int64, error) {
-	userID, err := s.queries.CreateUser(ctx, sqlite.CreateUserParams{
+func (s *Store) Create(ctx context.Context, username string, password string) (int32, error) {
+	userID, err := s.queries.CreateUser(ctx, postgres.CreateUserParams{
 		Username: username,
 		Password: password,
 	})

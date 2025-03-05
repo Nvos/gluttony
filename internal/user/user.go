@@ -7,7 +7,7 @@ import (
 )
 
 type User struct {
-	ID       int64
+	ID       int32
 	Username string
 	Role     security.Role
 	Password string

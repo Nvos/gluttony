@@ -23,7 +23,7 @@ const (
 type Session struct {
 	id string
 
-	UserID   int64
+	UserID   int32
 	Username string
 	Role     Role
 }

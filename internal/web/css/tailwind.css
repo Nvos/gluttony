@@ -1,7 +1,9 @@
 @import '@radix-ui/colors/red.css' layer(base);
 @import '@radix-ui/colors/red-dark.css' layer(base);
 @import '@radix-ui/colors/slate.css' layer(base);
+@import '@radix-ui/colors/slate-alpha.css' layer(base);
 @import '@radix-ui/colors/slate-dark.css' layer(base);
+@import '@radix-ui/colors/slate-dark-alpha.css' layer(base);
 @import '@radix-ui/colors/orange.css' layer(base);
 @import '@radix-ui/colors/orange-dark.css' layer(base);
 

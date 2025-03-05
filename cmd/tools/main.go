@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/urfave/cli/v2"
-	"gluttony/tools/linter"
 	"golang.org/x/sync/errgroup"
 	"io/fs"
 	"log/slog"
@@ -14,7 +13,6 @@ import (
 )
 
 func main() {
-	const golangCiLintVersion = "1.61.0"
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	workDir, err := os.Getwd()
@@ -34,21 +32,10 @@ func main() {
 		workDir: workDir,
 		binFS:   binFS,
 		binPath: binDir,
-		linter:  linter.NewLinter(golangCiLintVersion, binDir, logger),
 	}
 
 	app := &cli.App{
 		Commands: []*cli.Command{
-			{
-				Name: "lint",
-				Action: func(ctx *cli.Context) error {
-					if err := tools.linter.Run(ctx.Context); err != nil {
-						return err
-					}
-
-					return nil
-				},
-			},
 			{
 				Name: "tailwind",
 				Action: func(ctx *cli.Context) error {
@@ -63,7 +50,7 @@ func main() {
 					})
 
 					if err := group.Wait(); err != nil {
-						return err
+						return fmt.Errorf("tailwind wait: %w", err)
 					}
 
 					return nil
@@ -82,8 +69,6 @@ type Tools struct {
 	workDir string
 	binFS   fs.FS
 	binPath string
-
-	linter *linter.Linter
 }
 
 func (t *Tools) liveTailwind(ctx context.Context) error {

@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/blevesearch/bleve"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"io"
 	"log/slog"
 	"slices"
@@ -14,7 +16,7 @@ import (
 )
 
 type indexEntry struct {
-	ID          int64
+	ID          int32
 	Name        string
 	Description string
 }
@@ -26,7 +28,7 @@ type Tag struct {
 }
 
 type UpdateInput struct {
-	ID int64
+	ID int32
 	CreateInput
 }
 type CreateInput struct {
@@ -42,11 +44,11 @@ type CreateInput struct {
 	Nutrition       Nutrition
 	ThumbnailImage  io.Reader
 	ThumbnailURL    string
-	OwnerID         int64
+	OwnerID         int32
 }
 
 type Service struct {
-	db          *sql.DB
+	db          *pgxpool.Pool
 	mediaStore  MediaStore
 	searchIndex bleve.Index
 	store       *Store
@@ -59,7 +61,7 @@ func (s *Service) Stop() error {
 }
 
 func NewService(
-	db *sql.DB,
+	db *pgxpool.Pool,
 	mediaStore MediaStore,
 	searchIndex bleve.Index,
 	logger *slog.Logger,
@@ -109,7 +111,7 @@ func (s *Service) indexAll(ctx context.Context) error {
 	batch := s.searchIndex.NewBatch()
 	for i := range partial {
 		value := indexEntry{
-			ID:          int64(partial[i].ID),
+			ID:          partial[i].ID,
 			Name:        partial[i].Name,
 			Description: partial[i].Description,
 		}
@@ -135,19 +137,15 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (err error) {
 		}
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		err := tx.Rollback()
-		if errors.Is(err, sql.ErrTxDone) {
+		if err := tx.Rollback(ctx); err != nil {
+			// Commited
 			return
-		}
-
-		if err != nil {
-			s.logger.Error("Rolling back transaction", slog.String("err", err.Error()))
 		}
 
 		// TODO: remove image
@@ -192,7 +190,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (err error) {
 		return err
 	}
 
-	return tx.Commit()
+	return tx.Commit(ctx)
 }
 
 // TODO: move to index
@@ -208,20 +206,20 @@ func (s *Service) search(input SearchInput) (SearchResult, error) {
 	if err != nil {
 		return SearchResult{}, fmt.Errorf("search recipe index: %w", err)
 	}
-	recipeIDs := make([]int64, len(searchResult.Hits))
+	recipeIDs := make([]int32, len(searchResult.Hits))
 	for i := range searchResult.Hits {
-		id, err := strconv.ParseInt(searchResult.Hits[i].ID, 10, 64)
+		id, err := strconv.ParseInt(searchResult.Hits[i].ID, 10, 32)
 		if err != nil {
-			// All indexed ids are int64, any other id is unexpected and shouldn't happen
+			// All indexed ids are int32, any other id is unexpected and shouldn't happen
 			panic(fmt.Sprintf("unexpected recipe index id: %v", err))
 		}
 
-		recipeIDs[i] = id
+		recipeIDs[i] = int32(id)
 	}
 
 	return SearchResult{
 		IsSearch:   true,
-		TotalCount: searchResult.Total,
+		TotalCount: uint32(searchResult.Total),
 		IDs:        recipeIDs,
 	}, nil
 }
@@ -245,13 +243,13 @@ func (s *Service) Update(ctx context.Context, input UpdateInput) error {
 		},
 	)
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		err := tx.Rollback()
+		err := tx.Rollback(ctx)
 		if errors.Is(err, sql.ErrTxDone) {
 			return
 		}
@@ -316,7 +314,7 @@ func (s *Service) Update(ctx context.Context, input UpdateInput) error {
 		return fmt.Errorf("update recipe: %w", err)
 	}
 
-	return tx.Commit()
+	return tx.Commit(ctx)
 }
 
 func (s *Service) AllSummaries(ctx context.Context, input SearchInput) ([]Summary, error) {
@@ -334,7 +332,7 @@ func (s *Service) AllSummaries(ctx context.Context, input SearchInput) ([]Summar
 		return nil, err
 	}
 
-	tags, err := s.store.AllTagsByRecipeIDs(ctx, searchResult.IDs...)
+	tags, err := s.store.AllTagsByRecipeIDs(ctx, searchResult.IDs)
 	if err != nil {
 		return []Summary{}, err
 	}
@@ -351,7 +349,7 @@ func (s *Service) AllSummaries(ctx context.Context, input SearchInput) ([]Summar
 	return recipeSummaries, nil
 }
 
-func (s *Service) GetFull(ctx context.Context, recipeID int64) (Recipe, error) {
+func (s *Service) GetFull(ctx context.Context, recipeID int32) (Recipe, error) {
 	recipe, err := s.store.GetRecipe(ctx, recipeID)
 	if err != nil {
 		return Recipe{}, fmt.Errorf("get recipe id=%d: %w", recipeID, err)

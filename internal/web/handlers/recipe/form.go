@@ -10,7 +10,7 @@ import (
 )
 
 type Form struct {
-	ID                int64
+	ID                int32
 	Name              string
 	Description       string
 	Source            string
@@ -24,7 +24,7 @@ type Form struct {
 	Nutrition         recipe.Nutrition
 }
 
-func (form Form) ToInput(ownerID int64) recipe.CreateInput {
+func (form Form) ToInput(ownerID int32) recipe.CreateInput {
 	return recipe.CreateInput{
 		Name:            form.Name,
 		Description:     form.Description,
@@ -72,13 +72,13 @@ func NewRecipeForm(values url.Values) (Form, error) {
 	fat, _ := strconv.ParseFloat(values.Get("fat"), 32)
 	carbs, _ := strconv.ParseFloat(values.Get("carbs"), 32)
 
-	id, err := strconv.ParseInt(values.Get("id"), 10, 64)
+	id, err := strconv.ParseInt(values.Get("id"), 10, 32)
 	if err != nil {
 		return Form{}, fmt.Errorf("parse id: %w", err)
 	}
 
 	return Form{
-		ID:                id,
+		ID:                int32(id),
 		Name:              values.Get("name"),
 		Description:       values.Get("description"),
 		Source:            values.Get("source"),

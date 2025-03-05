@@ -58,6 +58,8 @@ func (r *Routes) CreateFormHandler(c *web.Context) error {
 		return nil
 	}
 
-	c.Data["Form"] = form
-	return c.RenderViewFragment(createView, createForm, http.StatusOK)
+	return c.Error(http.StatusBadRequest, err)
+
+	//c.Data["Form"] = form
+	//return c.RenderViewFragment(createView, createForm, http.StatusOK)
 }

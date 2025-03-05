@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"gluttony/internal/security"
 )
 
@@ -13,7 +14,7 @@ type Service struct {
 	session SessionStore
 }
 
-func NewService(db *sql.DB, sessionStore SessionStore) *Service {
+func NewService(db *pgxpool.Pool, sessionStore SessionStore) *Service {
 	return &Service{
 		db:      NewStore(db),
 		session: sessionStore,

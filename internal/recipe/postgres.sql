@@ -1,90 +1,83 @@
 -- name: GetFullRecipe :one
 SELECT *
 FROM recipes
-         JOIN main.recipe_nutrition rn on recipes.id = rn.recipe_id
-WHERE recipes.id = ?
+         JOIN recipe_nutrition rn on recipes.id = rn.recipe_id
+WHERE recipes.id = $1
 LIMIT 1;
-
--- name: AllRecipeSummary :many
-SELECT id, name, description, thumbnail_url
-FROM recipes
-WHERE (CAST(sqlc.arg('is_search') as INTEGER) = FALSE OR id in (sqlc.slice('ids')))
-ORDER BY id DESC
-LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
 -- name: AllRecipeTags :many
 SELECT *
 FROM tags
          JOIN recipe_tags rt on tags.id = rt.tag_id
-WHERE recipe_id in (sqlc.slice('ids'))
+WHERE recipe_id = ANY (sqlc.slice('ids')::int[])
 ORDER BY recipe_id, recipe_order;
 
 -- name: AllRecipeIngredients :many
 SELECT *
 FROM ingredients
          JOIN recipe_ingredients ri on ingredients.id = ri.ingredient_id
-WHERE recipe_id in (sqlc.slice('ids'))
+WHERE recipe_id = ANY (sqlc.slice('ids')::int[])
 ORDER BY recipe_id, recipe_order;
 
 
 -- name: CreateRecipe :one
 INSERT INTO recipes (name, description, instructions_markdown, thumbnail_url,
                      cook_time_seconds, preparation_time_seconds, source, owner_id, servings)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 RETURNING id;
 
 -- name: UpdateRecipe :exec
 UPDATE recipes
-SET name                     = ?,
-    description              = ?,
-    instructions_markdown    = ?,
-    thumbnail_url            = ?,
-    cook_time_seconds        = ?,
-    preparation_time_seconds = ?,
-    source                   = ?,
-    updated_at               = ?,
-    servings                 = ?
-WHERE id = ?;
+SET name                     = $1,
+    description              = $2,
+    instructions_markdown    = $3,
+    thumbnail_url            = $4,
+    cook_time_seconds        = $5,
+    preparation_time_seconds = $6,
+    source                   = $7,
+    updated_at               = $8,
+    servings                 = $9
+WHERE id = $10;
 
 -- name: CreateNutrition :exec
 INSERT INTO recipe_nutrition (recipe_id, calories, fat, carbs, protein)
-VALUES (?, ?, ?, ?, ?);
+VALUES ($1, $2, $3, $4, $5);
 
 -- name: UpdateNutrition :exec
 UPDATE recipe_nutrition
-SET calories = ?,
-    fat      = ?,
-    carbs    = ?,
-    protein  = ?
-WHERE recipe_id = ?;
+SET calories = $1,
+    fat      = $2,
+    carbs    = $3,
+    protein  = $4
+WHERE recipe_id = $5;
 
 -- name: AllTagsByNames :many
 SELECT id, name
 FROM tags
-WHERE name in (sqlc.slice('names'));
+WHERE name = ANY (sqlc.slice('names')::text[]);
 
 -- name: CreateTag :one
 INSERT INTO tags (name)
-VALUES (?)
+VALUES ($1)
 RETURNING id;
 
 -- name: AllIngredientsByNames :many
 SELECT id, name
 FROM ingredients
-WHERE name in (sqlc.slice('names'));
+WHERE name = ANY (sqlc.slice('names')::text[]);
 
 -- name: CreateIngredient :one
 INSERT INTO ingredients (name)
-VALUES (?)
+VALUES ($1)
 RETURNING id;
 
 -- name: CreateRecipeIngredient :exec
 INSERT INTO recipe_ingredients (recipe_order, recipe_id, ingredient_id, unit, quantity, note)
-VALUES (?, ?, ?, ?, ?, ?);
+VALUES ($1, $2, $3, $4, $5, $6);
 
 -- name: CreateRecipeTag :exec
 INSERT INTO recipe_tags (recipe_order, recipe_id, tag_id)
-VALUES (?, ?, ?);
+VALUES ($1, $2, $3);
 
 -- name: DeleteRecipeTags :exec
 DELETE
@@ -95,3 +88,10 @@ WHERE recipe_id = sqlc.arg('recipe_id');
 DELETE
 FROM recipe_ingredients
 WHERE recipe_id = sqlc.arg('recipe_id');
+
+-- name: AllRecipeSummaries :many
+SELECT id, name, description, thumbnail_url
+FROM recipes
+WHERE (sqlc.slice(ids)::int[] IS NULL OR id = ANY (sqlc.slice(ids)::int[]))
+ORDER BY id DESC
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');

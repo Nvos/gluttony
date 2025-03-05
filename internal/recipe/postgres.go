@@ -1,52 +1,30 @@
 package recipe
 
 import (
-	"bytes"
 	"context"
-	"database/sql"
 	"fmt"
-	"gluttony/internal/database"
+	"github.com/jackc/pgx/v5"
 	"gluttony/internal/ingredient"
-	"gluttony/internal/recipe/sqlite"
-	"strings"
-	"text/template"
+	"gluttony/internal/recipe/postgres"
 	"time"
 )
 
-var allRecipesQuery = template.Must(
-	template.New("").
-		Funcs(template.FuncMap{
-			"array": func(count int) string {
-				return strings.Repeat(",?", count)[1:]
-			},
-		}).
-		Parse(`
-		SELECT id, name, description, thumbnail_url
-		FROM recipes
-		{{if ne (len .RecipeIDs) 0}}
-		WHERE id in ({{array (len .RecipeIDs)}})
-		{{end}}
-		ORDER BY id DESC
-		LIMIT ? OFFSET ?;
-	`),
-)
-
 type Store struct {
-	db      database.DBTX
-	queries *sqlite.Queries
+	db      postgres.DBTX
+	queries *postgres.Queries
 }
 
-func NewStore(db database.DBTX) *Store {
+func NewStore(db postgres.DBTX) *Store {
 	return &Store{
 		db:      db,
-		queries: sqlite.New(db),
+		queries: postgres.New(db),
 	}
 }
 
-func (s *Store) WithTx(tx *sql.Tx) *Store {
+func (s *Store) WithTx(tx pgx.Tx) *Store {
 	return &Store{
 		db:      tx,
-		queries: sqlite.New(tx),
+		queries: postgres.New(tx),
 	}
 }
 
@@ -54,36 +32,32 @@ func (s *Store) AllRecipeSummaries(
 	ctx context.Context,
 	input SearchInput,
 ) ([]Summary, error) {
-	var buffer bytes.Buffer
-	if err := allRecipesQuery.Execute(&buffer, input); err != nil {
-		return nil, err
-	}
 
-	query := buffer.String()
-	params := make([]any, 0, 2+len(input.RecipeIDs))
+	ids := make([]int32, 0, len(input.RecipeIDs))
 	for i := range input.RecipeIDs {
-		params = append(params, input.RecipeIDs[i])
+		ids = append(ids, int32(i))
 	}
-	params = append(params, input.Limit, input.Page*input.Limit)
 
-	rows, err := s.db.QueryContext(ctx, query, params...)
+	if len(ids) == 0 {
+		ids = nil
+	}
+
+	rows, err := s.queries.AllRecipeSummaries(ctx, postgres.AllRecipeSummariesParams{
+		Ids:    nil,
+		Offset: int32(input.Page * input.Limit),
+		Limit:  int32(input.Limit),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	defer rows.Close()
-
 	out := make([]Summary, 0, 20)
-	for rows.Next() {
-		value := Summary{}
-		err = rows.Scan(
-			&value.ID,
-			&value.Name,
-			&value.Description,
-			&value.ThumbnailImageURL,
-		)
-		if err != nil {
-			return nil, err
+	for _, row := range rows {
+		value := Summary{
+			ID:                row.ID,
+			Name:              row.Name,
+			Description:       row.Description,
+			ThumbnailImageURL: row.ThumbnailUrl,
 		}
 
 		for i := range input.RecipeIDs {
@@ -101,13 +75,13 @@ func (s *Store) AllRecipeSummaries(
 	return out, nil
 }
 
-func (s *Store) GetRecipe(ctx context.Context, ID int64) (Recipe, error) {
+func (s *Store) GetRecipe(ctx context.Context, ID int32) (Recipe, error) {
 	recipe, err := s.queries.GetFullRecipe(ctx, ID)
 	if err != nil {
 		return Recipe{}, fmt.Errorf("get recipe id=%d: %w", ID, err)
 	}
 
-	tags, err := s.AllTagsByRecipeIDs(ctx, ID)
+	tags, err := s.AllTagsByRecipeIDs(ctx, []int32{ID})
 	if err != nil {
 		return Recipe{}, fmt.Errorf("get all recipe tags for recipe id=%d: %w", ID, err)
 	}
@@ -138,13 +112,13 @@ func (s *Store) GetRecipe(ctx context.Context, ID int64) (Recipe, error) {
 	}, nil
 }
 
-func (s *Store) AllTagsByRecipeIDs(ctx context.Context, recipeIDs ...int64) (map[int64][]Tag, error) {
+func (s *Store) AllTagsByRecipeIDs(ctx context.Context, recipeIDs []int32) (map[int32][]Tag, error) {
 	tags, err := s.queries.AllRecipeTags(ctx, recipeIDs)
 	if err != nil {
 		return nil, fmt.Errorf("get all tags by recipe ids = %+v: %w", recipeIDs, err)
 	}
 
-	out := make(map[int64][]Tag, len(tags))
+	out := make(map[int32][]Tag, len(tags))
 	for i := range tags {
 		if out[tags[i].RecipeID] == nil {
 			out[tags[i].RecipeID] = []Tag{}
@@ -162,14 +136,14 @@ func (s *Store) AllTagsByRecipeIDs(ctx context.Context, recipeIDs ...int64) (map
 
 func (s *Store) AllIngredientsByRecipeIDs(
 	ctx context.Context,
-	recipeIDs ...int64,
-) (map[int64][]Ingredient, error) {
+	recipeIDs ...int32,
+) (map[int32][]Ingredient, error) {
 	ingredients, err := s.queries.AllRecipeIngredients(ctx, recipeIDs)
 	if err != nil {
 		return nil, fmt.Errorf("get all ingredients by recipe ids = %+v: %w", recipeIDs, err)
 	}
 
-	out := make(map[int64][]Ingredient, len(ingredients))
+	out := make(map[int32][]Ingredient, len(ingredients))
 	for i := range ingredients {
 		if out[ingredients[i].RecipeID] == nil {
 			out[ingredients[i].RecipeID] = []Ingredient{}
@@ -192,7 +166,7 @@ func (s *Store) AllIngredientsByRecipeIDs(
 
 func (s *Store) CreateRecipeIngredients(
 	ctx context.Context,
-	recipeID int64,
+	recipeID int32,
 	ingredients []Ingredient,
 ) error {
 
@@ -206,14 +180,14 @@ func (s *Store) CreateRecipeIngredients(
 		return fmt.Errorf("all ingredients by names: %w", err)
 	}
 
-	existingIngredientLookup := make(map[string]sqlite.Ingredient, len(existingIngredients))
+	existingIngredientLookup := make(map[string]postgres.Ingredient, len(existingIngredients))
 	for i := range existingIngredients {
 		existingIngredientLookup[existingIngredients[i].Name] = existingIngredients[i]
 	}
 
 	savedIngredients := make([]Ingredient, len(ingredients))
 	for i := range ingredients {
-		var ingredientID int64
+		var ingredientID int32
 		if value, ok := existingIngredientLookup[ingredients[i].Name]; ok {
 			ingredientID = value.ID
 		} else {
@@ -234,12 +208,12 @@ func (s *Store) CreateRecipeIngredients(
 	}
 
 	for i := range savedIngredients {
-		err = s.queries.CreateRecipeIngredient(ctx, sqlite.CreateRecipeIngredientParams{
-			RecipeOrder:  int64(savedIngredients[i].Order),
+		err = s.queries.CreateRecipeIngredient(ctx, postgres.CreateRecipeIngredientParams{
+			RecipeOrder:  int32(savedIngredients[i].Order),
 			RecipeID:     recipeID,
-			IngredientID: int64(savedIngredients[i].Ingredient.ID),
+			IngredientID: int32(savedIngredients[i].Ingredient.ID),
 			Unit:         savedIngredients[i].Unit,
-			Quantity:     float64(savedIngredients[i].Quantity),
+			Quantity:     savedIngredients[i].Quantity,
 			Note:         savedIngredients[i].Note,
 		})
 		if err != nil {
@@ -252,15 +226,15 @@ func (s *Store) CreateRecipeIngredients(
 
 func (s *Store) CreateRecipeNutrition(
 	ctx context.Context,
-	recipeID int64,
+	recipeID int32,
 	nutrition Nutrition,
 ) error {
-	err := s.queries.CreateNutrition(ctx, sqlite.CreateNutritionParams{
+	err := s.queries.CreateNutrition(ctx, postgres.CreateNutritionParams{
 		RecipeID: recipeID,
-		Calories: float64(nutrition.Calories),
-		Fat:      float64(nutrition.Fat),
-		Carbs:    float64(nutrition.Carbs),
-		Protein:  float64(nutrition.Protein),
+		Calories: nutrition.Calories,
+		Fat:      nutrition.Fat,
+		Carbs:    nutrition.Carbs,
+		Protein:  nutrition.Protein,
 	})
 	if err != nil {
 		return fmt.Errorf("create nutrition: %w", err)
@@ -269,17 +243,17 @@ func (s *Store) CreateRecipeNutrition(
 	return nil
 }
 
-func (s *Store) CreateRecipe(ctx context.Context, input CreateRecipe) (int64, error) {
-	createRecipeParams := sqlite.CreateRecipeParams{
+func (s *Store) CreateRecipe(ctx context.Context, input CreateRecipe) (int32, error) {
+	createRecipeParams := postgres.CreateRecipeParams{
 		Name:                   input.Name,
 		Description:            input.Description,
 		InstructionsMarkdown:   input.InstructionsMarkdown,
-		CookTimeSeconds:        int64(input.CookTime.Seconds()),
-		PreparationTimeSeconds: int64(input.PreparationTime.Seconds()),
+		CookTimeSeconds:        int32(input.CookTime.Seconds()),
+		PreparationTimeSeconds: int32(input.PreparationTime.Seconds()),
 		Source:                 input.Source,
 		ThumbnailUrl:           input.ThumbnailImageURL,
-		OwnerID:                input.OwnerID,
-		Servings:               int64(input.Servings),
+		OwnerID:                int32(input.OwnerID),
+		Servings:               int32(input.Servings),
 	}
 
 	id, err := s.queries.CreateRecipe(ctx, createRecipeParams)
@@ -292,7 +266,7 @@ func (s *Store) CreateRecipe(ctx context.Context, input CreateRecipe) (int64, er
 
 func (s *Store) CreateRecipeTags(
 	ctx context.Context,
-	recipeID int64,
+	recipeID int32,
 	tagNames []string,
 ) error {
 	existingTags, err := s.queries.AllTagsByNames(ctx, tagNames)
@@ -300,14 +274,14 @@ func (s *Store) CreateRecipeTags(
 		return fmt.Errorf("all savedTags by names: %w", err)
 	}
 
-	existingTagLookup := make(map[string]sqlite.Tag, len(existingTags))
+	existingTagLookup := make(map[string]postgres.Tag, len(existingTags))
 	for i := range existingTags {
 		existingTagLookup[existingTags[i].Name] = existingTags[i]
 	}
 
 	savedTags := make([]Tag, len(tagNames))
 	for i := range tagNames {
-		var tagID int64
+		var tagID int32
 		if value, ok := existingTagLookup[tagNames[i]]; ok {
 			tagID = value.ID
 		} else {
@@ -325,10 +299,10 @@ func (s *Store) CreateRecipeTags(
 	}
 
 	for i := range savedTags {
-		err = s.queries.CreateRecipeTag(ctx, sqlite.CreateRecipeTagParams{
-			RecipeOrder: int64(savedTags[i].Order),
+		err = s.queries.CreateRecipeTag(ctx, postgres.CreateRecipeTagParams{
+			RecipeOrder: int32(savedTags[i].Order),
 			RecipeID:    recipeID,
-			TagID:       int64(savedTags[i].ID),
+			TagID:       int32(savedTags[i].ID),
 		})
 		if err != nil {
 			return fmt.Errorf("create recipe tag: %w", err)
@@ -338,7 +312,7 @@ func (s *Store) CreateRecipeTags(
 	return nil
 }
 
-func (s *Store) DeleteRecipeTags(ctx context.Context, recipeID int64) error {
+func (s *Store) DeleteRecipeTags(ctx context.Context, recipeID int32) error {
 	if err := s.queries.DeleteRecipeTags(ctx, recipeID); err != nil {
 		return fmt.Errorf("remove recipe tags: %w", err)
 	}
@@ -346,7 +320,7 @@ func (s *Store) DeleteRecipeTags(ctx context.Context, recipeID int64) error {
 	return nil
 }
 
-func (s *Store) DeleteRecipeIngredients(ctx context.Context, recipeID int64) error {
+func (s *Store) DeleteRecipeIngredients(ctx context.Context, recipeID int32) error {
 	if err := s.queries.DeleteRecipeIngredients(ctx, recipeID); err != nil {
 		return fmt.Errorf("remove recipe ingredients: %w", err)
 	}
@@ -354,13 +328,13 @@ func (s *Store) DeleteRecipeIngredients(ctx context.Context, recipeID int64) err
 	return nil
 }
 
-func (s *Store) UpdateNutrition(ctx context.Context, recipeID int64, nutrition Nutrition) error {
-	err := s.queries.UpdateNutrition(ctx, sqlite.UpdateNutritionParams{
+func (s *Store) UpdateNutrition(ctx context.Context, recipeID int32, nutrition Nutrition) error {
+	err := s.queries.UpdateNutrition(ctx, postgres.UpdateNutritionParams{
 		RecipeID: recipeID,
-		Calories: float64(nutrition.Calories),
-		Fat:      float64(nutrition.Fat),
-		Carbs:    float64(nutrition.Carbs),
-		Protein:  float64(nutrition.Protein),
+		Calories: nutrition.Calories,
+		Fat:      nutrition.Fat,
+		Carbs:    nutrition.Carbs,
+		Protein:  nutrition.Protein,
 	})
 	if err != nil {
 		return fmt.Errorf("update nutrition: %w", err)
@@ -370,20 +344,17 @@ func (s *Store) UpdateNutrition(ctx context.Context, recipeID int64, nutrition N
 }
 
 func (s *Store) UpdateRecipe(ctx context.Context, input UpdateRecipe) error {
-	params := sqlite.UpdateRecipeParams{
-		ID:                     input.ID,
+	params := postgres.UpdateRecipeParams{
+		ID:                     int32(input.ID),
 		Name:                   input.Name,
 		Description:            input.Description,
 		InstructionsMarkdown:   input.InstructionsMarkdown,
 		ThumbnailUrl:           input.ThumbnailImageURL,
-		CookTimeSeconds:        int64(input.CookTime.Seconds()),
-		PreparationTimeSeconds: int64(input.PreparationTime.Seconds()),
+		CookTimeSeconds:        int32(input.CookTime.Seconds()),
+		PreparationTimeSeconds: int32(input.PreparationTime.Seconds()),
 		Source:                 input.Source,
-		UpdatedAt: sql.NullTime{
-			Valid: true,
-			Time:  input.UpdatedAt,
-		},
-		Servings: int64(input.Servings),
+		UpdatedAt:              &input.UpdatedAt,
+		Servings:               int32(input.Servings),
 	}
 
 	if err := s.queries.UpdateRecipe(ctx, params); err != nil {

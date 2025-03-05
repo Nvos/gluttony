@@ -17,7 +17,7 @@ func (r *Routes) DetailsViewHandler(c *web.Context) error {
 		return c.Error(http.StatusNotFound, nil)
 	}
 
-	recipe, err := r.service.GetFull(c.Context(), int64(recipeID))
+	recipe, err := r.service.GetFull(c.Context(), int32(recipeID))
 	if err != nil {
 		return c.Error(http.StatusNotFound, nil)
 	}

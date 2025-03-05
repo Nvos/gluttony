@@ -1,7 +1,7 @@
 -- +goose Up
 CREATE TABLE recipes
 (
-    id                       INTEGER     NOT NULL,
+    id                       SERIAL PRIMARY KEY,
     name                     TEXT UNIQUE NOT NULL,
     description              TEXT        NOT NULL DEFAULT '',
     instructions_markdown    TEXT        NOT NULL,
@@ -10,19 +10,15 @@ CREATE TABLE recipes
     cook_time_seconds        INTEGER     NOT NULL DEFAULT 0,
     preparation_time_seconds INTEGER     NOT NULL DEFAULT 0,
     source                   TEXT        NOT NULL DEFAULT '',
-    created_at               DATETIME             DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at               DATETIME,
-    owner_id                 INTEGER     NOT NULL REFERENCES users (id),
-
-    PRIMARY KEY (id)
+    created_at               TIMESTAMPTZ          default (now() at time zone 'utc'),
+    updated_at               TIMESTAMPTZ,
+    owner_id                 INTEGER     NOT NULL REFERENCES users (id)
 );
 
 CREATE TABLE ingredients
 (
-    id   INTEGER     NOT NULL,
-    name TEXT UNIQUE NOT NULL,
-
-    PRIMARY KEY (id)
+    id   SERIAL PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL
 );
 
 CREATE TABLE recipe_ingredients
@@ -37,6 +33,12 @@ CREATE TABLE recipe_ingredients
     PRIMARY KEY (recipe_id, ingredient_id)
 );
 
+CREATE TABLE tags
+(
+    id   SERIAL PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL
+);
+
 CREATE TABLE recipe_tags
 (
     recipe_order INTEGER NOT NULL,
@@ -46,13 +48,6 @@ CREATE TABLE recipe_tags
     PRIMARY KEY (recipe_id, tag_id)
 );
 
-CREATE TABLE tags
-(
-    id   INTEGER     NOT NULL,
-    name TEXT UNIQUE NOT NULL,
-
-    PRIMARY KEY (id)
-);
 
 CREATE TABLE recipe_nutrition
 (

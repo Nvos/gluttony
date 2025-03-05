@@ -2,14 +2,14 @@
 // versions:
 //   sqlc v1.28.0
 
-package sqlite
+package postgres
 
 type Ingredient struct {
-	ID   int64
+	ID   int32
 	Name string
 }
 
 type Tag struct {
-	ID   int64
+	ID   int32
 	Name string
 }
