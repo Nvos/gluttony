@@ -1,8 +1,12 @@
 {{ define "recipes/list" }}
-  <div class="flex flex-wrap gap-4" id="recipe-list">
-    {{ range $val := .Recipes }}
-      {{ template "recipes/card" $val }}
-    {{ end }}
+  <div class="flex flex-col gap-8" id="recipe-list">
+    <div class="flex flex-wrap gap-4">
+      {{ range $val := .Recipes }}
+        {{ template "recipes/card" $val }}
+      {{ end }}
+    </div>
+
+    {{ template "pagination" . }}
   </div>
 {{ end }}
 
@@ -57,4 +61,35 @@
       </div>
     </div>
   </a>
+{{ end }}
+
+{{ define "pagination" }}
+  <div
+    class="border-neutral-border-2 flex items-center justify-center gap-2 rounded-md border p-4"
+  >
+    <a
+      class="button is-ghost-neutral"
+      hx-get="/recipes?page={{ .Paginator.PrevPage }}"
+      hx-push-url="true"
+      hx-swap="innerHTML"
+      hx-target="#recipe-list"
+      aria-disabled="{{ eq .Paginator.HasPrev false }}"
+    >
+      Previous
+    </a>
+    <div class="flex h-10 items-center rounded-md px-4">
+      {{ add .Paginator.Page 1 }} /
+      {{ .Paginator.TotalCount }}
+    </div>
+    <a
+      class="button is-ghost-neutral"
+      hx-get="/recipes?page={{ .Paginator.NextPage }}"
+      hx-push-url="true"
+      hx-swap="innerHTML"
+      hx-target="#recipe-list"
+      aria-disabled="{{ eq .Paginator.HasNext false }}"
+    >
+      Next
+    </a>
+  </div>
 {{ end }}

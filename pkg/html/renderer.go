@@ -3,31 +3,9 @@ package html
 import (
 	"errors"
 	"fmt"
-	"html"
-	"html/template"
 	"io"
 	"io/fs"
-	"net/url"
-	"strings"
-	"time"
 )
-
-func FuncMap() template.FuncMap {
-	return template.FuncMap{
-		"formatDuration": func(duration time.Duration) string {
-			return time.Unix(0, 0).UTC().Add(duration).Format("15:04")
-		},
-		"rawHTML": func(raw string) template.HTML {
-			//nolint:gosec // false positive, string is escaped
-			return template.HTML(html.EscapeString(raw))
-		},
-		"isURL": func(s string) bool {
-			_, err := url.ParseRequestURI(s)
-			return err == nil
-		},
-		"hasPrefix": strings.HasPrefix,
-	}
-}
 
 type TemplateName string
 type FragmentName string

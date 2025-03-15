@@ -6,7 +6,7 @@
     {{ template "sidebar" . }}
     <div class="bg-neutral-layer-2 w-full">
       {{ template "recipes/header" . }}
-      <main class="flex p-8">
+      <main class="flex flex-col p-8">
         {{ template "recipes/list" . }}
       </main>
     </div>
@@ -26,6 +26,7 @@
     >
       <div class="form-control">
         <input
+          autofocus
           name="search"
           class="input"
           placeholder="Search recipe"

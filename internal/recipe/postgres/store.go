@@ -28,14 +28,23 @@ func (s *Store) WithTx(tx pgx.Tx) recipe.Store {
 	}
 }
 
+func (s *Store) CountRecipeSummaries(ctx context.Context) (int64, error) {
+	summaries, err := s.queries.CountRecipeSummaries(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("count recipe summaries: %w", err)
+	}
+
+	return summaries, nil
+}
+
 func (s *Store) AllRecipeSummaries(
 	ctx context.Context,
 	input recipe.SearchInput,
 ) ([]recipe.Summary, error) {
 	rows, err := s.queries.AllRecipeSummaries(ctx, AllRecipeSummariesParams{
 		Ids:    input.RecipeIDs,
-		Offset: input.Page * pagination.DefaultLimit,
-		Limit:  pagination.DefaultLimit,
+		Offset: input.Page * pagination.Limit,
+		Limit:  pagination.Limit,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("fetch all recipe summaries: %w", err)

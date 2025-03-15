@@ -7,12 +7,12 @@
 @import '@radix-ui/colors/orange.css' layer(base);
 @import '@radix-ui/colors/orange-dark.css' layer(base);
 
-@import 'button.css' layer(components);
-@import 'form.css' layer(components);
-@import 'card.css' layer(components);
-@import 'alert.css' layer(components);
-@import 'navigation.css' layer(components);
-@import 'tag.css' layer(components);
+@import './button.css' layer(components);
+@import './form.css' layer(components);
+@import './card.css' layer(components);
+@import './alert.css' layer(components);
+@import './navigation.css' layer(components);
+@import './tag.css' layer(components);
 
 @import 'tailwindcss';
 

@@ -3,6 +3,7 @@ package recipe
 import (
 	"fmt"
 	"gluttony/internal/recipe"
+	"gluttony/pkg/pagination"
 	"gluttony/pkg/router"
 	"net/http"
 	"strconv"
@@ -27,7 +28,7 @@ func (r *Routes) ListViewHandler(c *router.Context) error {
 		page = int32(pageInt)
 	}
 
-	recipePartials, err := r.service.AllSummaries(c.Context(), recipe.SearchInput{
+	summariesPage, err := r.service.AllSummaries(c.Context(), recipe.SearchInput{
 		RecipeIDs: nil,
 		Search:    search,
 		Page:      page,
@@ -36,7 +37,9 @@ func (r *Routes) ListViewHandler(c *router.Context) error {
 		return fmt.Errorf("could not get recipe partials: %w", err)
 	}
 
-	c.Data["Recipes"] = recipePartials
+	c.Data["Recipes"] = summariesPage.Rows
+	c.Data["Paginator"] = pagination.New(page, summariesPage.TotalCount)
+
 	if c.IsHTMXRequest() {
 		return c.RenderViewFragment(listView, listContent, http.StatusOK)
 	}

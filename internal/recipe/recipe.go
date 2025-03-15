@@ -113,7 +113,7 @@ type MediaStore interface {
 
 type Store interface {
 	WithTx(tx pgx.Tx) Store
-	//TODO: verify search input
+	CountRecipeSummaries(ctx context.Context) (int64, error)
 	AllRecipeSummaries(ctx context.Context, input SearchInput) ([]Summary, error)
 	GetRecipe(ctx context.Context, id int32) (Recipe, error)
 	AllTagsByRecipeIDs(ctx context.Context, recipeIDs []int32) (map[int32][]Tag, error)

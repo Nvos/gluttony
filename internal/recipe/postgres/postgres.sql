@@ -95,3 +95,7 @@ FROM recipes
 WHERE (sqlc.slice(ids)::int[] IS NULL OR id = ANY (sqlc.slice(ids)::int[]))
 ORDER BY id DESC
 LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
+
+-- name: CountRecipeSummaries :one
+SELECT count(*)
+FROM recipes;

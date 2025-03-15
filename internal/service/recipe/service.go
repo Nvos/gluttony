@@ -237,28 +237,40 @@ func (s *Service) Update(ctx context.Context, input recipe.UpdateInput) error {
 	return nil
 }
 
-func (s *Service) AllSummaries(ctx context.Context, input recipe.SearchInput) ([]recipe.Summary, error) {
+func (s *Service) AllSummaries(
+	ctx context.Context,
+	input recipe.SearchInput,
+) (pagination.Page[recipe.Summary], error) {
+	out := pagination.Page[recipe.Summary]{}
 	if input.Search != "" {
 		result, err := s.searchIndex.Search(ctx, input.Search, pagination.OffsetFromPage(input.Page))
 		if err != nil {
-			return nil, fmt.Errorf("search index: %w", err)
+			return out, fmt.Errorf("search index: %w", err)
 		}
 
 		if result.TotalCount == 0 {
-			return nil, nil
+			return out, nil
 		}
 
 		input.RecipeIDs = result.IDs
+		out.TotalCount = result.TotalCount
+	} else {
+		count, err := s.store.CountRecipeSummaries(ctx)
+		if err != nil {
+			return pagination.Page[recipe.Summary]{}, fmt.Errorf("count recipe summaries: %w", err)
+		}
+
+		out.TotalCount = count
 	}
 
 	recipeSummaries, err := s.store.AllRecipeSummaries(ctx, input)
 	if err != nil {
-		return nil, err
+		return out, err
 	}
 
 	tags, err := s.store.AllTagsByRecipeIDs(ctx, input.RecipeIDs)
 	if err != nil {
-		return []recipe.Summary{}, err
+		return out, err
 	}
 
 	for i := range recipeSummaries {
@@ -270,7 +282,9 @@ func (s *Service) AllSummaries(ctx context.Context, input recipe.SearchInput) ([
 		recipeSummaries[i].Tags = recipeTags
 	}
 
-	return recipeSummaries, nil
+	out.Rows = recipeSummaries
+
+	return out, nil
 }
 
 func (s *Service) GetFull(ctx context.Context, recipeID int32) (recipe.Recipe, error) {
