@@ -39,6 +39,7 @@ func (r *Routes) ListViewHandler(c *router.Context) error {
 
 	c.Data["Recipes"] = summariesPage.Rows
 	c.Data["Paginator"] = pagination.New(page, summariesPage.TotalCount)
+	c.Data["Query"] = search
 
 	if c.IsHTMXRequest() {
 		return c.RenderViewFragment(listView, listContent, http.StatusOK)

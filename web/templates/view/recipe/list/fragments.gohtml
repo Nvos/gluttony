@@ -69,7 +69,7 @@
   >
     <a
       class="button is-ghost-neutral"
-      hx-get="/recipes?page={{ .Paginator.PrevPage }}"
+      hx-get="/recipes{{ queryParams "page" .Paginator.PrevPage "search" .Query }}"
       hx-push-url="true"
       hx-swap="innerHTML"
       hx-target="#recipe-list"
@@ -83,7 +83,7 @@
     </div>
     <a
       class="button is-ghost-neutral"
-      hx-get="/recipes?page={{ .Paginator.NextPage }}"
+      hx-get="/recipes{{ queryParams "page" .Paginator.NextPage "search" .Query }}"
       hx-push-url="true"
       hx-swap="innerHTML"
       hx-target="#recipe-list"

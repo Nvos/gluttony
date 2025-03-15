@@ -1,6 +1,7 @@
 package html
 
 import (
+	"fmt"
 	"html"
 	"html/template"
 	"net/url"
@@ -24,6 +25,25 @@ func FuncMap() template.FuncMap {
 		"hasPrefix": strings.HasPrefix,
 		"add": func(a, b any) int {
 			return castInt(a) + castInt(b)
+		},
+		"queryParams": func(values ...any) string {
+			if (len(values) % 2) == 1 {
+				panic("invalid number of pairs")
+			}
+
+			params := url.Values{}
+			for i := 0; i < len(values); i += 2 {
+				name := values[i].(string)
+				value := fmt.Sprintf("%v", values[i+1])
+
+				if name == "" || value == "" {
+					continue
+				}
+
+				params.Add(name, value)
+			}
+
+			return fmt.Sprintf("?%s", params.Encode())
 		},
 	}
 }

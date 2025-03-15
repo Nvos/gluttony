@@ -41,11 +41,16 @@ func (s *Store) AllRecipeSummaries(
 	ctx context.Context,
 	input recipe.SearchInput,
 ) ([]recipe.Summary, error) {
-	rows, err := s.queries.AllRecipeSummaries(ctx, AllRecipeSummariesParams{
-		Ids:    input.RecipeIDs,
-		Offset: input.Page * pagination.Limit,
-		Limit:  pagination.Limit,
-	})
+	params := AllRecipeSummariesParams{
+		Limit: pagination.Limit,
+	}
+	if len(input.RecipeIDs) > 0 {
+		params.Ids = input.RecipeIDs
+	} else {
+		params.Offset = input.Page * pagination.Limit
+	}
+
+	rows, err := s.queries.AllRecipeSummaries(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("fetch all recipe summaries: %w", err)
 	}
