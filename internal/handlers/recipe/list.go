@@ -22,7 +22,10 @@ func (r *Routes) ListViewHandler(c *router.Context) error {
 	if pageParam != "" {
 		pageInt, err := strconv.ParseInt(pageParam, 10, 32)
 		if err != nil {
-			return fmt.Errorf("parse page to int: %w", err)
+			return router.NewHTTPError(
+				http.StatusBadRequest,
+				router.WithError(fmt.Errorf("parse page to int: %w", err)),
+			)
 		}
 
 		page = int32(pageInt)
@@ -37,8 +40,13 @@ func (r *Routes) ListViewHandler(c *router.Context) error {
 		return fmt.Errorf("could not get recipe partials: %w", err)
 	}
 
+	paginator := pagination.New(page, summariesPage.TotalCount)
+	if page > paginator.TotalCount {
+		return router.NewHTTPError(http.StatusNotFound)
+	}
+
 	c.Data["Recipes"] = summariesPage.Rows
-	c.Data["Paginator"] = pagination.New(page, summariesPage.TotalCount)
+	c.Data["Paginator"] = paginator
 	c.Data["Query"] = search
 
 	if c.IsHTMXRequest() {

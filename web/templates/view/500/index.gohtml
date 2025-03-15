@@ -1,0 +1,28 @@
+{{ template "base" . }}
+{{ define "title" }}Gluttony - Login{{ end }}
+{{ define "head" }}{{ end }}
+{{ define "view" }}
+  <div class="flex flex-1">
+    {{ template "sidebar" . }}
+    <div class="bg-neutral-layer-2 flex flex-1 items-center justify-center">
+      <main class="flex flex-col p-8">
+        <div class="card w-[400px]">
+          <h1 class="text-3xl">Something went wrong</h1>
+          <h2 class="text-md text-neutral-font-secondary">
+            Failed to process your request, try refreshing page. If problem
+            persists, please try again later.
+          </h2>
+
+          <h3>
+            Consider rising issue on
+            <a
+              class="text-primary-11 underline"
+              href="https://github.com/Nvos/gluttony"
+              >GitHub</a
+            >
+          </h3>
+        </div>
+      </main>
+    </div>
+  </div>
+{{ end }}

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"gluttony/internal/user"
+	"gluttony/pkg/html"
 	"gluttony/pkg/router"
 	"gluttony/pkg/session"
 	"log/slog"
@@ -41,6 +42,9 @@ func AuthenticationMiddleware(sessionService *session.Service) router.Middleware
 	}
 }
 
+const view500 html.TemplateName = "view/500"
+const view404 html.TemplateName = "view/404"
+
 func ErrorMiddleware(logger *slog.Logger) router.Middleware {
 	return func(next router.HandlerFunc) router.HandlerFunc {
 		return func(c *router.Context) error {
@@ -49,22 +53,30 @@ func ErrorMiddleware(logger *slog.Logger) router.Middleware {
 				return nil
 			}
 
-			var errorCode *router.CodeError
-			if errors.As(err, &errorCode) {
-				c.Response.WriteHeader(errorCode.Code)
-				if errorCode.Err != nil {
-					logger.Error("Http handler returned managed error", slog.String("err", err.Error()))
+			var httpErr *router.HTTPError
+			if errors.As(err, &httpErr) {
+				if httpErr.Err != nil {
+					logger.Error(
+						"Http handler",
+						slog.String("code", http.StatusText(httpErr.Code)),
+						slog.String("err", err.Error()),
+					)
 				}
 
-				// TODO: handle 404 view redirect
-				return nil
+				switch httpErr.Code {
+				case http.StatusNotFound, http.StatusBadRequest:
+					return c.RenderView(view404, http.StatusNotFound)
+				case http.StatusInternalServerError:
+					return c.RenderView(view500, http.StatusInternalServerError)
+				default:
+					c.Response.WriteHeader(httpErr.Code)
+
+					return nil
+				}
 			}
 
-			// TODO: handle 500 view redirect
-			c.Response.WriteHeader(http.StatusInternalServerError)
 			logger.Error("Http handler returned internal error", slog.String("err", err.Error()))
-
-			return nil
+			return c.RenderView(view500, http.StatusInternalServerError)
 		}
 	}
 }

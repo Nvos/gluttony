@@ -24,7 +24,7 @@ func (c *Context) FormValue(name string) string {
 
 func (c *Context) Form() error {
 	if err := c.Request.ParseForm(); err != nil {
-		return &CodeError{http.StatusBadRequest, err}
+		return &HTTPError{http.StatusBadRequest, err}
 	}
 
 	return nil
@@ -35,7 +35,7 @@ func (c *Context) SetStatus(code int) {
 }
 
 func (c *Context) Error(code int, err error) error {
-	return &CodeError{code, err}
+	return &HTTPError{code, err}
 }
 
 func (c *Context) SetCookie(cookie *http.Cookie) {
