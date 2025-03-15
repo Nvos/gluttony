@@ -2,22 +2,19 @@ package app
 
 import (
 	"github.com/spf13/afero"
-	"gluttony/internal/config"
-	"gluttony/internal/livereload"
-	"gluttony/internal/recipe"
-	"gluttony/internal/security"
-	"gluttony/internal/user"
-	"gluttony/internal/web"
-	"gluttony/internal/web/handlers"
-	recipehandlers "gluttony/internal/web/handlers/recipe"
-	"log/slog"
+	recipehandlers "gluttony/internal/handlers/recipe"
+	userhandlers "gluttony/internal/handlers/user"
+	"gluttony/internal/service/recipe"
+	"gluttony/internal/service/user"
+	"gluttony/pkg/livereload"
+	"gluttony/pkg/router"
+	"gluttony/pkg/session"
 	"net/http"
 )
 
 func MountWebRoutes(
-	mux *web.Router,
-	logger *slog.Logger,
-	sessionStore *security.SessionStore,
+	mux *router.Router,
+	sessionService *session.Service,
 	userService *user.Service,
 	recipeService *recipe.Service,
 ) {
@@ -26,33 +23,39 @@ func MountWebRoutes(
 		panic(err)
 	}
 
-	userRouter, err := handlers.NewRoutes(userService, sessionStore)
+	userRouter, err := userhandlers.NewRoutes(userService, sessionService)
 	if err != nil {
 		panic(err)
 	}
+
+	mux.Get("/", func(c *router.Context) error {
+		c.Redirect("/recipes", http.StatusFound)
+		
+		return nil
+	})
 
 	userRouter.Mount(mux)
 	recipeRoutes.Mount(mux)
 }
 
 func MountRoutes(
-	mux *web.Router,
-	mode config.Mode,
+	mux *router.Router,
+	mode Mode,
 	liveReload *livereload.LiveReload,
 	directories *Directories,
 ) {
-	if mode == config.Dev {
-		mux.Get("/reload", web.WrapHandlerFunc(liveReload.Handle))
+	if mode == Dev {
+		mux.Get("/reload", router.WrapHandlerFunc(liveReload.Handle))
 	}
 
-	mux.Get("/assets/{pathname...}", web.WrapHandlerFunc(handleAssets(mode, directories)))
-	mux.Get("/media/{pathname...}", web.WrapHandlerFunc(handleMedia(directories)))
+	mux.Get("/assets/{pathname...}", router.WrapHandlerFunc(handleAssets(mode, directories)))
+	mux.Get("/media/{pathname...}", router.WrapHandlerFunc(handleMedia(directories)))
 }
 
-func handleAssets(mode config.Mode, directories *Directories) func(w http.ResponseWriter, r *http.Request) {
+func handleAssets(mode Mode, directories *Directories) func(w http.ResponseWriter, r *http.Request) {
 	httpFS := http.FileServerFS(directories.Assets)
 	return func(w http.ResponseWriter, r *http.Request) {
-		if mode == config.Dev {
+		if mode == Dev {
 			w.Header().Set("Cache-Control", "no-store")
 		}
 

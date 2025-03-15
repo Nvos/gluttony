@@ -2,26 +2,44 @@ package user
 
 import (
 	"context"
-	"gluttony/internal/security"
-	"log/slog"
+	"errors"
+	"gluttony/pkg/session"
+)
+
+var ErrInvalidCredentials = errors.New("invalid credentials")
+
+const DoerSessionKey = session.Key("doer")
+
+type Role string
+
+const (
+	RoleAdmin Role = "admin"
+	RoleUser  Role = "user"
 )
 
 type User struct {
 	ID       int32
 	Username string
-	Role     security.Role
+	Role     Role
 	Password string
 }
 
-type Deps struct {
-	service      *Service
-	sessionStore SessionStore
-	logger       *slog.Logger
+type CreateInput struct {
+	Username string
+	Password string
+	Role     Role
 }
 
-type SessionStore interface {
-	Get(ctx context.Context, key string) (security.Session, error)
-	New(ctx context.Context) (security.Session, error)
-	Save(ctx context.Context, value security.Session) error
-	Delete(ctx context.Context, value security.Session) error
+type Credentials struct {
+	Username string
+	Password string
+}
+
+type Store interface {
+	GetByUsername(ctx context.Context, username string) (User, error)
+	Create(ctx context.Context, input CreateInput) (int32, error)
+}
+
+func GetSessionDoer(value session.Session) (User, bool) {
+	return session.Get[User](value, DoerSessionKey)
 }

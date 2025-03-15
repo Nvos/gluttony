@@ -1,0 +1,42 @@
+{{ template "base" . }}
+{{ define "head" }}{{ end }}
+{{ define "title" }}Gluttony - Create recipe{{ end }}
+{{ define "view" }}
+  <div class="flex flex-1">
+    {{ template "sidebar" . }}
+    <div class="bg-neutral-layer-2 w-full">
+      {{ template "recipes/header" . }}
+      <main class="flex p-8">
+        {{ template "recipes/list" . }}
+      </main>
+    </div>
+  </div>
+{{ end }}
+
+{{ define "recipes/header" }}
+  <header
+    class="border-neutral-border-1 bg-neutral-layer-2 sticky top-0 z-50 flex h-[72px] items-center justify-between border-b px-8"
+  >
+    <form
+      hx-get="/recipes"
+      hx-push-url="true"
+      hx-trigger="submit"
+      hx-swap="innerHTML"
+      hx-target="#recipe-list"
+    >
+      <div class="form-control">
+        <input
+          name="search"
+          class="input"
+          placeholder="Search recipe"
+          aria-label="Recipe search text field"
+        />
+      </div>
+    </form>
+
+    <a class="button is-solid-primary" href="/recipes/create">
+      {{ template "icons/plus" }}
+      <span>New Recipe</span>
+    </a>
+  </header>
+{{ end }}

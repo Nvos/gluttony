@@ -7,7 +7,7 @@ sql:
       go:
         package: "postgres"
         sql_package: "pgx/v5"
-        out: "internal/recipe/postgres"
+        out: "internal/recipe/postgres/postgres"
         omit_unused_structs: true
         emit_empty_slices: true
         emit_prepared_queries: false
@@ -20,7 +20,7 @@ sql:
             go_type:
               type: "*time.Time"
   - engine: "postgresql"
-    queries: "internal/user/postgres.sql"
+    queries: "internal/user/postgres/postgres.sql"
     schema: "internal/database/migrations"
     gen:
       go:

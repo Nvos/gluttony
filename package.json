@@ -4,17 +4,17 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "tailwind:watch": "npx @tailwindcss/cli -i ./internal/web/css/tailwind.css -o ./assets/css/tailwind.css --watch"
+    "tailwind:watch": "npx @tailwindcss/cli -i web/css/tailwind.css -o ./assets/css/tailwind.css --watch"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@tailwindcss/cli": "^4.0.9",
+    "@tailwindcss/cli": "4.0.9",
     "prettier": "^3.3.3",
     "prettier-plugin-go-template": "^0.0.15",
     "prettier-plugin-tailwindcss": "^0.6.11",
-    "tailwindcss": "^4.0.9"
+    "tailwindcss": "4.0.9"
   },
   "dependencies": {
     "@radix-ui/colors": "^3.0.0"

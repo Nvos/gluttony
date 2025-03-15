@@ -4,7 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gluttony/internal/livereload"
+	"gluttony/internal/user"
+	"gluttony/pkg/livereload"
 	"golang.org/x/sync/errgroup"
 	"net/http"
 	"path/filepath"
@@ -13,7 +14,11 @@ import (
 
 func (app *App) Start(ctx context.Context, group *errgroup.Group) error {
 	// TODO: move to cmd, left for now as it is convenient
-	if err := app.userService.Create(ctx, "admin", "admin"); err != nil {
+	if err := app.userService.Create(ctx, user.CreateInput{
+		Username: "admin",
+		Password: "admin",
+		Role:     user.RoleAdmin,
+	}); err != nil {
 		return fmt.Errorf("create initial admin user: %w", err)
 	}
 
@@ -21,8 +26,8 @@ func (app *App) Start(ctx context.Context, group *errgroup.Group) error {
 		if err := app.liveReload.Watch(ctx, livereload.WatchConfig{
 			Extensions: []string{".gohtml", ".html", ".css", ".js"},
 			Directories: []string{
-				filepath.Join("assets"),
-				filepath.Clean(filepath.Join("internal/web/templates")),
+				filepath.Clean("assets"),
+				filepath.Clean("web/templates"),
 			},
 		}); err != nil {
 			return fmt.Errorf("start livereload watch: %w", err)

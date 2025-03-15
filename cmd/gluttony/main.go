@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"gluttony/internal/app"
-	"gluttony/internal/config"
 	"golang.org/x/sync/errgroup"
 	"os"
 	"os/signal"
@@ -12,7 +11,7 @@ import (
 )
 
 func main() {
-	cfg, err := config.New()
+	cfg, err := app.New()
 	if err != nil {
 		fmt.Printf("Create config failed: '%v', Aborting startup\n", err)
 		os.Exit(1)

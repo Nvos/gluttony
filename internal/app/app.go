@@ -4,24 +4,29 @@ import (
 	"context"
 	"fmt"
 	"github.com/spf13/afero"
-	"gluttony/internal/config"
-	"gluttony/internal/database"
-	"gluttony/internal/html"
-	"gluttony/internal/livereload"
-	"gluttony/internal/log"
-	"gluttony/internal/media"
-	"gluttony/internal/recipe"
-	"gluttony/internal/security"
-	"gluttony/internal/user"
-	"gluttony/internal/web"
-	"gluttony/internal/web/templates"
+	"gluttony/internal/handlers"
+	"gluttony/internal/recipe/bleve"
+	"gluttony/internal/service/recipe"
+	"gluttony/internal/service/user"
+	"gluttony/internal/user/postgres"
+	"gluttony/migrations"
+	"gluttony/pkg/database"
+	"gluttony/pkg/html"
+	"gluttony/pkg/livereload"
+	"gluttony/pkg/log"
+	"gluttony/pkg/media"
+	"gluttony/pkg/router"
+	"gluttony/pkg/session"
+	"gluttony/web/templates"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 )
 
 type App struct {
-	cfg    config.Config
+	cfg    Config
 	logger *slog.Logger
 
 	recipeService *recipe.Service
@@ -31,13 +36,11 @@ type App struct {
 	httpServer *http.Server
 }
 
-func NewApp(cfg config.Config) (*App, error) {
-	logFile, err := os.Create(cfg.LogFilePath)
+func NewApp(cfg Config) (*App, error) {
+	logger, err := NewLogger(cfg.Mode, cfg.LogLevel, cfg.LogFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("create log file: %w", err)
+		return nil, fmt.Errorf("create logger: %w", err)
 	}
-
-	logger := log.New(cfg.Mode, cfg.LogLevel, logFile)
 
 	rootFS := afero.NewBasePathFs(afero.NewOsFs(), cfg.WorkDirectoryPath)
 	if err := os.MkdirAll(cfg.WorkDirectoryPath, os.ModePerm); err != nil {
@@ -50,16 +53,30 @@ func NewApp(cfg config.Config) (*App, error) {
 	}
 
 	// TODO: move to config
-	dbURL := "postgres://postgres:postgres@localhost:5432/gluttony?sslmode=disable"
-	db, err := database.NewPostgres(context.Background(), dbURL)
+	dbCfg := database.Config{
+		Name:     "gluttony",
+		User:     "postgres",
+		Host:     "localhost",
+		Port:     "5432",
+		Password: "postgres",
+	}
+
+	db, err := database.New(context.Background(), dbCfg)
 	if err != nil {
 		return nil, fmt.Errorf("create database: %w", err)
 	}
 
-	sessionStore := security.NewSessionStore()
-	userService := user.NewService(db, sessionStore)
+	if err := database.Migrate(db, migrations.Migrations); err != nil {
+		return nil, fmt.Errorf("migrate database: %w", err)
+	}
+
+	sessionStore := session.NewStoreMemory()
+	sessionService := session.NewService(sessionStore)
+	userStore := postgres.NewStore(db)
+
+	userService := user.NewService(userStore, sessionService)
 	mediaStore := media.NewStore(directories.Media)
-	recipeSearchIndex, err := recipe.NewSearchIndex(cfg.WorkDirectoryPath)
+	recipeSearchIndex, err := bleve.New(cfg.WorkDirectoryPath)
 	if err != nil {
 		return nil, fmt.Errorf("create recipe search index: %w", err)
 	}
@@ -70,26 +87,30 @@ func NewApp(cfg config.Config) (*App, error) {
 	}
 
 	liveReload := livereload.New(logger)
-	renderer, err := html.NewRenderer(templates.GetTemplates(cfg.Mode), html.RendererOptions{
+	renderer, err := html.NewRenderer(GetTemplates(cfg.Mode), html.RendererOptions{
 		IsReloadEnabled: true,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create html renderer: %w", err)
 	}
-	mux := web.NewRouter(renderer)
+	mux := router.NewRouter(renderer)
 
-	middlewares := []web.Middleware{
-		web.AuthenticationMiddleware(sessionStore),
-		web.ErrorMiddleware(logger),
+	middlewares := []router.Middleware{
+		handlers.AuthenticationMiddleware(sessionService),
+		handlers.ErrorMiddleware(logger),
 	}
 
 	mux.Use(middlewares...)
 	MountRoutes(mux, cfg.Mode, liveReload, directories)
-	MountWebRoutes(mux, logger, sessionStore, userService, recipeService)
+	MountWebRoutes(mux, sessionService, userService, recipeService)
 
+	const (
+		defaultHeaderTimeout = time.Second * 10
+	)
 	httpServer := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", cfg.WebHost, cfg.WebPort),
-		Handler: mux,
+		ReadHeaderTimeout: defaultHeaderTimeout,
+		Addr:              fmt.Sprintf("%s:%d", cfg.WebHost, cfg.WebPort),
+		Handler:           mux,
 	}
 
 	return &App{
@@ -100,4 +121,20 @@ func NewApp(cfg config.Config) (*App, error) {
 		liveReload:    liveReload,
 		logger:        logger,
 	}, nil
+}
+
+func GetTemplates(mode Mode) fs.FS {
+	if mode == Prod {
+		return templates.Embedded
+	}
+
+	return os.DirFS("web/templates")
+}
+
+func NewLogger(mode Mode, level slog.Level, filePath string) (*slog.Logger, error) {
+	if mode == Prod {
+		return log.NewProd(level, filePath)
+	}
+
+	return log.NewDev(level), nil
 }
