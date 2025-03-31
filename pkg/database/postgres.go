@@ -11,11 +11,11 @@ import (
 )
 
 type Config struct {
-	Name     string `json:",omitempty"`
-	User     string `json:",omitempty"`
-	Host     string `json:",omitempty"`
-	Port     string `json:",omitempty"`
-	Password string `json:"-"`
+	Name     string
+	User     string
+	Host     string
+	Port     string
+	Password string
 }
 
 func (c *Config) ConnectionURL() string {

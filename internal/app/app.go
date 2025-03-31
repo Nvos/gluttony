@@ -52,16 +52,7 @@ func New(cfg Config) (*App, error) {
 		return nil, fmt.Errorf("create directories: %w", err)
 	}
 
-	// TODO: move to config
-	dbCfg := database.Config{
-		Name:     "gluttony",
-		User:     "postgres",
-		Host:     "localhost",
-		Port:     "5432",
-		Password: "postgres",
-	}
-
-	db, err := database.New(context.Background(), dbCfg)
+	db, err := database.New(context.Background(), cfg.Database)
 	if err != nil {
 		return nil, fmt.Errorf("create database: %w", err)
 	}
@@ -108,13 +99,13 @@ func New(cfg Config) (*App, error) {
 	MountRoutes(mux, cfg.Mode, liveReload, directories)
 	MountWebRoutes(mux, sessionService, userService, recipeService)
 
-	const (
-		defaultHeaderTimeout = time.Second * 10
-	)
 	httpServer := &http.Server{
-		ReadHeaderTimeout: defaultHeaderTimeout,
 		Addr:              fmt.Sprintf("%s:%d", cfg.WebHost, cfg.WebPort),
 		Handler:           mux,
+		ReadTimeout:       15 * time.Second,
+		ReadHeaderTimeout: 15 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       1 * time.Minute,
 	}
 
 	return &App{

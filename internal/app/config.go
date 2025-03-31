@@ -3,6 +3,7 @@ package app
 import (
 	"errors"
 	"fmt"
+	"gluttony/pkg/database"
 	"gluttony/pkg/env"
 	"log/slog"
 	"os"
@@ -33,6 +34,19 @@ type Config struct {
 	LogFilePath       string
 	WebPort           int
 	WebHost           string
+	Database          database.Config
+}
+
+func (c Config) Validate() error {
+	if !filepath.IsAbs(c.WorkDirectoryPath) {
+		return errors.New("work directory path must be absolute env=GLUTTONY_WORK_DIRECTORY_PATH")
+	}
+
+	if !filepath.IsAbs(c.LogFilePath) {
+		return errors.New("log path must be absolute env=GLUTTONY_LOG_FILE_PATH")
+	}
+
+	return nil
 }
 
 func NewConfig() (Config, error) {
@@ -40,42 +54,50 @@ func NewConfig() (Config, error) {
 		return Config{}, fmt.Errorf("loading environment variables: %w", err)
 	}
 
-	logLevelRaw := os.Getenv("GLUTTONY_LOG_LEVEL")
-	workDirectoryPath := os.Getenv("GLUTTONY_WORK_DIRECTORY_PATH")
-	logFilePath := os.Getenv("GLUTTONY_LOG_FILE_PATH")
-	modeRaw := os.Getenv("GLUTTONY_MODE")
-	webPortRaw := os.Getenv("GLUTTONY_WEB_PORT")
-	webHostRaw := os.Getenv("GLUTTONY_WEB_HOST")
+	mustGet := func(name string) string {
+		key := "GLUTTONY_" + name
+		got := os.Getenv(key)
+		if got == "" {
+			panic(fmt.Sprintf("config %v is not set", key))
+		}
 
-	var logLevel slog.Level
-	if err := logLevel.UnmarshalText([]byte(logLevelRaw)); err != nil {
-		return Config{}, fmt.Errorf("parsing env=GLUTTONY_LOG_LEVEL: %w", err)
+		return got
 	}
 
-	if !filepath.IsAbs(workDirectoryPath) {
-		return Config{}, errors.New("work directory path must be absolute env=GLUTTONY_WORK_DIRECTORY_PATH")
-	}
-
-	if !filepath.IsAbs(logFilePath) {
-		return Config{}, errors.New("log path must be absolute env=GLUTTONY_LOG_FILE_PATH")
-	}
-
-	mode, err := newMode(modeRaw)
+	mode, err := newMode(mustGet("MODE"))
 	if err != nil {
 		return Config{}, fmt.Errorf("parsing env=GLUTTONY_MODE: %w", err)
 	}
 
-	webPort, err := strconv.Atoi(webPortRaw)
+	var logLevel slog.Level
+	if err := logLevel.UnmarshalText([]byte(mustGet("LOG_LEVEL"))); err != nil {
+		return Config{}, fmt.Errorf("parsing env=GLUTTONY_LOG_LEVEL: %w", err)
+	}
+
+	webPort, err := strconv.Atoi(mustGet("WEB_PORT"))
 	if err != nil {
 		return Config{}, fmt.Errorf("parsing env=GLUTTONY_WEB_PORT: %w", err)
 	}
 
-	return Config{
+	cfg := Config{
 		Mode:              mode,
 		LogLevel:          logLevel,
-		WorkDirectoryPath: workDirectoryPath,
+		WorkDirectoryPath: mustGet("WORK_DIRECTORY_PATH"),
+		LogFilePath:       mustGet("LOG_FILE_PATH"),
 		WebPort:           webPort,
-		WebHost:           webHostRaw,
-		LogFilePath:       logFilePath,
-	}, nil
+		WebHost:           mustGet("WEB_HOST"),
+		Database: database.Config{
+			Name:     mustGet("DATABASE_NAME"),
+			User:     mustGet("DATABASE_USER"),
+			Host:     mustGet("DATABASE_HOST"),
+			Port:     mustGet("DATABASE_PORT"),
+			Password: mustGet("DATABASE_PASSWORD"),
+		},
+	}
+
+	if err := cfg.Validate(); err != nil {
+		return Config{}, fmt.Errorf("validating config: %w", err)
+	}
+
+	return cfg, nil
 }
