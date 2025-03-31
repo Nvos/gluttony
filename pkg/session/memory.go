@@ -12,6 +12,7 @@ type StoreMemory struct {
 
 func NewStoreMemory() *StoreMemory {
 	return &StoreMemory{
+		mu:   sync.RWMutex{},
 		data: make(map[string]Session),
 	}
 }

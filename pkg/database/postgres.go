@@ -19,11 +19,6 @@ type Config struct {
 }
 
 func (c *Config) ConnectionURL() string {
-	host := c.Host
-	if v := c.Port; v != "" {
-		host = host + ":" + v
-	}
-
 	u := &url.URL{
 		Scheme: "postgres",
 		Host:   c.Host,

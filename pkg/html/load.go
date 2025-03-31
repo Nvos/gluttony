@@ -10,7 +10,7 @@ import (
 )
 
 // collectViewRoutes collect all view routes in given fs, collection happens only
-// for 2 levels of nesting
+// for 2 levels of nesting.
 func collectViewRoutes(f fs.FS) ([]string, error) {
 	var matches []string
 

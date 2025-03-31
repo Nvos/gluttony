@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	cfg, err := app.New()
+	cfg, err := app.NewConfig()
 	if err != nil {
 		fmt.Printf("Create config failed: '%v', Aborting startup\n", err)
 		os.Exit(1)
@@ -26,7 +26,7 @@ func main() {
 
 	group, groupCtx := errgroup.WithContext(ctx)
 
-	a, err := app.NewApp(cfg)
+	a, err := app.New(cfg)
 	if err != nil {
 		fmt.Printf("Create new app failed: '%v', Aborting startup\n", err)
 		os.Exit(1)

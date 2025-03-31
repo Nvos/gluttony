@@ -5,6 +5,7 @@ import (
 	"gluttony/internal/ingredient"
 	"gluttony/internal/recipe"
 	"gluttony/pkg/router"
+	"mime/multipart"
 	"net/http"
 )
 
@@ -66,7 +67,9 @@ func (r *Routes) CreateFormHandler(c *router.Context) error {
 		if err != nil {
 			return c.Error(http.StatusInternalServerError, err)
 		}
-		defer file.Close()
+		defer func(file multipart.File) {
+			_ = file.Close()
+		}(file)
 
 		input.ThumbnailImage = file
 	}

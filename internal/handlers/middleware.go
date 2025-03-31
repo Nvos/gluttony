@@ -86,7 +86,7 @@ func AuthorizationMiddleware(role user.Role) router.Middleware {
 		return func(c *router.Context) error {
 			doer := GetDoer(c)
 			if doer == nil {
-				url := fmt.Sprintf("/login?next=%s", c.Request.URL.Path)
+				url := "/login?next=" + c.Request.URL.Path
 				c.Redirect(url, http.StatusFound)
 
 				return nil

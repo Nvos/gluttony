@@ -94,6 +94,7 @@ func (idx *Index) Search(
 	}
 
 	out := recipe.SearchResult{
+		//nolint:gosec // data present wont result in overflow
 		TotalCount: int64(searchResult.Total),
 		IDs:        make([]int32, 0, len(searchResult.Hits)),
 	}
@@ -110,13 +111,14 @@ func (idx *Index) Search(
 }
 
 func buildQuery(phrase string) *query.DisjunctionQuery {
+	const nameWeight = 3
 	terms := strings.Split(phrase, " ")
 
 	dj := query.NewDisjunctionQuery(nil)
 	for i := range terms {
 		nameMatch := bleve.NewMatchQuery(terms[i])
 		nameMatch.SetField("name")
-		nameMatch.SetBoost(3)
+		nameMatch.SetBoost(nameWeight)
 
 		descriptionMatch := bleve.NewMatchQuery(terms[i])
 		descriptionMatch.SetField("description")

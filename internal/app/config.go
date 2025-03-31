@@ -35,7 +35,7 @@ type Config struct {
 	WebHost           string
 }
 
-func New() (Config, error) {
+func NewConfig() (Config, error) {
 	if err := env.LoadEnv(); err != nil {
 		return Config{}, fmt.Errorf("loading environment variables: %w", err)
 	}

@@ -54,15 +54,16 @@
       class="bg-neutral-layer-1 text-neutral-font flex h-dvh flex-col antialiased"
     >
       {{ template "view" . }}
-      <script>
-        const es = new EventSource('/reload');
-        es.onmessage = (e) => {
-          console.log(e);
-          if (e.data === 'reload') {
-            window.location.reload();
-          }
-        };
-      </script>
+      {{ if .IsReloadEnabled }}
+        <script>
+          const es = new EventSource('/reload');
+          es.onmessage = (e) => {
+            if (e.data === 'reload') {
+              window.location.reload();
+            }
+          };
+        </script>
+      {{ end }}
     </body>
   </html>
 {{ end }}

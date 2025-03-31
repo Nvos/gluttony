@@ -21,12 +21,11 @@ func (s *Store) UploadImage(file io.Reader) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("upload image file: %w", err)
 	}
-	defer create.Close()
+	defer func(create afero.File) {
+		_ = create.Close()
+	}(create)
 
-	const defaultImageQuality = 80
-	err = optimizeAndWriteImage(file, create, optimizeImageOpts{
-		quality: defaultImageQuality,
-	})
+	err = optimizeAndWriteImage(file, create)
 	if err != nil {
 		return "", fmt.Errorf("upload iamge (optimizing): %w", err)
 	}

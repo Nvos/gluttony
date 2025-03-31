@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/sync/errgroup"
-	"io/fs"
 	"log/slog"
 	"os"
 	"os/exec"
-	"path/filepath"
 )
 
 func main() {
@@ -20,18 +18,9 @@ func main() {
 		panic(fmt.Sprintf("get work dir: %v", err))
 	}
 
-	binDir := filepath.Join(workDir, ".bin")
-	if err := os.MkdirAll(binDir, 0644); err != nil {
-		panic(fmt.Sprintf("create .bin directory: %v", err))
-	}
-
-	binFS := os.DirFS(binDir)
-
 	tools := &Tools{
 		logger:  logger,
 		workDir: workDir,
-		binFS:   binFS,
-		binPath: binDir,
 	}
 
 	app := &cli.App{
@@ -67,8 +56,6 @@ type Tools struct {
 	logger *slog.Logger
 
 	workDir string
-	binFS   fs.FS
-	binPath string
 }
 
 func (t *Tools) liveTailwind(ctx context.Context) error {

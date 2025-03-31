@@ -17,7 +17,7 @@ func WithError(err error) func(*HTTPError) {
 }
 
 func NewHTTPError(code int, opts ...func(err *HTTPError)) *HTTPError {
-	e := &HTTPError{Code: code}
+	e := &HTTPError{Code: code, Err: nil}
 	for i := range opts {
 		opts[i](e)
 	}

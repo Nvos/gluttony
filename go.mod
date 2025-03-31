@@ -5,6 +5,7 @@ go 1.23.2
 require (
 	github.com/alexedwards/argon2id v1.0.0
 	github.com/blevesearch/bleve v1.0.14
+	github.com/disintegration/imaging v1.6.2
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/gen2brain/webp v0.5.2
 	github.com/google/uuid v1.6.0

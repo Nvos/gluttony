@@ -13,6 +13,7 @@ func NewDev(level slog.Level) *slog.Logger {
 		ReplaceAttr: nil,
 	}))
 }
+
 func NewProd(level slog.Level, filePath string) (*slog.Logger, error) {
 	file, err := os.Open(filePath)
 	if err != nil {

@@ -25,6 +25,7 @@ type Session struct {
 	Data map[Key]any
 }
 
+//nolint:ireturn // casts key in session and panics on invalid type
 func Get[T any](session Session, key Key) (T, bool) {
 	var value T
 	got, ok := session.Data[key]

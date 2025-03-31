@@ -27,13 +27,17 @@ func FuncMap() template.FuncMap {
 			return castInt(a) + castInt(b)
 		},
 		"queryParams": func(values ...any) string {
-			if (len(values) % 2) == 1 {
+			const pairValue = 2
+			if (len(values) % pairValue) == 1 {
 				panic("invalid number of pairs")
 			}
 
 			params := url.Values{}
 			for i := 0; i < len(values); i += 2 {
-				name := values[i].(string)
+				name, ok := values[i].(string)
+				if !ok {
+					panic("query param name must be string")
+				}
 				value := fmt.Sprintf("%v", values[i+1])
 
 				if name == "" || value == "" {

@@ -2,6 +2,7 @@ package media
 
 import (
 	"fmt"
+	"github.com/disintegration/imaging"
 	"github.com/gen2brain/webp"
 	// Register webp codec.
 	_ "golang.org/x/image/webp"
@@ -13,26 +14,25 @@ import (
 	"io"
 )
 
-type optimizeImageOpts struct {
-	quality int
-}
-
 func optimizeAndWriteImage(
 	imgSource io.Reader,
 	writeTo io.Writer,
-	opts optimizeImageOpts,
 ) error {
 	img, _, err := image.Decode(imgSource)
 	if err != nil {
 		return fmt.Errorf("decode image: %w", err)
 	}
 
-	// TODO: crop + resize
+	const expectedWidth = 382
+	const expectedHeight = 256
+	img = imaging.Fill(img, expectedWidth, expectedHeight, imaging.Center, imaging.Lanczos)
 
+	const defaultImageQuality = 80
+	const defaultMethod = 4
 	encodeOpts := webp.Options{
-		Quality:  opts.quality,
+		Quality:  defaultImageQuality,
+		Method:   defaultMethod,
 		Lossless: false,
-		Method:   0,
 		Exact:    false,
 	}
 	if err := webp.Encode(writeTo, img, encodeOpts); err != nil {

@@ -2,6 +2,7 @@ package user
 
 import (
 	"errors"
+	"fmt"
 	"gluttony/internal/handlers"
 	"gluttony/internal/user"
 	"gluttony/pkg/router"
@@ -61,19 +62,20 @@ func (r *Routes) LoginHTMXFormHandler(c *router.Context) error {
 			return c.RenderViewFragment(loginView, loginForm, http.StatusOK)
 		}
 
-		return err
+		return fmt.Errorf("get user=%s: %w", form.Username, err)
 	}
 
 	session, err := r.sessionService.New(c.Context())
 	if err != nil {
-		return err
+		return fmt.Errorf("new session: %w", err)
 	}
 
 	session.Data[user.DoerSessionKey] = u
 
 	c.Response.Header().Add("Vary", "Cookie")
 	c.Response.Header().Add("Cache-Control", `no-cache="Set-Cookie"`)
-	c.SetCookie(session.ToCookie(time.Now().UTC().Add(time.Hour * 24)))
+	const dayDuration = 24 * time.Hour
+	c.SetCookie(session.ToCookie(time.Now().UTC().Add(dayDuration)))
 	c.HTMXRedirect(form.RedirectURL)
 
 	return nil

@@ -16,12 +16,6 @@ import (
 	"time"
 )
 
-type indexEntry struct {
-	ID          int32
-	Name        string
-	Description string
-}
-
 type Service struct {
 	db          *pgxpool.Pool
 	mediaStore  recipe.MediaStore
@@ -122,9 +116,24 @@ func (s *Service) Create(ctx context.Context, input recipe.CreateInput) error {
 	}
 
 	indexRecipe := recipe.Recipe{
-		ID:          recipeID,
-		Name:        input.Name,
-		Description: input.Description,
+		ID:                   recipeID,
+		Name:                 input.Name,
+		Description:          input.Description,
+		ThumbnailImageURL:    "",
+		Source:               "",
+		InstructionsMarkdown: "",
+		InstructionsHTML:     "",
+		Servings:             0,
+		PreparationTime:      0,
+		CookTime:             0,
+		Tags:                 nil,
+		Ingredients:          nil,
+		Nutrition: recipe.Nutrition{
+			Calories: 0,
+			Fat:      0,
+			Carbs:    0,
+			Protein:  0,
+		},
 	}
 
 	if err := s.searchIndex.Index(indexRecipe); err != nil {
@@ -138,24 +147,75 @@ func (s *Service) Create(ctx context.Context, input recipe.CreateInput) error {
 	return nil
 }
 
-func (s *Service) Update(ctx context.Context, input recipe.UpdateInput) error {
-	current, err := s.GetFull(ctx, input.ID)
-	if err != nil {
-		return err
+func (s *Service) updateTagsIfChanged(
+	ctx context.Context,
+	txStore recipe.Store,
+	recipeID int32,
+	current []recipe.Tag,
+	incoming []string,
+) error {
+	if len(incoming) == 0 {
+		return nil
 	}
 
-	tags := make([]string, 0, len(current.Tags))
-	for i := range current.Tags {
-		tags = append(tags, current.Tags[i].Name)
+	tags := make([]string, 0, len(current))
+	for i := range current {
+		tags = append(tags, current[i].Name)
 	}
-	isTagsChanged := !slices.Equal(tags, input.Tags)
+	isTagsChanged := !slices.Equal(tags, incoming)
+	if !isTagsChanged {
+		return nil
+	}
+
+	if err := txStore.DeleteRecipeTags(ctx, recipeID); err != nil {
+		return fmt.Errorf("delete recipe tags: %w", err)
+	}
+
+	if err := txStore.CreateRecipeTags(ctx, recipeID, incoming); err != nil {
+		return fmt.Errorf("create tags: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) updateIngredientsIfChanged(
+	ctx context.Context,
+	txStore recipe.Store,
+	recipeID int32,
+	current []recipe.Ingredient,
+	incoming []recipe.Ingredient,
+) error {
+	if len(incoming) == 0 {
+		return nil
+	}
 
 	isIngredientsChanged := !slices.EqualFunc(
-		current.Ingredients, input.Ingredients,
+		current, incoming,
 		func(v1, v2 recipe.Ingredient) bool {
 			return v1 == v2
 		},
 	)
+
+	if !isIngredientsChanged {
+		return nil
+	}
+
+	if err := txStore.DeleteRecipeIngredients(ctx, recipeID); err != nil {
+		return fmt.Errorf("delete ingredients: %w", err)
+	}
+
+	if err := txStore.CreateRecipeIngredients(ctx, recipeID, incoming); err != nil {
+		return fmt.Errorf("create ingredients: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) Update(ctx context.Context, input recipe.UpdateInput) error {
+	current, err := s.GetFull(ctx, input.ID)
+	if err != nil {
+		return fmt.Errorf("get recipe by id=%v: %w", input.ID, err)
+	}
 
 	tx, err := s.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
@@ -176,24 +236,27 @@ func (s *Service) Update(ctx context.Context, input recipe.UpdateInput) error {
 	}()
 
 	txStore := s.store.WithTx(tx)
-	if isTagsChanged && len(input.Tags) > 0 {
-		if err := txStore.DeleteRecipeTags(ctx, input.ID); err != nil {
-			return fmt.Errorf("delete recipe id=%d tags: %w", input.ID, err)
-		}
 
-		if err := txStore.CreateRecipeTags(ctx, input.ID, input.Tags); err != nil {
-			return fmt.Errorf("create tags: %w", err)
-		}
+	err = s.updateTagsIfChanged(
+		ctx,
+		txStore,
+		current.ID,
+		current.Tags,
+		input.Tags,
+	)
+	if err != nil {
+		return fmt.Errorf("update recipe id=%v tags: %w", input.ID, err)
 	}
 
-	if isIngredientsChanged && len(input.Ingredients) > 0 {
-		if err := txStore.DeleteRecipeIngredients(ctx, input.ID); err != nil {
-			return fmt.Errorf("delete recipe id=%d ingredients: %w", input.ID, err)
-		}
-
-		if err := txStore.CreateRecipeIngredients(ctx, input.ID, input.Ingredients); err != nil {
-			return fmt.Errorf("create ingredients: %w", err)
-		}
+	err = s.updateIngredientsIfChanged(
+		ctx,
+		txStore,
+		current.ID,
+		current.Ingredients,
+		input.Ingredients,
+	)
+	if err != nil {
+		return fmt.Errorf("update recipe id=%v ingredients : %w", input.ID, err)
 	}
 
 	if err = txStore.UpdateNutrition(ctx, input.ID, input.Nutrition); err != nil {
@@ -241,7 +304,10 @@ func (s *Service) AllSummaries(
 	ctx context.Context,
 	input recipe.SearchInput,
 ) (pagination.Page[recipe.Summary], error) {
-	out := pagination.Page[recipe.Summary]{}
+	out := pagination.Page[recipe.Summary]{
+		TotalCount: 0,
+		Rows:       nil,
+	}
 	if input.Search != "" {
 		result, err := s.searchIndex.Search(ctx, input.Search, pagination.OffsetFromPage(input.Page))
 		if err != nil {
@@ -265,12 +331,12 @@ func (s *Service) AllSummaries(
 
 	recipeSummaries, err := s.store.AllRecipeSummaries(ctx, input)
 	if err != nil {
-		return out, err
+		return out, fmt.Errorf("all recipe summaries: %w", err)
 	}
 
 	tags, err := s.store.AllTagsByRecipeIDs(ctx, input.RecipeIDs)
 	if err != nil {
-		return out, err
+		return out, fmt.Errorf("all recipe tags by ids=%+v: %w", input.RecipeIDs, err)
 	}
 
 	for i := range recipeSummaries {

@@ -91,7 +91,12 @@ func (reload *LiveReload) Handle(w http.ResponseWriter, _ *http.Request) {
 	reload.cond.L.Unlock()
 
 	_, _ = fmt.Fprintf(w, "data: reload\n\n")
-	w.(http.Flusher).Flush()
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		panic("flusher not implement http.Flusher")
+	}
+
+	flusher.Flush()
 }
 
 func (reload *LiveReload) Watch(ctx context.Context, cfg WatchConfig) error {

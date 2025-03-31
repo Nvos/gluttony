@@ -5,6 +5,7 @@ import (
 	"gluttony/internal/handlers"
 	"gluttony/internal/recipe"
 	"gluttony/pkg/router"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 )
@@ -68,7 +69,9 @@ func (r *Routes) UpdateFormHandler(c *router.Context) error {
 			// TODO: handle err
 			panic(fmt.Errorf("could not open cover image: %w", err))
 		}
-		defer file.Close()
+		defer func(file multipart.File) {
+			_ = file.Close()
+		}(file)
 
 		input.ThumbnailImage = file
 	}

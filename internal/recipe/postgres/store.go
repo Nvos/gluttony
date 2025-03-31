@@ -22,6 +22,7 @@ func NewStore(db DBTX) *Store {
 	}
 }
 
+//nolint:ireturn // has to return self via interface in order to conform to interface
 func (s *Store) WithTx(tx pgx.Tx) recipe.Store {
 	return &Store{
 		queries: New(tx),
@@ -42,7 +43,9 @@ func (s *Store) AllRecipeSummaries(
 	input recipe.SearchInput,
 ) ([]recipe.Summary, error) {
 	params := AllRecipeSummariesParams{
-		Limit: pagination.Limit,
+		Offset: 0,
+		Ids:    nil,
+		Limit:  pagination.Limit,
 	}
 	if len(input.RecipeIDs) > 0 {
 		params.Ids = input.RecipeIDs
@@ -101,11 +104,12 @@ func (s *Store) GetRecipe(ctx context.Context, id int32) (recipe.Recipe, error) 
 		ThumbnailImageURL:    r.ThumbnailUrl,
 		Tags:                 tags[id],
 		Source:               r.Source,
-		Servings:             int8(r.Servings),
-		PreparationTime:      time.Duration(r.PreparationTimeSeconds) * time.Second,
-		CookTime:             time.Duration(r.CookTimeSeconds) * time.Second,
-		Ingredients:          ingredients[id],
-		InstructionsHTML:     "",
+		//nolint:gosec // conversion is fine
+		Servings:         int8(r.Servings),
+		PreparationTime:  time.Duration(r.PreparationTimeSeconds) * time.Second,
+		CookTime:         time.Duration(r.CookTimeSeconds) * time.Second,
+		Ingredients:      ingredients[id],
+		InstructionsHTML: "",
 		Nutrition: recipe.Nutrition{
 			Calories: r.Calories,
 			Fat:      r.Fat,
@@ -153,12 +157,13 @@ func (s *Store) AllIngredientsByRecipeIDs(
 		}
 
 		out[ingredients[i].RecipeID] = append(out[ingredients[i].RecipeID], recipe.Ingredient{
+			//nolint:gosec // conversion is fine, there's no reason for more than 127 ingredients
 			Order:    int8(ingredients[i].RecipeOrder),
-			Quantity: float32(ingredients[i].Quantity),
+			Quantity: ingredients[i].Quantity,
 			Note:     ingredients[i].Note,
 			Unit:     ingredients[i].Unit,
 			Ingredient: ingredient.Ingredient{
-				ID:   int(ingredients[i].ID),
+				ID:   ingredients[i].ID,
 				Name: ingredients[i].Name,
 			},
 		})
@@ -201,8 +206,9 @@ func (s *Store) CreateRecipeIngredients(
 			ingredientID = id
 		}
 
-		savedIngredients[i].Ingredient.ID = int(ingredientID)
-		savedIngredients[i].Ingredient.Name = ingredients[i].Name
+		savedIngredients[i].ID = ingredientID
+		savedIngredients[i].Name = ingredients[i].Name
+		//nolint:gosec // conversion is fine, there's no reason for more than 127 ingredients
 		savedIngredients[i].Order = int8(i)
 		savedIngredients[i].Quantity = ingredients[i].Quantity
 		savedIngredients[i].Unit = ingredients[i].Unit
@@ -213,7 +219,7 @@ func (s *Store) CreateRecipeIngredients(
 		err = s.queries.CreateRecipeIngredient(ctx, CreateRecipeIngredientParams{
 			RecipeOrder:  int32(savedIngredients[i].Order),
 			RecipeID:     recipeID,
-			IngredientID: int32(savedIngredients[i].Ingredient.ID),
+			IngredientID: savedIngredients[i].ID,
 			Unit:         savedIngredients[i].Unit,
 			Quantity:     savedIngredients[i].Quantity,
 			Note:         savedIngredients[i].Note,
@@ -297,6 +303,7 @@ func (s *Store) CreateRecipeTags(
 
 		savedTags[i].Name = tagNames[i]
 		savedTags[i].ID = tagID
+		//nolint:gosec // not realistic for this to overflow
 		savedTags[i].Order = int32(i)
 	}
 

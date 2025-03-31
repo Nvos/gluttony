@@ -47,12 +47,13 @@ func NewRenderer(f fs.FS, opts RendererOptions) (*Renderer, error) {
 	}, nil
 }
 
-func (r *Renderer) RenderTemplate(name TemplateName, w io.Writer, data any) error {
+func (r *Renderer) RenderTemplate(name TemplateName, w io.Writer, data map[string]any) error {
 	t, ok := r.templates[name]
 	if !ok {
 		return fmt.Errorf("no such template: %s", name)
 	}
 
+	data["IsReloadEnabled"] = r.opts.IsReloadEnabled
 	if r.opts.IsReloadEnabled {
 		if err := t.Parse(r.fs); err != nil {
 			return fmt.Errorf("reload template %s: %w", name, err)
@@ -66,12 +67,13 @@ func (r *Renderer) RenderTemplate(name TemplateName, w io.Writer, data any) erro
 	return nil
 }
 
-func (r *Renderer) RenderFragment(name TemplateName, fragment FragmentName, w io.Writer, data any) error {
+func (r *Renderer) RenderFragment(name TemplateName, fragment FragmentName, w io.Writer, data map[string]any) error {
 	t, ok := r.templates[name]
 	if !ok {
 		return fmt.Errorf("no such template: %s", name)
 	}
 
+	data["IsReloadEnabled"] = r.opts.IsReloadEnabled
 	if r.opts.IsReloadEnabled {
 		if err := t.Parse(r.fs); err != nil {
 			return fmt.Errorf("reload template %s: %w", name, err)

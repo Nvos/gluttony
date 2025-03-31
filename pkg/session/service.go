@@ -57,7 +57,8 @@ func (s *Service) Delete(ctx context.Context, session Session) error {
 }
 
 func generateSessionID() (string, error) {
-	b := make([]byte, 32)
+	const sessionIDLength = 32
+	b := make([]byte, sessionIDLength)
 	if _, err := rand.Read(b); err != nil {
 		return "", fmt.Errorf("generate session id: %w", err)
 	}

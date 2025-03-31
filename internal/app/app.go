@@ -36,14 +36,14 @@ type App struct {
 	httpServer *http.Server
 }
 
-func NewApp(cfg Config) (*App, error) {
+func New(cfg Config) (*App, error) {
 	logger, err := NewLogger(cfg.Mode, cfg.LogLevel, cfg.LogFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("create logger: %w", err)
 	}
 
 	rootFS := afero.NewBasePathFs(afero.NewOsFs(), cfg.WorkDirectoryPath)
-	if err := os.MkdirAll(cfg.WorkDirectoryPath, os.ModePerm); err != nil {
+	if err := os.MkdirAll(cfg.WorkDirectoryPath, 0750); err != nil {
 		return nil, fmt.Errorf("create root working directory: %w", err)
 	}
 
@@ -86,9 +86,13 @@ func NewApp(cfg Config) (*App, error) {
 		return nil, fmt.Errorf("create recipe service: %w", err)
 	}
 
-	liveReload := livereload.New(logger)
+	var liveReload *livereload.LiveReload
+	if cfg.Mode == Dev {
+		liveReload = livereload.New(logger)
+	}
+
 	renderer, err := html.NewRenderer(GetTemplates(cfg.Mode), html.RendererOptions{
-		IsReloadEnabled: true,
+		IsReloadEnabled: cfg.Mode == Dev,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create html renderer: %w", err)
@@ -133,7 +137,12 @@ func GetTemplates(mode Mode) fs.FS {
 
 func NewLogger(mode Mode, level slog.Level, filePath string) (*slog.Logger, error) {
 	if mode == Prod {
-		return log.NewProd(level, filePath)
+		logger, err := log.NewProd(level, filePath)
+		if err != nil {
+			return nil, fmt.Errorf("create prod logger: %w", err)
+		}
+
+		return logger, nil
 	}
 
 	return log.NewDev(level), nil
