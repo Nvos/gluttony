@@ -3,25 +3,26 @@ package media
 import (
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/spf13/afero"
 	"io"
+	"io/fs"
+	"os"
 )
 
 type Store struct {
-	fs afero.Fs
+	rootDir *os.Root
 }
 
-func NewStore(fs afero.Fs) *Store {
-	return &Store{fs: fs}
+func NewStore(rootDir *os.Root) *Store {
+	return &Store{rootDir: rootDir}
 }
 
 func (s *Store) UploadImage(file io.Reader) (string, error) {
 	fileName := fmt.Sprintf("%s.webp", uuid.New().String())
-	create, err := s.fs.Create(fileName)
+	create, err := s.rootDir.Create(fileName)
 	if err != nil {
 		return "", fmt.Errorf("upload image file: %w", err)
 	}
-	defer func(create afero.File) {
+	defer func(create fs.File) {
 		_ = create.Close()
 	}(create)
 

@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"github.com/spf13/afero"
 	"gluttony/internal/handlers"
 	"gluttony/internal/recipe/bleve"
 	"gluttony/internal/service/recipe"
@@ -22,6 +21,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -42,14 +42,8 @@ func New(cfg Config) (*App, error) {
 		return nil, fmt.Errorf("create logger: %w", err)
 	}
 
-	rootFS := afero.NewBasePathFs(afero.NewOsFs(), cfg.WorkDirectoryPath)
 	if err := os.MkdirAll(cfg.WorkDirectoryPath, 0750); err != nil {
 		return nil, fmt.Errorf("create root working directory: %w", err)
-	}
-
-	directories, err := NewDirectories(cfg.Mode, rootFS)
-	if err != nil {
-		return nil, fmt.Errorf("create directories: %w", err)
 	}
 
 	db, err := database.New(context.Background(), cfg.Database)
@@ -61,12 +55,31 @@ func New(cfg Config) (*App, error) {
 		return nil, fmt.Errorf("migrate database: %w", err)
 	}
 
+	rootDir, err := os.OpenRoot(cfg.WorkDirectoryPath)
+	if err != nil {
+		return nil, fmt.Errorf("open root directory: %w", err)
+	}
+
+	if err := os.MkdirAll(filepath.Join(cfg.WorkDirectoryPath, "media"), 0750); err != nil {
+		return nil, fmt.Errorf("create media directory: %w", err)
+	}
+
+	mediaDir, err := rootDir.OpenRoot("media")
+	if err != nil {
+		return nil, fmt.Errorf("open media directory: %w", err)
+	}
+
+	assetsFS, err := GetAssets(cfg.Mode)
+	if err != nil {
+		return nil, fmt.Errorf("get assets: %w", err)
+	}
+
 	sessionStore := session.NewStoreMemory()
 	sessionService := session.NewService(sessionStore)
 	userStore := postgres.NewStore(db)
 
 	userService := user.NewService(userStore, sessionService)
-	mediaStore := media.NewStore(directories.Media)
+	mediaStore := media.NewStore(mediaDir)
 	recipeSearchIndex, err := bleve.New(cfg.WorkDirectoryPath)
 	if err != nil {
 		return nil, fmt.Errorf("create recipe search index: %w", err)
@@ -96,16 +109,17 @@ func New(cfg Config) (*App, error) {
 	}
 
 	mux.Use(middlewares...)
-	MountRoutes(mux, cfg.Mode, liveReload, directories)
+	MountRoutes(mux, cfg.Mode, liveReload, assetsFS, mediaDir.FS())
 	MountWebRoutes(mux, sessionService, userService, recipeService)
 
+	const defaultTimeout = 15 * time.Second
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.WebHost, cfg.WebPort),
 		Handler:           mux,
-		ReadTimeout:       15 * time.Second,
-		ReadHeaderTimeout: 15 * time.Second,
-		WriteTimeout:      15 * time.Second,
-		IdleTimeout:       1 * time.Minute,
+		ReadTimeout:       defaultTimeout,
+		ReadHeaderTimeout: defaultTimeout,
+		WriteTimeout:      defaultTimeout,
+		IdleTimeout:       time.Minute,
 	}
 
 	return &App{

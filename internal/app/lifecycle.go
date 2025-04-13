@@ -7,12 +7,14 @@ import (
 	"gluttony/internal/user"
 	"gluttony/pkg/livereload"
 	"golang.org/x/sync/errgroup"
+	"log/slog"
 	"net/http"
 	"path/filepath"
 	"time"
 )
 
 func (app *App) Start(ctx context.Context, group *errgroup.Group) error {
+	app.logger.InfoContext(ctx, "Directories", slog.String("root", app.cfg.WorkDirectoryPath))
 	// TODO: move to cmd, left for now as it is convenient
 	if err := app.userService.Create(ctx, user.CreateInput{
 		Username: "admin",
@@ -23,6 +25,10 @@ func (app *App) Start(ctx context.Context, group *errgroup.Group) error {
 	}
 
 	group.Go(func() error {
+		if app.cfg.Mode == Prod {
+			return nil
+		}
+
 		if err := app.liveReload.Watch(ctx, livereload.WatchConfig{
 			Extensions: []string{".gohtml", ".html", ".css", ".js"},
 			Directories: []string{
@@ -38,6 +44,8 @@ func (app *App) Start(ctx context.Context, group *errgroup.Group) error {
 	})
 
 	group.Go(func() error {
+		app.logger.InfoContext(ctx, "Starting HTTP server", slog.String("address", app.httpServer.Addr))
+
 		if err := app.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			return fmt.Errorf("start http server: %w", err)
 		}

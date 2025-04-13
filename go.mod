@@ -1,6 +1,6 @@
 module gluttony
 
-go 1.23.2
+go 1.24.0
 
 require (
 	github.com/alexedwards/argon2id v1.0.0
@@ -11,8 +11,6 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/pressly/goose/v3 v3.22.1
-	github.com/spf13/afero v1.11.0
-	github.com/urfave/cli/v2 v2.27.5
 	github.com/yuin/goldmark v1.4.13
 	golang.org/x/image v0.18.0
 	golang.org/x/sync v0.10.0
@@ -30,7 +28,6 @@ require (
 	github.com/blevesearch/zap/v14 v14.0.5 // indirect
 	github.com/blevesearch/zap/v15 v15.0.3 // indirect
 	github.com/couchbase/vellum v1.0.2 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
 	github.com/ebitengine/purego v0.8.1 // indirect
 	github.com/glycerine/go-unsnap-stream v0.0.0-20181221182339-f9677308dec2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
@@ -42,13 +39,11 @@ require (
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/philhofer/fwd v1.0.0 // indirect
-	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/steveyen/gtreap v0.1.0 // indirect
 	github.com/tetratelabs/wazero v1.8.1 // indirect
 	github.com/tinylib/msgp v1.1.0 // indirect
 	github.com/willf/bitset v1.1.10 // indirect
-	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	go.etcd.io/bbolt v1.3.5 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.27.0 // indirect
