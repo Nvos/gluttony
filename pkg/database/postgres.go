@@ -14,7 +14,7 @@ type Config struct {
 	Name     string
 	User     string
 	Host     string
-	Port     string
+	Port     int
 	Password string
 }
 

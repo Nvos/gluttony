@@ -106,7 +106,6 @@ func (idx *Index) Search(
 
 		out.IDs = append(out.IDs, int32(id))
 	}
-	bleve.NewDisjunctionQuery()
 	return out, nil
 }
 

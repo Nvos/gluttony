@@ -11,7 +11,12 @@ import (
 )
 
 func main() {
-	cfg, err := app.NewConfig()
+	wd, err := os.Getwd()
+	if err != nil {
+		panic(fmt.Sprintf("get work dir path: %v", err))
+	}
+
+	cfg, err := app.NewConfig(wd)
 	if err != nil {
 		fmt.Printf("Create config failed: '%v', Aborting startup\n", err)
 		os.Exit(1)

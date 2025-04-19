@@ -37,12 +37,23 @@ func (s *Service) Create(ctx context.Context, input user.CreateInput) error {
 }
 
 func (s *Service) GetByCredentials(ctx context.Context, input user.Credentials) (user.User, error) {
+	// Validate input
+	if input.Username == "" || input.Password == "" {
+		return user.User{}, user.ErrInvalidCredentials
+	}
+
+	// Check context before proceeding
+	if err := ctx.Err(); err != nil {
+		return user.User{}, fmt.Errorf("context error: %w", err)
+	}
+
 	value, err := s.store.GetByUsername(ctx, input.Username)
 	if err != nil {
+		// Use constant time comparison even for an error case
+		_, _ = password.Compare("dummy-hash", input.Password)
 		if errors.Is(err, sql.ErrNoRows) {
 			return user.User{}, user.ErrInvalidCredentials
 		}
-
 		return user.User{}, fmt.Errorf("get user: %w", err)
 	}
 
@@ -50,10 +61,11 @@ func (s *Service) GetByCredentials(ctx context.Context, input user.Credentials) 
 	if err != nil {
 		return user.User{}, fmt.Errorf("compare password: %w", err)
 	}
-
 	if !ok {
 		return user.User{}, user.ErrInvalidCredentials
 	}
 
+	// Clear sensitive data before returning
+	value.Password = ""
 	return value, nil
 }

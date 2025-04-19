@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 )
 
-func GetAssets(mode Mode) (fs.FS, error) {
-	if mode == Prod {
+func GetAssets(mode Environment) (fs.FS, error) {
+	if mode == EnvProduction {
 		return assets.Embedded, nil
 	}
 

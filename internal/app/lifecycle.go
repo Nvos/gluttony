@@ -25,7 +25,7 @@ func (app *App) Start(ctx context.Context, group *errgroup.Group) error {
 	}
 
 	group.Go(func() error {
-		if app.cfg.Mode == Prod {
+		if app.cfg.Environment == EnvProduction {
 			return nil
 		}
 

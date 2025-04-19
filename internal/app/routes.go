@@ -41,16 +41,16 @@ func MountWebRoutes(
 
 func MountRoutes(
 	mux *router.Router,
-	mode Mode,
+	mode Environment,
 	liveReload *livereload.LiveReload,
 	assetsFS fs.FS,
 	mediaFS fs.FS,
 ) {
-	if mode == Dev {
+	if mode == EnvDevelopment {
 		mux.Get("/reload", router.WrapHandlerFunc(liveReload.Handle))
 	}
 
-	isCacheEnabled := mode == Prod
+	isCacheEnabled := mode == EnvProduction
 	mux.Get("/assets/{pathname...}", handlers.AssetHandler(assetsFS, isCacheEnabled))
 	mux.Get("/media/{pathname...}", handlers.MediaHandler(mediaFS))
 }

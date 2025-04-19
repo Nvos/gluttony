@@ -26,7 +26,7 @@ import (
 )
 
 type App struct {
-	cfg    Config
+	cfg    *Config
 	logger *slog.Logger
 
 	recipeService *recipe.Service
@@ -36,8 +36,8 @@ type App struct {
 	httpServer *http.Server
 }
 
-func New(cfg Config) (*App, error) {
-	logger, err := NewLogger(cfg.Mode, cfg.LogLevel, cfg.LogFilePath)
+func New(cfg *Config) (*App, error) {
+	logger, err := NewLogger(cfg.Environment, cfg.Log.Level, cfg.Log.Path)
 	if err != nil {
 		return nil, fmt.Errorf("create logger: %w", err)
 	}
@@ -69,7 +69,7 @@ func New(cfg Config) (*App, error) {
 		return nil, fmt.Errorf("open media directory: %w", err)
 	}
 
-	assetsFS, err := GetAssets(cfg.Mode)
+	assetsFS, err := GetAssets(cfg.Environment)
 	if err != nil {
 		return nil, fmt.Errorf("get assets: %w", err)
 	}
@@ -91,12 +91,12 @@ func New(cfg Config) (*App, error) {
 	}
 
 	var liveReload *livereload.LiveReload
-	if cfg.Mode == Dev {
+	if cfg.Environment == EnvDevelopment {
 		liveReload = livereload.New(logger)
 	}
 
-	renderer, err := html.NewRenderer(GetTemplates(cfg.Mode), html.RendererOptions{
-		IsReloadEnabled: cfg.Mode == Dev,
+	renderer, err := html.NewRenderer(GetTemplates(cfg.Environment), html.RendererOptions{
+		IsReloadEnabled: cfg.Environment == EnvDevelopment,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create html renderer: %w", err)
@@ -109,12 +109,12 @@ func New(cfg Config) (*App, error) {
 	}
 
 	mux.Use(middlewares...)
-	MountRoutes(mux, cfg.Mode, liveReload, assetsFS, mediaDir.FS())
+	MountRoutes(mux, cfg.Environment, liveReload, assetsFS, mediaDir.FS())
 	MountWebRoutes(mux, sessionService, userService, recipeService)
 
 	const defaultTimeout = 15 * time.Second
 	httpServer := &http.Server{
-		Addr:              fmt.Sprintf("%s:%d", cfg.WebHost, cfg.WebPort),
+		Addr:              fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
 		Handler:           mux,
 		ReadTimeout:       defaultTimeout,
 		ReadHeaderTimeout: defaultTimeout,
@@ -132,16 +132,16 @@ func New(cfg Config) (*App, error) {
 	}, nil
 }
 
-func GetTemplates(mode Mode) fs.FS {
-	if mode == Prod {
+func GetTemplates(mode Environment) fs.FS {
+	if mode == EnvProduction {
 		return templates.Embedded
 	}
 
 	return os.DirFS("web/templates")
 }
 
-func NewLogger(mode Mode, level slog.Level, filePath string) (*slog.Logger, error) {
-	if mode == Prod {
+func NewLogger(mode Environment, level slog.Level, filePath string) (*slog.Logger, error) {
+	if mode == EnvProduction {
 		logger, err := log.NewProd(level, filePath)
 		if err != nil {
 			return nil, fmt.Errorf("create prod logger: %w", err)
