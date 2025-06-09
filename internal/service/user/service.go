@@ -69,3 +69,12 @@ func (s *Service) GetByCredentials(ctx context.Context, input user.Credentials) 
 	value.Password = ""
 	return value, nil
 }
+
+func (s *Service) GetByUsername(ctx context.Context, username string) (user.User, error) {
+	value, err := s.store.GetByUsername(ctx, username)
+	if err != nil {
+		return user.User{}, fmt.Errorf("get user: %w", err)
+	}
+
+	return value, nil
+}

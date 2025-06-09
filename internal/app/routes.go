@@ -6,7 +6,6 @@ import (
 	userhandlers "gluttony/internal/handlers/user"
 	"gluttony/internal/service/recipe"
 	"gluttony/internal/service/user"
-	"gluttony/pkg/livereload"
 	"gluttony/pkg/router"
 	"gluttony/pkg/session"
 	"io/fs"
@@ -42,14 +41,9 @@ func MountWebRoutes(
 func MountRoutes(
 	mux *router.Router,
 	mode Environment,
-	liveReload *livereload.LiveReload,
 	assetsFS fs.FS,
 	mediaFS fs.FS,
 ) {
-	if mode == EnvDevelopment {
-		mux.Get("/reload", router.WrapHandlerFunc(liveReload.Handle))
-	}
-
 	isCacheEnabled := mode == EnvProduction
 	mux.Get("/assets/{pathname...}", handlers.AssetHandler(assetsFS, isCacheEnabled))
 	mux.Get("/media/{pathname...}", handlers.MediaHandler(mediaFS))

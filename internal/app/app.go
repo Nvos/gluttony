@@ -10,14 +10,10 @@ import (
 	"gluttony/internal/user/postgres"
 	"gluttony/migrations"
 	"gluttony/pkg/database"
-	"gluttony/pkg/html"
-	"gluttony/pkg/livereload"
 	"gluttony/pkg/log"
 	"gluttony/pkg/media"
 	"gluttony/pkg/router"
 	"gluttony/pkg/session"
-	"gluttony/web/templates"
-	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
@@ -32,7 +28,6 @@ type App struct {
 	recipeService *recipe.Service
 	userService   *user.Service
 
-	liveReload *livereload.LiveReload
 	httpServer *http.Server
 }
 
@@ -90,26 +85,18 @@ func New(cfg *Config) (*App, error) {
 		return nil, fmt.Errorf("create recipe service: %w", err)
 	}
 
-	var liveReload *livereload.LiveReload
-	if cfg.Environment == EnvDevelopment {
-		liveReload = livereload.New(logger)
-	}
-
-	renderer, err := html.NewRenderer(GetTemplates(cfg.Environment), html.RendererOptions{
-		IsReloadEnabled: cfg.Environment == EnvDevelopment,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("create html renderer: %w", err)
-	}
-	mux := router.NewRouter(renderer)
+	mux := router.NewRouter()
 
 	middlewares := []router.Middleware{
-		handlers.AuthenticationMiddleware(sessionService),
 		handlers.ErrorMiddleware(logger),
+		handlers.AuthenticationMiddleware(sessionService),
+	}
+	if cfg.Environment == EnvDevelopment && cfg.Impersonate != "" {
+		middlewares = append(middlewares, handlers.ImpersonateMiddleware(cfg.Impersonate, userService, sessionService))
 	}
 
 	mux.Use(middlewares...)
-	MountRoutes(mux, cfg.Environment, liveReload, assetsFS, mediaDir.FS())
+	MountRoutes(mux, cfg.Environment, assetsFS, mediaDir.FS())
 	MountWebRoutes(mux, sessionService, userService, recipeService)
 
 	const defaultTimeout = 15 * time.Second
@@ -127,17 +114,8 @@ func New(cfg *Config) (*App, error) {
 		userService:   userService,
 		httpServer:    httpServer,
 		cfg:           cfg,
-		liveReload:    liveReload,
 		logger:        logger,
 	}, nil
-}
-
-func GetTemplates(mode Environment) fs.FS {
-	if mode == EnvProduction {
-		return templates.Embedded
-	}
-
-	return os.DirFS("web/templates")
 }
 
 func NewLogger(mode Environment, level slog.Level, filePath string) (*slog.Logger, error) {

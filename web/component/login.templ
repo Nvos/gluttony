@@ -1,0 +1,57 @@
+package component
+
+import "gluttony/internal/user"
+import "gluttony/internal/handlers"
+import "gluttony/web"
+import "github.com/starfederation/datastar/sdk/go"
+import "fmt"
+
+type LoginFormProps struct {
+	Credentials user.Credentials `json:"credentials"`
+	RedirectURL string           `json:"redirectUrl"`
+}
+
+templ FormLogin(props LoginFormProps) {
+	<form
+		class="card w-[400px]"
+		data-signals={ templ.JSONString(props) }
+		onsubmit="return false;"
+	>
+		<h1 class="text-2xl font-bold">Sign in to Gluttony</h1>
+		<h2 class="text-neutral-font-secondary">
+			Enter your account credentials below
+		</h2>
+		@Alert(handlers.Alert{})
+		<label class="form-control">
+			<span class="label">
+				<span class="label-text">Username</span>
+			</span>
+			<input autofocus class="input" name="username" data-bind="credentials.username"/>
+		</label>
+		<label class="form-control">
+			<span class="label">
+				<span class="label-text">Password</span>
+			</span>
+			<input
+				type="password"
+				class="input"
+				name="password"
+				data-bind="credentials.password"
+				data-on-keydown={ fmt.Sprintf("evt.key === 'Enter' && %s", datastar.PostSSE("/login")) }
+			/>
+		</label>
+		<button
+			type="button"
+			data-on-click={ datastar.PostSSE("/login") }
+			class="button is-solid-primary mt-3"
+		>Login</button>
+	</form>
+}
+
+templ ViewLogin(c *web.Context, login LoginFormProps) {
+	@View("Login", c) {
+		<main class="flex h-dvh items-center justify-center">
+			@FormLogin(login)
+		</main>
+	}
+}

@@ -1,0 +1,24 @@
+package component
+
+import "gluttony/web"
+
+templ View404(c *web.Context) {
+	@View("Not found", c) {
+		<div class="flex flex-1">
+			@Sidebar(c)
+			<div class="bg-neutral-layer-2 flex flex-1 items-center justify-center">
+				<main class="flex flex-col p-8">
+					<div class="card w-[400px]">
+						<h1 class="text-3xl">Resource not found</h1>
+						<h2 class="text-md text-neutral-font-secondary">
+							Resource might not exist, or access to it is restricted.
+						</h2>
+						<div class="flex items-start">
+							<a class="button is-ghost-neutral" href="/recipes">Go to recipes</a>
+						</div>
+					</div>
+				</main>
+			</div>
+		</div>
+	}
+}

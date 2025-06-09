@@ -1,15 +1,77 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	usersvc "gluttony/internal/service/user"
 	"gluttony/internal/user"
 	"gluttony/pkg/html"
 	"gluttony/pkg/router"
 	"gluttony/pkg/session"
 	"log/slog"
 	"net/http"
+	"time"
 )
+
+// ImpersonateMiddleware creates a middleware that impersonates a user by
+// setting their session if not already established.
+// INTENDED ONLY FOR DEV.
+func ImpersonateMiddleware(
+	impersonate string,
+	userService *usersvc.Service,
+	sessionService *session.Service,
+) router.Middleware {
+	u, err := userService.GetByUsername(context.Background(), impersonate)
+	if err != nil {
+		panic(err)
+	}
+
+	return func(next router.HandlerFunc) router.HandlerFunc {
+		return func(c *router.Context) error {
+			var cookie *http.Cookie
+			cookie, err = c.Request.Cookie("GluttonySession")
+			if err != nil {
+				sess, sessErr := sessionService.New(c.Context())
+				if sessErr != nil {
+					return fmt.Errorf("new session: %w", sessErr)
+				}
+
+				sess.Data[user.DoerSessionKey] = u
+
+				c.Response.Header().Add("Vary", "Cookie")
+				c.Response.Header().Add("Cache-Control", `no-cache="Set-Cookie"`)
+				const dayDuration = 24 * time.Hour
+				cookie = sess.ToCookie(time.Now().UTC().Add(dayDuration))
+				c.SetCookie(cookie)
+			}
+
+			sess, err := sessionService.Get(c.Context(), cookie.Value)
+			if err == nil {
+				return next(c)
+			}
+
+			_, ok := user.GetSessionDoer(sess)
+			if ok {
+				return next(c)
+			}
+
+			ses, err := sessionService.Restore(c.Context(), cookie.Value)
+			if err != nil {
+				return fmt.Errorf("new session: %w", err)
+			}
+
+			ses.Data[user.DoerSessionKey] = u
+
+			c.Response.Header().Add("Vary", "Cookie")
+			c.Response.Header().Add("Cache-Control", `no-cache="Set-Cookie"`)
+			const dayDuration = 24 * time.Hour
+			c.SetCookie(ses.ToCookie(time.Now().UTC().Add(dayDuration)))
+
+			return next(c)
+		}
+	}
+}
 
 func AuthenticationMiddleware(sessionService *session.Service) router.Middleware {
 	return func(next router.HandlerFunc) router.HandlerFunc {

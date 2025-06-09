@@ -5,6 +5,8 @@ import (
 	"gluttony/internal/handlers"
 	"gluttony/internal/recipe"
 	"gluttony/pkg/router"
+	"gluttony/web"
+	"gluttony/web/component"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -32,7 +34,7 @@ func (r *Routes) UpdateViewHandler(c *router.Context) error {
 		tags = append(tags, tag.Name)
 	}
 
-	c.Data["Form"] = Form{
+	form := recipe.Form{
 		ID:                fullRecipe.ID,
 		Name:              fullRecipe.Name,
 		Description:       fullRecipe.Description,
@@ -47,7 +49,11 @@ func (r *Routes) UpdateViewHandler(c *router.Context) error {
 		Nutrition:         fullRecipe.Nutrition,
 	}
 
-	return c.RenderView(updateView, http.StatusOK)
+	webCtx := web.NewContext(c.Request, handlers.GetDoer(c), "en")
+	return c.TemplComponent(
+		http.StatusOK,
+		component.ViewRecipeCreate(webCtx, form),
+	)
 }
 
 func (r *Routes) UpdateFormHandler(c *router.Context) error {
@@ -55,7 +61,7 @@ func (r *Routes) UpdateFormHandler(c *router.Context) error {
 		return c.Error(http.StatusBadRequest, err)
 	}
 
-	form, err := NewRecipeForm(c.Request.MultipartForm.Value)
+	form, err := recipe.NewRecipeForm(c.Request.MultipartForm.Value)
 	if err != nil {
 		return c.Error(http.StatusBadRequest, err)
 	}
@@ -81,10 +87,10 @@ func (r *Routes) UpdateFormHandler(c *router.Context) error {
 		CreateInput: input,
 	})
 	if err == nil {
-		c.HTMXRedirect(fmt.Sprintf("/recipes/%d", form.ID))
+		c.Redirect(fmt.Sprintf("/recipes/%d", form.ID), http.StatusFound)
 		return nil
 	}
 
-	c.Data["Form"] = form
-	return c.RenderViewFragment(updateView, updateForm, http.StatusBadRequest)
+	// TODO: Handle errors
+	return c.Error(http.StatusBadRequest, err)
 }

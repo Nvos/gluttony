@@ -1,10 +1,13 @@
 package recipe
 
 import (
+	datastar "github.com/starfederation/datastar/sdk/go"
 	"gluttony/internal/handlers"
 	"gluttony/internal/ingredient"
 	"gluttony/internal/recipe"
 	"gluttony/pkg/router"
+	"gluttony/web"
+	"gluttony/web/component"
 	"mime/multipart"
 	"net/http"
 )
@@ -15,7 +18,7 @@ const (
 )
 
 func (r *Routes) CreateViewHandler(c *router.Context) error {
-	c.Data["Form"] = Form{
+	form := recipe.Form{
 		ID:                0,
 		Name:              "",
 		Description:       "",
@@ -46,7 +49,11 @@ func (r *Routes) CreateViewHandler(c *router.Context) error {
 		},
 	}
 
-	return c.RenderView(createView, http.StatusOK)
+	webCtx := web.NewContext(c.Request, handlers.GetDoer(c), "en")
+	return c.TemplComponent(
+		http.StatusOK,
+		component.ViewRecipeCreate(webCtx, form),
+	)
 }
 
 func (r *Routes) CreateFormHandler(c *router.Context) error {
@@ -54,7 +61,7 @@ func (r *Routes) CreateFormHandler(c *router.Context) error {
 		return c.Error(http.StatusBadRequest, err)
 	}
 
-	form, err := NewRecipeForm(c.Request.MultipartForm.Value)
+	form, err := recipe.NewRecipeForm(c.Request.MultipartForm.Value)
 	if err != nil {
 		return c.Error(http.StatusBadRequest, err)
 	}
@@ -74,11 +81,17 @@ func (r *Routes) CreateFormHandler(c *router.Context) error {
 		input.ThumbnailImage = file
 	}
 
+	sse := datastar.NewSSE(c.Response, c.Request)
+
 	err = r.service.Create(c.Context(), input)
 	if err == nil {
-		c.HTMXRedirect("/recipes")
+		if err := sse.Redirect("/recipes"); err != nil {
+			return c.Error(http.StatusInternalServerError, err)
+		}
+
 		return nil
 	}
 
+	// TODO: Handle errors
 	return c.Error(http.StatusBadRequest, err)
 }

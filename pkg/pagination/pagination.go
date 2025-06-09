@@ -2,7 +2,7 @@ package pagination
 
 import "math"
 
-const Limit = 3
+const Limit = 20
 
 type Paginator struct {
 	Page       int32

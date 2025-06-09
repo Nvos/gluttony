@@ -1,0 +1,42 @@
+package component
+
+import (
+	"fmt"
+	"gluttony/internal/recipe"
+	"gluttony/web"
+)
+
+templ ViewRecipeUpdate(c *web.Context, form recipe.Form) {
+	@View("Recipes", c) {
+		<div
+			class="flex flex-1"
+		>
+			@Sidebar(c)
+			<div class="bg-neutral-layer-2 w-full">
+				@CreateRecipeUpdate(form)
+				<main class="flex flex-col p-8">
+					@FormRecipe(form)
+				</main>
+			</div>
+		</div>
+	}
+}
+
+templ CreateRecipeUpdate(form recipe.Form) {
+	<header
+		class="border-neutral-border-1 bg-neutral-layer-2/80 sticky top-0 z-50 flex h-[72px] items-center justify-between border-b px-8 backdrop-blur-md"
+	>
+		<div class="form-control">
+			<a href="/recipes" class="button is-ghost-neutral">Go back to recipes</a>
+		</div>
+		<div class="flex gap-4">
+			<button
+				class="button is-solid-primary"
+				type="button"
+				data-on-submit={ fmt.Sprintf("@post('/recipes/%d/update/form', {contentType: 'form', selector: '#recipe-form'})", form.ID) }
+			>
+				Update
+			</button>
+		</div>
+	</header>
+}

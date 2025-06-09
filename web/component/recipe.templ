@@ -1,0 +1,188 @@
+package component
+
+import "gluttony/internal/recipe"
+import "gluttony/web"
+import "fmt"
+import "strconv"
+import "net/url"
+
+templ ViewRecipe(c *web.Context, r recipe.Recipe) {
+	@View(fmt.Sprintf("Recipe - %s", r.Name), c) {
+		<div class="flex flex-1">
+			@Sidebar(c)
+			<div class="bg-neutral-layer-2 w-full">
+				@RecipeHeader(r.ID)
+				<main class="flex flex-col p-8">
+					@Recipe(r)
+				</main>
+			</div>
+		</div>
+	}
+}
+
+templ Recipe(r recipe.Recipe) {
+	<div class="flex flex-col gap-8">
+		<div class="flex gap-8">
+			<div
+				class="bg-neutral-layer-1 border-neutral-border-2 relative flex min-w-96 overflow-hidden rounded-md border-1"
+			>
+				if r.ThumbnailImageURL != "" {
+					<img
+						class="h-64 w-full rounded-t-sm object-cover"
+						src={ fmt.Sprintf("/media/%s", r.ThumbnailImageURL) }
+						alt="Recipe image"
+					/>
+				} else {
+					<div class="flex h-64 w-full items-center justify-center">
+						No thumbnail image
+					</div>
+				}
+			</div>
+			<div class="flex flex-col gap-4">
+				<h1 class="text-3xl">
+					{ r.Name }
+				</h1>
+				<h2 class="text-md">{ r.Description }</h2>
+				@RecipeTagList(r.Tags)
+				@RecipeMeta(r)
+			</div>
+		</div>
+		// {{ template "recipe-view/metadata" . }}
+		<div class="grid grid-cols-12">
+			<div class="col-span-12 md:col-span-3">
+				<h2 class="mb-4 text-2xl">Ingredients</h2>
+				@RecipeIngredientList(r.Ingredients)
+			</div>
+			<div class="col-span-12 md:col-span-9">
+				<h2 class="mb-4 text-2xl">Instructions</h2>
+				@RecipeInstructions(r.InstructionsHTML)
+			</div>
+		</div>
+		<div class="flex flex-col gap-4">
+			<h2 class="text-2xl">Source</h2>
+			{{
+	isURL := false
+	if r.Source != "" {
+		if _, err := url.Parse(r.Source); err == nil {
+			isURL = true
+		}
+
+	}
+			}}
+			if isURL {
+				<a
+					class="underline"
+					href={ templ.SafeURL(r.Source) }
+					target="_blank"
+					rel="noopener"
+				>
+					{ r.Source }
+				</a>
+			} else {
+				<span>{ r.Source }</span>
+			}
+		</div>
+	</div>
+}
+
+templ RecipeHeader(id int32) {
+	<header
+		class="border-neutral-border-1 bg-neutral-layer-3 sticky top-0 z-50 flex h-[72px] items-center justify-between border-b px-8 backdrop-blur-md"
+	>
+		<div class="form-control">
+			<a href="/recipes" class="button is-ghost-neutral">Go back to recipes</a>
+		</div>
+		<div class="flex gap-4">
+			<a
+				href={ templ.SafeURL(fmt.Sprintf("/recipes/%d/update", id)) }
+				class="button is-solid-primary"
+			>
+				Update
+			</a>
+		</div>
+	</header>
+}
+
+templ RecipeTagList(tags []recipe.Tag) {
+	<div class="flex flex-wrap gap-2">
+		for _, tag := range tags {
+			<div class="tag is-ghost-neutral min-w-fit">{ tag.Name }</div>
+		}
+	</div>
+}
+
+templ RecipeIngredientList(ingredients []recipe.Ingredient) {
+	<ul class="marker:text-primary-9 list-disc pl-4">
+		for _, ingredient := range ingredients {
+			<li class="pb-1">
+				<div>
+					if ingredient.Unit == "count" {
+						{ fmt.Sprintf("%f %s", ingredient.Quantity, ingredient.Name) }
+					} else {
+						{ fmt.Sprintf("%f %s %s", ingredient.Quantity, ingredient.Unit, ingredient.Name) }
+					}
+				</div>
+				if ingredient.Note != "" {
+					<div class="text-neutral-11 text-sm">
+						{ ingredient.Note }
+					</div>
+				}
+			</li>
+		}
+	</ul>
+}
+
+templ RecipeMeta(r recipe.Recipe) {
+	<div class="flex flex-col gap-2">
+		<div class="flex gap-2">
+			<span class="tag is-ghost-neutral">
+				Servings 
+				<span class="text-neutral-font">
+					{ strconv.Itoa(int(r.Servings)) }
+				</span>
+			</span>
+			<span class="tag is-ghost-neutral">
+				Preparation time 
+				<span class="text-neutral-font">
+					{ fmt.Sprintf("%02d:%02d", int(r.PreparationTime.Hours()), int(r.PreparationTime.Minutes()) % 60) }
+				</span>
+			</span>
+			<span class="tag is-ghost-neutral">
+				Cook time 
+				<span class="text-neutral-font">
+					{ fmt.Sprintf("%02d:%02d", int(r.CookTime.Hours()), int(r.CookTime.Minutes()) % 60) }
+				</span>
+			</span>
+		</div>
+	</div>
+}
+
+templ RecipeNutrition(n recipe.Nutrition) {
+	<div class="flex flex-col gap-4">
+		<h2 class="text-2xl">Nutrition</h2>
+		<div class="flex min-w-fit flex-col gap-1">
+			<span>
+				<span class="text-neutral-font-secondary">Calories:</span>
+				<span>{ strconv.Itoa(int(n.Calories)) } kcal</span>
+			</span>
+			<span>
+				<span class="text-neutral-font-secondary">Fat:</span>
+				<span>{ strconv.Itoa(int(n.Fat)) } g</span>
+			</span>
+			<span>
+				<span class="text-neutral-font-secondary">Carbs:</span>
+				<span>{ strconv.Itoa(int(n.Carbs)) } g</span>
+			</span>
+			<span>
+				<span class="text-neutral-font-secondary">Protein:</span>
+				<span>{ strconv.Itoa(int(n.Protein)) } g</span>
+			</span>
+		</div>
+	</div>
+}
+
+templ RecipeInstructions(instructionsHtml string) {
+	<div class="markdown">
+		@templ.Raw(instructionsHtml)
+	</div>
+}

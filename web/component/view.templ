@@ -1,0 +1,18 @@
+package component
+
+import "gluttony/web"
+import "fmt"
+
+templ View(title string, c *web.Context) {
+	<!DOCTYPE html>
+	<html lang={ c.Lang } class="dark">
+		<head>
+			<title>{ fmt.Sprintf("Gluttony - %s", title) }</title>
+			<link rel="stylesheet" href="/assets/css/tailwind.css"/>
+			<script script type="module" src="/assets/js/datastar.js"></script>
+		</head>
+		<body class="bg-neutral-layer-1 text-neutral-font flex h-dvh flex-col antialiased">
+			{ children... }
+		</body>
+	</html>
+}

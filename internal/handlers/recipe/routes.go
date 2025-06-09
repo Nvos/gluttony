@@ -30,7 +30,7 @@ func (r *Routes) Mount(mux *router.Router) {
 	mux.Get("/recipes/create", r.CreateViewHandler, middlewares...)
 	mux.Post("/recipes/create/form", r.CreateFormHandler, middlewares...)
 	mux.Get("/recipes/{recipe_id}", r.DetailsViewHandler, middlewares...)
-	mux.Get("/recipes", r.ListViewHandler, middlewares...)
+	mux.Get("/recipes", r.RecipesHandler, middlewares...)
 	mux.Get("/recipes/{recipe_id}/update", r.UpdateViewHandler, middlewares...)
 	mux.Post("/recipes/{recipe_id}/update/form", r.UpdateFormHandler, middlewares...)
 }

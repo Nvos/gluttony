@@ -20,6 +20,7 @@ linters:
       extra-ignore-sigs:
         - .RenderViewFragment
         - .RenderView
+        - .TemplComponent
         - .Error
 
     cyclop:
@@ -134,6 +135,7 @@ linters:
         - os.WriteFile
         - prometheus.ExponentialBuckets.*
         - prometheus.LinearBuckets
+        - z.Struct
 
     nakedret:
       # Make an issue if func has more lines of code than this setting, and it has naked returns.

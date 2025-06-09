@@ -5,16 +5,21 @@ import (
 	"errors"
 	"fmt"
 	"gluttony/internal/user"
-	"gluttony/pkg/livereload"
 	"golang.org/x/sync/errgroup"
 	"log/slog"
 	"net/http"
-	"path/filepath"
 	"time"
 )
 
+const defaultHttpServerTimeout = time.Second * 15
+
 func (app *App) Start(ctx context.Context, group *errgroup.Group) error {
-	app.logger.InfoContext(ctx, "Directories", slog.String("root", app.cfg.WorkDirectoryPath))
+	app.logger.InfoContext(
+		ctx,
+		"Configuration",
+		slog.String("mode", string(app.cfg.Environment)),
+		slog.String("rootDir", app.cfg.WorkDirectoryPath),
+	)
 	// TODO: move to cmd, left for now as it is convenient
 	if err := app.userService.Create(ctx, user.CreateInput{
 		Username: "admin",
@@ -23,25 +28,6 @@ func (app *App) Start(ctx context.Context, group *errgroup.Group) error {
 	}); err != nil {
 		return fmt.Errorf("create initial admin user: %w", err)
 	}
-
-	group.Go(func() error {
-		if app.cfg.Environment == EnvProduction {
-			return nil
-		}
-
-		if err := app.liveReload.Watch(ctx, livereload.WatchConfig{
-			Extensions: []string{".gohtml", ".html", ".css", ".js"},
-			Directories: []string{
-				filepath.Clean("assets"),
-				filepath.Clean("web/templates"),
-			},
-		}); err != nil {
-			return fmt.Errorf("start livereload watch: %w", err)
-		}
-
-		app.logger.InfoContext(ctx, "Shutting down live reload")
-		return nil
-	})
 
 	group.Go(func() error {
 		app.logger.InfoContext(ctx, "Starting HTTP server", slog.String("address", app.httpServer.Addr))
@@ -70,7 +56,10 @@ func (app *App) Start(ctx context.Context, group *errgroup.Group) error {
 }
 
 func (app *App) stop() error {
-	const shutdownTimeout = 15 * time.Second
+	shutdownTimeout := defaultHttpServerTimeout
+	if app.cfg.Environment == EnvDevelopment {
+		shutdownTimeout = 0
+	}
 	shutdownCtx, cancelFn := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancelFn()
 

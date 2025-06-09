@@ -18,7 +18,6 @@ func (r *Router) toHTTPHandler(h HandlerFunc, middlewares ...Middleware) http.Ha
 			Response: rw,
 			Request:  req,
 			Data:     make(map[string]any),
-			renderer: r.renderer,
 		}
 
 		ctx.Data["Path"] = req.URL.Path

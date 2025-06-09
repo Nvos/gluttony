@@ -36,6 +36,7 @@ type Config struct {
 	Database          database.Config
 	Log               LogConfig
 	WorkDirectoryPath string
+	Impersonate       string
 }
 
 type ServerConfig struct {
@@ -68,7 +69,7 @@ func NewConfig(path string) (*Config, error) {
 	cfg := &Config{}
 
 	// Load environment
-	envMode := getEnvOrDefault("MODE", "dev")
+	envMode := getEnvOrDefault("MODE", "prod")
 	switch envMode {
 	case string(EnvProduction):
 		cfg.Environment = EnvProduction
@@ -115,6 +116,11 @@ func NewConfig(path string) (*Config, error) {
 		User:     getEnvOrDefault("DATABASE_USER", "postgres"),
 		Password: getEnvOrDefault("DATABASE_PASSWORD", ""),
 		Name:     getEnvOrDefault("DATABASE_NAME", "gluttony"),
+	}
+
+	// Load Impersonate config only for development mode
+	if cfg.Environment == EnvDevelopment {
+		cfg.Impersonate = getEnvOrDefault("IMPERSONATE", "")
 	}
 
 	if err := cfg.Validate(); err != nil {

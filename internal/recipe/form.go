@@ -2,7 +2,6 @@ package recipe
 
 import (
 	"fmt"
-	"gluttony/internal/recipe"
 	"net/url"
 	"strconv"
 	"strings"
@@ -20,12 +19,12 @@ type Form struct {
 	PreparationTime   time.Duration
 	CookTime          time.Duration
 	Tags              []string
-	Ingredients       []recipe.Ingredient
-	Nutrition         recipe.Nutrition
+	Ingredients       []Ingredient
+	Nutrition         Nutrition
 }
 
-func (form Form) ToInput(ownerID int32) recipe.CreateInput {
-	return recipe.CreateInput{
+func (form Form) ToInput(ownerID int32) CreateInput {
+	return CreateInput{
 		Name:            form.Name,
 		Description:     form.Description,
 		Source:          form.Source,
@@ -44,7 +43,7 @@ func (form Form) ToInput(ownerID int32) recipe.CreateInput {
 }
 
 func NewRecipeForm(values url.Values) (Form, error) {
-	ingredients := make([]recipe.Ingredient, len(values["ingredient"]))
+	ingredients := make([]Ingredient, len(values["ingredient"]))
 
 	quantities := values["quantity"]
 	notes := values["note"]
@@ -93,7 +92,7 @@ func NewRecipeForm(values url.Values) (Form, error) {
 		Tags:              values["tag"],
 		Ingredients:       ingredients,
 		ThumbnailImageURL: values.Get("cover-image-url"),
-		Nutrition: recipe.Nutrition{
+		Nutrition: Nutrition{
 			Calories: float32(calories),
 			Fat:      float32(fat),
 			Carbs:    float32(carbs),
@@ -102,7 +101,6 @@ func NewRecipeForm(values url.Values) (Form, error) {
 	}, nil
 }
 
-// TODO: move to some time utils
 func ParseFormDuration(value string) (time.Duration, error) {
 	const expectedPartCount = 2
 

@@ -1,30 +1,18 @@
 package user
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	datastar "github.com/starfederation/datastar/sdk/go"
 	"gluttony/internal/handlers"
 	"gluttony/internal/user"
 	"gluttony/pkg/router"
+	"gluttony/web"
+	"gluttony/web/component"
 	"net/http"
 	"time"
 )
-
-type LoginForm struct {
-	Username    string
-	Password    string
-	RedirectURL string
-}
-
-func (r LoginForm) ToCredentials() user.Credentials {
-	return user.Credentials{
-		Username: r.Username,
-		Password: r.Password,
-	}
-}
-
-const loginView = "view/login"
-const loginForm = "login/form"
 
 func (r *Routes) LoginViewHandler(c *router.Context) error {
 	redirectURL := "/recipes"
@@ -33,36 +21,49 @@ func (r *Routes) LoginViewHandler(c *router.Context) error {
 		redirectURL = next
 	}
 
-	c.Data["Form"] = LoginForm{
-		Username:    "",
-		Password:    "",
+	webCtx := web.NewContext(c.Request, handlers.GetDoer(c), "en")
+
+	formProps := component.LoginFormProps{
+		Credentials: user.Credentials{
+			Username: "",
+			Password: "",
+		},
 		RedirectURL: redirectURL,
 	}
 
-	return c.RenderView(loginView, http.StatusOK)
+	return c.TemplComponent(http.StatusOK, component.ViewLogin(webCtx, formProps))
 }
 
-func (r *Routes) LoginHTMXFormHandler(c *router.Context) error {
-	form := LoginForm{
-		Username:    c.FormValue("username"),
-		Password:    c.FormValue("password"),
-		RedirectURL: c.FormValue("redirect_url"),
+func (r *Routes) LoginFormHandler(c *router.Context) error {
+	var props component.LoginFormProps
+	if err := json.NewDecoder(c.Request.Body).Decode(&props); err != nil {
+		return c.Error(http.StatusBadRequest, err)
 	}
 
-	u, err := r.service.GetByCredentials(c.Context(), form.ToCredentials())
+	u, err := r.service.GetByCredentials(c.Context(), props.Credentials)
 	if err != nil {
+		sse := datastar.NewSSE(c.Response, c.Request)
+
 		if errors.Is(err, user.ErrInvalidCredentials) {
-			c.Data["Form"] = form
-			c.Data["LoginAlert"] = handlers.NewAlert(
+			alert := handlers.NewAlert(
 				handlers.AlertError,
 				"Invalid credentials",
 				"Username and password do not match.",
 			)
+			props.Credentials.Password = ""
 
-			return c.RenderViewFragment(loginView, loginForm, http.StatusOK)
+			err := sse.MergeFragmentTempl(
+				component.Alert(alert),
+				datastar.WithSelectorID("alert"),
+			)
+			if err != nil {
+				return c.Error(http.StatusInternalServerError, err)
+			}
+
+			return nil
 		}
 
-		return fmt.Errorf("get user=%s: %w", form.Username, err)
+		return fmt.Errorf("get user=%s: %w", props.Credentials.Username, err)
 	}
 
 	session, err := r.sessionService.New(c.Context())
@@ -76,7 +77,11 @@ func (r *Routes) LoginHTMXFormHandler(c *router.Context) error {
 	c.Response.Header().Add("Cache-Control", `no-cache="Set-Cookie"`)
 	const dayDuration = 24 * time.Hour
 	c.SetCookie(session.ToCookie(time.Now().UTC().Add(dayDuration)))
-	c.HTMXRedirect(form.RedirectURL)
+
+	sse := datastar.NewSSE(c.Response, c.Request)
+	if err := sse.Redirect(props.RedirectURL); err != nil {
+		return c.Error(http.StatusInternalServerError, err)
+	}
 
 	return nil
 }

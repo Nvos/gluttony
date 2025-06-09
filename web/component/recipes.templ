@@ -1,0 +1,112 @@
+package component
+
+import "gluttony/web"
+
+import "gluttony/pkg/pagination"
+import "strconv"
+import "gluttony/internal/recipe"
+import "fmt"
+
+templ ViewRecipes(c *web.Context, query string, p pagination.Paginator, recipes []recipe.Summary) {
+	@View("Recipes", c) {
+		<div class="flex flex-1">
+			@Sidebar(c)
+			<div class="bg-neutral-layer-2 w-full">
+				@HeaderRecipes(query)
+				<main class="flex flex-col p-8">
+					@ListRecipes(query, p, recipes)
+				</main>
+			</div>
+		</div>
+	}
+}
+
+templ HeaderRecipes(query string) {
+	<header
+		class="border-neutral-border-1 bg-neutral-layer-2 sticky top-0 z-50 flex h-[72px] items-center justify-between border-b px-8"
+	>
+		<div class="form-control">
+			<input
+				data-on-keydown="(evt.key === 'Enter') && (window.location.href = `/recipes?query=${evt.target.value}`);"
+				autofocus
+				name="query"
+				class="input"
+				placeholder="Search recipe"
+				aria-label="Recipe search text field"
+				value={ query }
+			/>
+		</div>
+		<a class="button is-solid-primary" href="/recipes/create">
+			@IconPlus()
+			<span>New Recipe</span>
+		</a>
+	</header>
+}
+
+templ ListRecipes(query string, p pagination.Paginator, recipes []recipe.Summary) {
+	<div id="list-recipes" class="flex flex-col gap-8">
+		<div class="flex flex-wrap gap-4">
+			for _, r := range recipes {
+				@CardRecipe(r)
+			}
+		</div>
+		@Pagination(query, p)
+	</div>
+}
+
+templ CardRecipe(r recipe.Summary) {
+	<a
+		href={ templ.SafeURL(fmt.Sprintf("/recipes/%d", r.ID)) }
+		class="border-neutral-border-2 bg-neutral-layer-1 relative flex w-96 cursor-pointer flex-col rounded-md border"
+	>
+		if r.ThumbnailImageURL == "" {
+			<div class="flex h-64 w-full items-center justify-center">
+				No thumbnail image
+			</div>
+		} else {
+			<img
+				class="h-64 w-full rounded-t-sm object-cover"
+				src={ fmt.Sprintf("/media/%s", r.ThumbnailImageURL) }
+				alt="Recipe image"
+			/>
+		}
+		<div class="flex flex-col px-4 pt-4">
+			<h2 class="truncate text-xl">{ r.Name }</h2>
+			<h3
+				class="text-neutral-font-secondary line-clamp-2 min-h-10 flex-1 text-sm"
+			>
+				{ r.Description }
+			</h3>
+			<div class="mt-2 flex gap-2 overflow-x-auto overflow-y-hidden pb-4">
+				for _, t := range r.Tags {
+					<div class="tag is-ghost-neutral min-w-fit">{ t.Name }</div>
+				}
+			</div>
+		</div>
+	</a>
+}
+
+templ Pagination(query string, p pagination.Paginator) {
+	<div
+		class="border-neutral-border-2 flex items-center justify-center gap-2 rounded-md border p-4"
+	>
+		<a
+			href={ templ.SafeURL(fmt.Sprintf("/recipes?page=%d&query=%s", p.PrevPage, query)) }
+			class={ "button is-ghost-neutral",
+			templ.KV("pointer-events-none opacity-50", p.HasPrev == false) }
+		>
+			Previous
+		</a>
+		<div class="flex h-10 items-center rounded-md px-4">
+			{ strconv.Itoa(int(p.Page + 1)) } / 
+			{ strconv.Itoa(int(p.TotalCount)) }
+		</div>
+		<a
+			href={ templ.SafeURL(fmt.Sprintf("/recipes?page=%d&query=%s", p.NextPage, query)) }
+			class={ "button is-ghost-neutral",
+			templ.KV("pointer-events-none opacity-50", p.HasNext == false) }
+		>
+			Next
+		</a>
+	</div>
+}

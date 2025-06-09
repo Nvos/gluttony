@@ -2,20 +2,17 @@ package router
 
 import (
 	"fmt"
-	"gluttony/pkg/html"
 	"net/http"
 )
 
 type Router struct {
 	mux         *http.ServeMux
 	middlewares []Middleware
-	renderer    *html.Renderer
 }
 
-func NewRouter(renderer *html.Renderer) *Router {
+func NewRouter() *Router {
 	return &Router{
 		mux:         http.NewServeMux(),
-		renderer:    renderer,
 		middlewares: []Middleware{},
 	}
 }

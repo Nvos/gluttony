@@ -1,13 +1,12 @@
 package recipe
 
 import (
+	"gluttony/internal/handlers"
 	"gluttony/pkg/router"
+	"gluttony/web"
+	"gluttony/web/component"
 	"net/http"
 	"strconv"
-)
-
-const (
-	detailsView = "view/recipe/view"
 )
 
 func (r *Routes) DetailsViewHandler(c *router.Context) error {
@@ -24,5 +23,7 @@ func (r *Routes) DetailsViewHandler(c *router.Context) error {
 
 	c.Data["Recipe"] = recipe
 
-	return c.RenderView(detailsView, http.StatusOK)
+	webCtx := web.NewContext(c.Request, handlers.GetDoer(c), "en")
+
+	return c.TemplComponent(http.StatusOK, component.ViewRecipe(webCtx, recipe))
 }

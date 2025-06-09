@@ -1,0 +1,32 @@
+package component
+
+import "gluttony/internal/handlers"
+
+templ Alert(in handlers.Alert) {
+	<div id="alert">
+		if in.Variant == handlers.AlertError {
+			<div class="alert is-ghost-danger">
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="24"
+					height="24"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					class="alert-icon"
+				>
+					<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path>
+					<path d="M12 9v4"></path>
+					<path d="M12 17h.01"></path>
+				</svg>
+				<div class="alert-content">
+					<span class="alert-title">{ in.Title }</span>
+					<span class="alert-text">{ in.Message }</span>
+				</div>
+			</div>
+		}
+	</div>
+}

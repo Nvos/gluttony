@@ -39,6 +39,19 @@ func (s *Service) New(ctx context.Context) (Session, error) {
 	return value, nil
 }
 
+func (s *Service) Restore(ctx context.Context, sessionID string) (Session, error) {
+	value := Session{
+		id:   sessionID,
+		Data: make(map[Key]any),
+	}
+
+	if err := s.store.Create(ctx, value); err != nil {
+		return Session{}, fmt.Errorf("restore session: %w", err)
+	}
+
+	return value, nil
+}
+
 func (s *Service) Get(ctx context.Context, sessionID string) (Session, error) {
 	value, err := s.store.Get(ctx, sessionID)
 	if err != nil {
