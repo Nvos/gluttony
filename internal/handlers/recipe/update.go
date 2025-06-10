@@ -1,7 +1,9 @@
 package recipe
 
 import (
+	"errors"
 	"fmt"
+	datastar "github.com/starfederation/datastar/sdk/go"
 	"gluttony/internal/handlers"
 	"gluttony/internal/recipe"
 	"gluttony/pkg/router"
@@ -52,7 +54,7 @@ func (r *Routes) UpdateViewHandler(c *router.Context) error {
 	webCtx := web.NewContext(c.Request, handlers.GetDoer(c), "en")
 	return c.TemplComponent(
 		http.StatusOK,
-		component.ViewRecipeCreate(webCtx, form),
+		component.ViewRecipeUpdate(webCtx, form),
 	)
 }
 
@@ -82,15 +84,29 @@ func (r *Routes) UpdateFormHandler(c *router.Context) error {
 		input.ThumbnailImage = file
 	}
 
+	sse := datastar.NewSSE(c.Response, c.Request)
 	err = r.service.Update(c.Context(), recipe.UpdateInput{
 		ID:          form.ID,
 		CreateInput: input,
 	})
 	if err == nil {
-		c.Redirect(fmt.Sprintf("/recipes/%d", form.ID), http.StatusFound)
+		if err := sse.Redirect("/recipes"); err != nil {
+			return c.Error(http.StatusInternalServerError, err)
+		}
+
 		return nil
 	}
 
-	// TODO: Handle errors
-	return c.Error(http.StatusBadRequest, err)
+	uniqueName := ""
+	if errors.Is(err, recipe.ErrUniqueName) {
+		uniqueName = "Recipe with such name exists"
+	}
+	err = sse.MarshalAndMergeSignals(map[string]string{
+		"errors.name": uniqueName,
+	})
+	if err != nil {
+		return c.Error(http.StatusInternalServerError, err)
+	}
+
+	return nil
 }

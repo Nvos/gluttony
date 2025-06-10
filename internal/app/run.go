@@ -13,7 +13,7 @@ import (
 
 const defaultHttpServerTimeout = time.Second * 15
 
-func (app *App) Start(ctx context.Context, group *errgroup.Group) error {
+func (app *App) Run(ctx context.Context, group *errgroup.Group) error {
 	app.logger.InfoContext(
 		ctx,
 		"Configuration",

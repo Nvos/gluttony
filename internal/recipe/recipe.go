@@ -2,12 +2,15 @@ package recipe
 
 import (
 	"context"
+	"errors"
 	"github.com/jackc/pgx/v5"
 	"gluttony/internal/ingredient"
 	"gluttony/pkg/pagination"
 	"io"
 	"time"
 )
+
+var ErrUniqueName = errors.New("unique name")
 
 type Ingredient struct {
 	Order    int8
@@ -144,6 +147,7 @@ type Store interface {
 }
 
 type Index interface {
+	// TODO: add custom model for indexing, no need to pass whole Recipe
 	Index(value Recipe) error
 	Search(ctx context.Context, query string, offset pagination.Offset) (SearchResult, error)
 	Close() error

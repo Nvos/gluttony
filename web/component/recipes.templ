@@ -16,6 +16,7 @@ templ ViewRecipes(c *web.Context, query string, p pagination.Paginator, recipes 
 				<main class="flex flex-col p-8">
 					@ListRecipes(query, p, recipes)
 				</main>
+				@Pagination(query, p)
 			</div>
 		</div>
 	}
@@ -23,7 +24,7 @@ templ ViewRecipes(c *web.Context, query string, p pagination.Paginator, recipes 
 
 templ HeaderRecipes(query string) {
 	<header
-		class="border-neutral-border-1 bg-neutral-layer-2 sticky top-0 z-50 flex h-[72px] items-center justify-between border-b px-8"
+		class="border-neutral-border-1 bg-neutral-layer-2/80 sticky top-0 z-50 flex h-[72px] items-center justify-between border-b px-8 backdrop-blur-md"
 	>
 		<div class="form-control">
 			<input
@@ -50,7 +51,6 @@ templ ListRecipes(query string, p pagination.Paginator, recipes []recipe.Summary
 				@CardRecipe(r)
 			}
 		</div>
-		@Pagination(query, p)
 	</div>
 }
 
@@ -60,7 +60,7 @@ templ CardRecipe(r recipe.Summary) {
 		class="border-neutral-border-2 bg-neutral-layer-1 relative flex w-96 cursor-pointer flex-col rounded-md border"
 	>
 		if r.ThumbnailImageURL == "" {
-			<div class="flex h-64 w-full items-center justify-center">
+			<div class="flex h-64 w-full items-center justify-center border-b border-neutral-border-2">
 				No thumbnail image
 			</div>
 		} else {
@@ -88,7 +88,7 @@ templ CardRecipe(r recipe.Summary) {
 
 templ Pagination(query string, p pagination.Paginator) {
 	<div
-		class="border-neutral-border-2 flex items-center justify-center gap-2 rounded-md border p-4"
+		class="border-neutral-border-2 flex items-center justify-center gap-2 border-t p-4"
 	>
 		<a
 			href={ templ.SafeURL(fmt.Sprintf("/recipes?page=%d&query=%s", p.PrevPage, query)) }

@@ -9,6 +9,8 @@ templ FormRecipe(form recipe.Form) {
 		id="recipe-form"
 		enctype="multipart/form-data"
 		class="flex flex-1 flex-col gap-4 max-w-4xl"
+		data-signals-errors.name=""
+		data-on-signal-change="console.log($errors.name)"
 	>
 		<input type="hidden" name="id" value={ strconv.Itoa(int(form.ID)) }/>
 		<div class="flex gap-8 flex-1 flex-wrap">
@@ -20,7 +22,7 @@ templ FormRecipe(form recipe.Form) {
 				</label>
 				@ImagePreview(form)
 			</div>
-			<div class="flex flex-col gap-8 w-xs flex-1">
+			<div class="flex flex-col gap-4 w-xs flex-1">
 				<label class="form-control">
 					<span class="label">
 						<span class="label-text">
@@ -28,7 +30,8 @@ templ FormRecipe(form recipe.Form) {
 							<span class="text-danger-11 ml-1 text-xs">(Required)</span>
 						</span>
 					</span>
-					<input class="input" name="name" value={ form.Name }/>
+					<input required class="input" name="name" value={ form.Name }/>
+					<span class="text-danger-11 text-sm" data-show="$errors.name !== ''" data-text="$errors.name"></span>
 				</label>
 				<label class="form-control">
 					<span class="label">
@@ -74,17 +77,15 @@ templ ImagePreview(form recipe.Form) {
 			id="thumbnail-image"
 			type="file"
 			name="thumbnail-image"
-			class="absolute inset-0 z-50 m-0 h-full w-full p-0 opacity-0 outline-none"
+			class="absolute inset-0 z-10 m-0 h-full w-full p-0 opacity-0 outline-none"
 			data-on-change="file = evt.target.files[0]; fileToDataUrl(evt, url => $imageUrl = url )"
 		/>
-		// <template data-show="$imageUrl !== ''">
 		<img
 			class="absolute h-64 w-full rounded-sm object-cover"
 			data-show="$imageUrl !== ''"
 			data-attr-src="$imageUrl"
 			alt="Image upload preview"
 		/>
-		// </template>
 		<template data-show="$imageUrl === ''">
 			<div class="flex flex-1 flex-col items-center justify-center gap-1">
 				<p>
@@ -116,6 +117,7 @@ templ FormNutrition(form recipe.Form) {
 						<span class="label-text">Calories (kcal)</span>
 					</span>
 					<input
+						min="0"
 						class="input"
 						name="calories"
 						value={ form.Nutrition.Calories }
@@ -125,13 +127,14 @@ templ FormNutrition(form recipe.Form) {
 					<span class="label">
 						<span class="label-text">Fat (g)</span>
 					</span>
-					<input class="input" name="fat" value={ form.Nutrition.Fat }/>
+					<input min="0" class="input" name="fat" value={ form.Nutrition.Fat }/>
 				</label>
 				<label class="form-control">
 					<span class="label">
 						<span class="label-text">Carbs (g)</span>
 					</span>
 					<input
+						min="0"
 						class="input"
 						name="carbs"
 						value={ form.Nutrition.Carbs }
@@ -142,6 +145,7 @@ templ FormNutrition(form recipe.Form) {
 						<span class="label-text">Protein (g)</span>
 					</span>
 					<input
+						min="0"
 						class="input"
 						name="protein"
 						value={ form.Nutrition.Protein }
@@ -162,7 +166,7 @@ templ MetadataColumn(form recipe.Form) {
 					<span class="text-danger-11 text-xs">(Required)</span>
 				</span>
 			</span>
-			<input class="input" name="source" value={ form.Source }/>
+			<input required class="input" name="source" value={ form.Source }/>
 			<span class="hint">Website link, name of cookbook, friend etc.</span>
 		</label>
 		<div class="flex gap-4">

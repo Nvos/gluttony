@@ -6,6 +6,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"gluttony/internal/ingredient"
 	"gluttony/internal/recipe"
+	"gluttony/pkg/database"
 	"gluttony/pkg/pagination"
 	"time"
 )
@@ -266,7 +267,7 @@ func (s *Store) CreateRecipe(ctx context.Context, input recipe.CreateRecipe) (in
 
 	id, err := s.queries.CreateRecipe(ctx, createRecipeParams)
 	if err != nil {
-		return 0, fmt.Errorf("create recipe: %w", err)
+		return 0, fmt.Errorf("create recipe: %w", database.TransformSQLError(err))
 	}
 
 	return id, nil
@@ -367,7 +368,7 @@ func (s *Store) UpdateRecipe(ctx context.Context, input recipe.UpdateRecipe) err
 	}
 
 	if err := s.queries.UpdateRecipe(ctx, params); err != nil {
-		return fmt.Errorf("update recipe: %w", err)
+		return fmt.Errorf("update recipe: %w", database.TransformSQLError(err))
 	}
 
 	return nil

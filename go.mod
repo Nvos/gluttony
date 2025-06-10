@@ -7,7 +7,6 @@ require (
 	github.com/alexedwards/argon2id v1.0.0
 	github.com/blevesearch/bleve v1.0.14
 	github.com/disintegration/imaging v1.6.2
-	github.com/fsnotify/fsnotify v1.7.0
 	github.com/gen2brain/webp v0.5.2
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.1
@@ -39,6 +38,7 @@ require (
 	github.com/delaneyj/gostar v0.8.0 // indirect
 	github.com/ebitengine/purego v0.8.1 // indirect
 	github.com/fatih/color v1.16.0 // indirect
+	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/goccy/go-json v0.10.4 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.1 // indirect

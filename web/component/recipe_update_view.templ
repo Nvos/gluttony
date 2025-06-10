@@ -8,9 +8,7 @@ import (
 
 templ ViewRecipeUpdate(c *web.Context, form recipe.Form) {
 	@View("Recipes", c) {
-		<div
-			class="flex flex-1"
-		>
+		<div class="flex flex-1">
 			@Sidebar(c)
 			<div class="bg-neutral-layer-2 w-full">
 				@CreateRecipeUpdate(form)
@@ -33,7 +31,7 @@ templ CreateRecipeUpdate(form recipe.Form) {
 			<button
 				class="button is-solid-primary"
 				type="button"
-				data-on-submit={ fmt.Sprintf("@post('/recipes/%d/update/form', {contentType: 'form', selector: '#recipe-form'})", form.ID) }
+				data-on-click={ fmt.Sprintf("@post('/recipes/%d/update/form', {contentType: 'form', selector: '#recipe-form'})", form.ID) }
 			>
 				Update
 			</button>

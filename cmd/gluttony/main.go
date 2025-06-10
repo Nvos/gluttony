@@ -37,13 +37,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := a.Start(groupCtx, group); err != nil {
-		fmt.Printf("Start new app failed: '%v', Aborting startup\n", err)
+	if err := a.Run(groupCtx, group); err != nil {
+		fmt.Printf("Run new app failed: '%v', Aborting startup\n", err)
 		os.Exit(1)
 	}
 
 	if err := group.Wait(); err != nil {
-		fmt.Printf("Start new app failed: '%v', Aborting startup\n", err)
+		fmt.Printf("Run new app failed: '%v', Aborting startup\n", err)
 		os.Exit(1)
 	}
 }

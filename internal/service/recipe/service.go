@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"gluttony/internal/recipe"
 	"gluttony/internal/recipe/postgres"
+	"gluttony/pkg/database"
 	"gluttony/pkg/markdown"
 	"gluttony/pkg/pagination"
 	"log/slog"
@@ -100,6 +101,10 @@ func (s *Service) Create(ctx context.Context, input recipe.CreateInput) error {
 	}
 	recipeID, err := txStore.CreateRecipe(ctx, params)
 	if err != nil {
+		if database.IsUniqueViolation(err) {
+			return recipe.ErrUniqueName
+		}
+
 		return fmt.Errorf("create recipe: %w", err)
 	}
 
@@ -290,6 +295,10 @@ func (s *Service) Update(ctx context.Context, input recipe.UpdateInput) error {
 		ID:        input.ID,
 	})
 	if err != nil {
+		if database.IsUniqueViolation(err) {
+			return recipe.ErrUniqueName
+		}
+
 		return fmt.Errorf("update recipe: %w", err)
 	}
 

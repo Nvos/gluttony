@@ -1,6 +1,7 @@
 package recipe
 
 import (
+	"errors"
 	datastar "github.com/starfederation/datastar/sdk/go"
 	"gluttony/internal/handlers"
 	"gluttony/internal/ingredient"
@@ -92,6 +93,16 @@ func (r *Routes) CreateFormHandler(c *router.Context) error {
 		return nil
 	}
 
-	// TODO: Handle errors
-	return c.Error(http.StatusBadRequest, err)
+	uniqueName := ""
+	if errors.Is(err, recipe.ErrUniqueName) {
+		uniqueName = "Recipe with such name exists"
+	}
+	err = sse.MarshalAndMergeSignals(map[string]string{
+		"errors.name": uniqueName,
+	})
+	if err != nil {
+		return c.Error(http.StatusInternalServerError, err)
+	}
+
+	return nil
 }
