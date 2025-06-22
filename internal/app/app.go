@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"gluttony/internal/config"
 	"gluttony/internal/handlers"
 	"gluttony/internal/recipe/bleve"
 	"gluttony/internal/service/recipe"
@@ -22,7 +23,7 @@ import (
 )
 
 type App struct {
-	cfg    *Config
+	cfg    *config.Config
 	logger *slog.Logger
 
 	recipeService *recipe.Service
@@ -31,7 +32,7 @@ type App struct {
 	httpServer *http.Server
 }
 
-func New(cfg *Config) (*App, error) {
+func New(cfg *config.Config) (*App, error) {
 	logger, err := NewLogger(cfg.Environment, cfg.Log.Level, cfg.Log.Path)
 	if err != nil {
 		return nil, fmt.Errorf("create logger: %w", err)
@@ -74,13 +75,13 @@ func New(cfg *Config) (*App, error) {
 	userStore := postgres.NewStore(db)
 
 	userService := user.NewService(userStore, sessionService)
-	mediaStore := media.NewStore(mediaDir)
+	mediaService := media.New(mediaDir)
 	recipeSearchIndex, err := bleve.New(cfg.WorkDirectoryPath)
 	if err != nil {
 		return nil, fmt.Errorf("create recipe search index: %w", err)
 	}
 
-	recipeService, err := recipe.NewService(db, mediaStore, recipeSearchIndex, logger)
+	recipeService, err := recipe.NewService(db, mediaService, recipeSearchIndex, logger)
 	if err != nil {
 		return nil, fmt.Errorf("create recipe service: %w", err)
 	}
@@ -91,7 +92,7 @@ func New(cfg *Config) (*App, error) {
 		handlers.ErrorMiddleware(logger),
 		handlers.AuthenticationMiddleware(sessionService),
 	}
-	if cfg.Environment == EnvDevelopment && cfg.Impersonate != "" {
+	if cfg.Environment == config.EnvDevelopment && cfg.Impersonate != "" {
 		middlewares = append(middlewares, handlers.ImpersonateMiddleware(cfg.Impersonate, userService, sessionService))
 	}
 
@@ -118,8 +119,8 @@ func New(cfg *Config) (*App, error) {
 	}, nil
 }
 
-func NewLogger(mode Environment, level slog.Level, filePath string) (*slog.Logger, error) {
-	if mode == EnvProduction {
+func NewLogger(mode config.Environment, level slog.Level, filePath string) (*slog.Logger, error) {
+	if mode == config.EnvProduction {
 		logger, err := log.NewProd(level, filePath)
 		if err != nil {
 			return nil, fmt.Errorf("create prod logger: %w", err)

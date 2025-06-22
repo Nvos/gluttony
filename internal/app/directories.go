@@ -3,13 +3,14 @@ package app
 import (
 	"fmt"
 	"gluttony/assets"
+	"gluttony/internal/config"
 	"io/fs"
 	"os"
 	"path/filepath"
 )
 
-func GetAssets(mode Environment) (fs.FS, error) {
-	if mode == EnvProduction {
+func GetAssets(mode config.Environment) (fs.FS, error) {
+	if mode == config.EnvProduction {
 		return assets.Embedded, nil
 	}
 

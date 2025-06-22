@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"gluttony/internal/app"
+	"gluttony/internal/config"
 	"golang.org/x/sync/errgroup"
 	"os"
 	"os/signal"
@@ -16,7 +17,7 @@ func main() {
 		panic(fmt.Sprintf("get work dir path: %v", err))
 	}
 
-	cfg, err := app.NewConfig(wd)
+	cfg, err := config.NewConfig(wd)
 	if err != nil {
 		fmt.Printf("Create config failed: '%v', Aborting startup\n", err)
 		os.Exit(1)

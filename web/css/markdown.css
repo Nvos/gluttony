@@ -1,0 +1,9 @@
+.markdown {
+  h1 {
+    @apply mb-2 text-xl;
+  }
+
+  ol {
+    @apply marker:text-primary-9 mb-4 list-decimal pl-4;
+  }
+}

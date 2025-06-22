@@ -11,6 +11,7 @@ sql:
         omit_unused_structs: true
         emit_empty_slices: true
         emit_prepared_queries: false
+        emit_pointers_for_null_types: true
         overrides:
           - db_type: "timestamptz"
             go_type:
@@ -30,4 +31,5 @@ sql:
         omit_unused_structs: true
         emit_empty_slices: true
         emit_prepared_queries: false
+        emit_pointers_for_null_types: true
 

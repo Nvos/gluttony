@@ -1,6 +1,7 @@
 package app
 
 import (
+	"gluttony/internal/config"
 	"gluttony/internal/handlers"
 	recipehandlers "gluttony/internal/handlers/recipe"
 	userhandlers "gluttony/internal/handlers/user"
@@ -40,11 +41,11 @@ func MountWebRoutes(
 
 func MountRoutes(
 	mux *router.Router,
-	mode Environment,
+	mode config.Environment,
 	assetsFS fs.FS,
 	mediaFS fs.FS,
 ) {
-	isCacheEnabled := mode == EnvProduction
+	isCacheEnabled := mode == config.EnvProduction
 	mux.Get("/assets/{pathname...}", handlers.AssetHandler(assetsFS, isCacheEnabled))
 	mux.Get("/media/{pathname...}", handlers.MediaHandler(mediaFS))
 }

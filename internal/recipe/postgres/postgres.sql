@@ -2,6 +2,7 @@
 SELECT *
 FROM recipes
          JOIN recipe_nutrition rn on recipes.id = rn.recipe_id
+         JOIN images im on recipes.thumbnail_id = im.id
 WHERE recipes.id = $1
 LIMIT 1;
 
@@ -21,7 +22,7 @@ ORDER BY recipe_id, recipe_order;
 
 
 -- name: CreateRecipe :one
-INSERT INTO recipes (name, description, instructions_markdown, thumbnail_url,
+INSERT INTO recipes (name, description, instructions_markdown, thumbnail_id,
                      cook_time_seconds, preparation_time_seconds, source, owner_id, servings)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 RETURNING id;
@@ -31,7 +32,7 @@ UPDATE recipes
 SET name                     = $1,
     description              = $2,
     instructions_markdown    = $3,
-    thumbnail_url            = $4,
+    thumbnail_id             = $4,
     cook_time_seconds        = $5,
     preparation_time_seconds = $6,
     source                   = $7,
@@ -90,12 +91,19 @@ FROM recipe_ingredients
 WHERE recipe_id = sqlc.arg('recipe_id');
 
 -- name: AllRecipeSummaries :many
-SELECT id, name, description, thumbnail_url
+SELECT recipes.id, recipes.name, recipes.description, images.url
 FROM recipes
-WHERE (sqlc.slice(ids)::int[] IS NULL OR id = ANY (sqlc.slice(ids)::int[]))
-ORDER BY id DESC
+         LEFT JOIN images on recipes.thumbnail_id = images.id
+WHERE (sqlc.slice(ids)::int[] IS NULL OR recipes.id = ANY (sqlc.slice(ids)::int[]))
+ORDER BY recipes.id DESC
 LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
 -- name: CountRecipeSummaries :one
 SELECT count(*)
 FROM recipes;
+
+-- name: CreateRecipeImage :one
+INSERT INTO images (url)
+VALUES ($1)
+RETURNING id;
+

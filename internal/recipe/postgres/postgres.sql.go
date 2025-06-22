@@ -85,10 +85,11 @@ func (q *Queries) AllRecipeIngredients(ctx context.Context, ids []int32) ([]AllR
 }
 
 const allRecipeSummaries = `-- name: AllRecipeSummaries :many
-SELECT id, name, description, thumbnail_url
+SELECT recipes.id, recipes.name, recipes.description, images.url
 FROM recipes
-WHERE ($1::int[] IS NULL OR id = ANY ($1::int[]))
-ORDER BY id DESC
+         LEFT JOIN images on recipes.thumbnail_id = images.id
+WHERE ($1::int[] IS NULL OR recipes.id = ANY ($1::int[]))
+ORDER BY recipes.id DESC
 LIMIT $3 OFFSET $2
 `
 
@@ -99,10 +100,10 @@ type AllRecipeSummariesParams struct {
 }
 
 type AllRecipeSummariesRow struct {
-	ID           int32
-	Name         string
-	Description  string
-	ThumbnailUrl string
+	ID          int32
+	Name        string
+	Description string
+	Url         *string
 }
 
 func (q *Queries) AllRecipeSummaries(ctx context.Context, arg AllRecipeSummariesParams) ([]AllRecipeSummariesRow, error) {
@@ -118,7 +119,7 @@ func (q *Queries) AllRecipeSummaries(ctx context.Context, arg AllRecipeSummaries
 			&i.ID,
 			&i.Name,
 			&i.Description,
-			&i.ThumbnailUrl,
+			&i.Url,
 		); err != nil {
 			return nil, err
 		}
@@ -248,7 +249,7 @@ func (q *Queries) CreateNutrition(ctx context.Context, arg CreateNutritionParams
 }
 
 const createRecipe = `-- name: CreateRecipe :one
-INSERT INTO recipes (name, description, instructions_markdown, thumbnail_url,
+INSERT INTO recipes (name, description, instructions_markdown, thumbnail_id,
                      cook_time_seconds, preparation_time_seconds, source, owner_id, servings)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 RETURNING id
@@ -258,7 +259,7 @@ type CreateRecipeParams struct {
 	Name                   string
 	Description            string
 	InstructionsMarkdown   string
-	ThumbnailUrl           string
+	ThumbnailID            *int32
 	CookTimeSeconds        int32
 	PreparationTimeSeconds int32
 	Source                 string
@@ -271,13 +272,26 @@ func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (int
 		arg.Name,
 		arg.Description,
 		arg.InstructionsMarkdown,
-		arg.ThumbnailUrl,
+		arg.ThumbnailID,
 		arg.CookTimeSeconds,
 		arg.PreparationTimeSeconds,
 		arg.Source,
 		arg.OwnerID,
 		arg.Servings,
 	)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createRecipeImage = `-- name: CreateRecipeImage :one
+INSERT INTO images (url)
+VALUES ($1)
+RETURNING id
+`
+
+func (q *Queries) CreateRecipeImage(ctx context.Context, url string) (int32, error) {
+	row := q.db.QueryRow(ctx, createRecipeImage, url)
 	var id int32
 	err := row.Scan(&id)
 	return id, err
@@ -361,9 +375,10 @@ func (q *Queries) DeleteRecipeTags(ctx context.Context, recipeID int32) error {
 }
 
 const getFullRecipe = `-- name: GetFullRecipe :one
-SELECT id, name, description, instructions_markdown, thumbnail_url, servings, cook_time_seconds, preparation_time_seconds, source, created_at, updated_at, owner_id, recipe_id, calories, fat, carbs, protein
+SELECT recipes.id, name, description, instructions_markdown, thumbnail_id, servings, cook_time_seconds, preparation_time_seconds, source, created_at, updated_at, owner_id, recipe_id, calories, fat, carbs, protein, im.id, url
 FROM recipes
          JOIN recipe_nutrition rn on recipes.id = rn.recipe_id
+         JOIN images im on recipes.thumbnail_id = im.id
 WHERE recipes.id = $1
 LIMIT 1
 `
@@ -373,7 +388,7 @@ type GetFullRecipeRow struct {
 	Name                   string
 	Description            string
 	InstructionsMarkdown   string
-	ThumbnailUrl           string
+	ThumbnailID            *int32
 	Servings               int32
 	CookTimeSeconds        int32
 	PreparationTimeSeconds int32
@@ -386,6 +401,8 @@ type GetFullRecipeRow struct {
 	Fat                    float32
 	Carbs                  float32
 	Protein                float32
+	ID_2                   int32
+	Url                    string
 }
 
 func (q *Queries) GetFullRecipe(ctx context.Context, id int32) (GetFullRecipeRow, error) {
@@ -396,7 +413,7 @@ func (q *Queries) GetFullRecipe(ctx context.Context, id int32) (GetFullRecipeRow
 		&i.Name,
 		&i.Description,
 		&i.InstructionsMarkdown,
-		&i.ThumbnailUrl,
+		&i.ThumbnailID,
 		&i.Servings,
 		&i.CookTimeSeconds,
 		&i.PreparationTimeSeconds,
@@ -409,6 +426,8 @@ func (q *Queries) GetFullRecipe(ctx context.Context, id int32) (GetFullRecipeRow
 		&i.Fat,
 		&i.Carbs,
 		&i.Protein,
+		&i.ID_2,
+		&i.Url,
 	)
 	return i, err
 }
@@ -446,7 +465,7 @@ UPDATE recipes
 SET name                     = $1,
     description              = $2,
     instructions_markdown    = $3,
-    thumbnail_url            = $4,
+    thumbnail_id             = $4,
     cook_time_seconds        = $5,
     preparation_time_seconds = $6,
     source                   = $7,
@@ -459,7 +478,7 @@ type UpdateRecipeParams struct {
 	Name                   string
 	Description            string
 	InstructionsMarkdown   string
-	ThumbnailUrl           string
+	ThumbnailID            *int32
 	CookTimeSeconds        int32
 	PreparationTimeSeconds int32
 	Source                 string
@@ -473,7 +492,7 @@ func (q *Queries) UpdateRecipe(ctx context.Context, arg UpdateRecipeParams) erro
 		arg.Name,
 		arg.Description,
 		arg.InstructionsMarkdown,
-		arg.ThumbnailUrl,
+		arg.ThumbnailID,
 		arg.CookTimeSeconds,
 		arg.PreparationTimeSeconds,
 		arg.Source,

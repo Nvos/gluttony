@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gluttony/internal/user"
+	"gluttony/internal/config"
 	"golang.org/x/sync/errgroup"
 	"log/slog"
 	"net/http"
@@ -20,14 +20,6 @@ func (app *App) Run(ctx context.Context, group *errgroup.Group) error {
 		slog.String("mode", string(app.cfg.Environment)),
 		slog.String("rootDir", app.cfg.WorkDirectoryPath),
 	)
-	// TODO: move to cmd, left for now as it is convenient
-	if err := app.userService.Create(ctx, user.CreateInput{
-		Username: "admin",
-		Password: "admin",
-		Role:     user.RoleAdmin,
-	}); err != nil {
-		return fmt.Errorf("create initial admin user: %w", err)
-	}
 
 	group.Go(func() error {
 		app.logger.InfoContext(ctx, "Starting HTTP server", slog.String("address", app.httpServer.Addr))
@@ -57,7 +49,7 @@ func (app *App) Run(ctx context.Context, group *errgroup.Group) error {
 
 func (app *App) stop() error {
 	shutdownTimeout := defaultHttpServerTimeout
-	if app.cfg.Environment == EnvDevelopment {
+	if app.cfg.Environment == config.EnvDevelopment {
 		shutdownTimeout = 0
 	}
 	shutdownCtx, cancelFn := context.WithTimeout(context.Background(), shutdownTimeout)

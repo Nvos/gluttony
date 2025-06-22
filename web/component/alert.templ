@@ -1,10 +1,8 @@
 package component
 
-import "gluttony/internal/handlers"
-
-templ Alert(in handlers.Alert) {
+templ Alert(in AlertInput) {
 	<div id="alert">
-		if in.Variant == handlers.AlertError {
+		if in.Variant == AlertError {
 			<div class="alert is-ghost-danger">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"

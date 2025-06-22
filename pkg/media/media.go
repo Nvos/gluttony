@@ -1,22 +1,50 @@
 package media
 
 import (
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"io"
 	"io/fs"
+	"mime/multipart"
 	"os"
 )
 
-type Store struct {
+const maxFileSize = 5242880 // 5MB
+
+type Service struct {
 	rootDir *os.Root
 }
 
-func NewStore(rootDir *os.Root) *Store {
-	return &Store{rootDir: rootDir}
+func New(rootDir *os.Root) *Service {
+	return &Service{rootDir: rootDir}
 }
 
-func (s *Store) UploadImage(file io.Reader) (string, error) {
+func (s *Service) Delete(fileName string) error {
+	return s.rootDir.Remove(fileName)
+}
+
+func (s *Service) UploadImage(file *multipart.FileHeader) (string, error) {
+	if file.Size > maxFileSize {
+		return "", errors.New("file size is too big")
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		return "", fmt.Errorf("open image file: %w", err)
+	}
+	defer func(src io.ReadCloser) {
+		_ = src.Close()
+	}(src)
+
+	ok, err := isMediaContentAllowed(src)
+	if err != nil {
+		return "", fmt.Errorf("is media content allowed: %w", err)
+	}
+	if !ok {
+		return "", errors.New("media content is not allowed")
+	}
+
 	fileName := fmt.Sprintf("%s.webp", uuid.New().String())
 	create, err := s.rootDir.Create(fileName)
 	if err != nil {
@@ -26,13 +54,9 @@ func (s *Store) UploadImage(file io.Reader) (string, error) {
 		_ = create.Close()
 	}(create)
 
-	err = optimizeAndWriteImage(file, create)
+	err = optimizeAndWriteImage(src, create)
 	if err != nil {
 		return "", fmt.Errorf("upload iamge (optimizing): %w", err)
-	}
-
-	if err := create.Sync(); err != nil {
-		return "", fmt.Errorf("upload image (file sync): %w", err)
 	}
 
 	return fileName, nil

@@ -45,8 +45,8 @@ func (r *Routes) LoginFormHandler(c *router.Context) error {
 		sse := datastar.NewSSE(c.Response, c.Request)
 
 		if errors.Is(err, user.ErrInvalidCredentials) {
-			alert := handlers.NewAlert(
-				handlers.AlertError,
+			alert := component.NewAlert(
+				component.AlertError,
 				"Invalid credentials",
 				"Username and password do not match.",
 			)

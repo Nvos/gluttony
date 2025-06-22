@@ -12,7 +12,7 @@ templ ViewRecipeCreate(c *web.Context, form recipe.Form) {
 			<div class="bg-neutral-layer-2 w-full">
 				@CreateRecipeHeader()
 				<main class="flex flex-col p-8">
-					@FormRecipe(form)
+					@FormRecipe("", form)
 				</main>
 			</div>
 		</div>

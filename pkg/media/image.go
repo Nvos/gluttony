@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/disintegration/imaging"
 	"github.com/gen2brain/webp"
+	"mime/multipart"
+	"net/http"
 	// Register webp codec.
 	_ "golang.org/x/image/webp"
 	"image"
@@ -15,7 +17,7 @@ import (
 )
 
 func optimizeAndWriteImage(
-	imgSource io.Reader,
+	imgSource multipart.File,
 	writeTo io.Writer,
 ) error {
 	img, _, err := image.Decode(imgSource)
@@ -40,4 +42,25 @@ func optimizeAndWriteImage(
 	}
 
 	return nil
+}
+
+func isMediaContentAllowed(file multipart.File) (bool, error) {
+	buffer := make([]byte, 512)
+
+	if _, err := file.Read(buffer); err != nil {
+		return false, fmt.Errorf("read header bytes: %w", err)
+	}
+
+	if _, err := file.Seek(0, 0); err != nil {
+		return false, fmt.Errorf("seek to start: %w", err)
+	}
+
+	contentType := http.DetectContentType(buffer)
+	switch contentType {
+	case "image/jpeg", "image/png", "image/webp":
+		return true, nil
+	default:
+		return false, nil
+	}
+
 }

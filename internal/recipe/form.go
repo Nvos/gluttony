@@ -1,7 +1,10 @@
 package recipe
 
 import (
+	"errors"
 	"fmt"
+	"math"
+	"mime/multipart"
 	"net/url"
 	"strconv"
 	"strings"
@@ -9,18 +12,18 @@ import (
 )
 
 type Form struct {
-	ID                int32
-	Name              string
-	Description       string
-	Source            string
-	Instructions      string
-	ThumbnailImageURL string
-	Servings          int8
-	PreparationTime   time.Duration
-	CookTime          time.Duration
-	Tags              []string
-	Ingredients       []Ingredient
-	Nutrition         Nutrition
+	ID              int32
+	Name            string
+	Description     string
+	Source          string
+	Instructions    string
+	ThumbnailImage  *multipart.FileHeader
+	Servings        int8
+	PreparationTime time.Duration
+	CookTime        time.Duration
+	Tags            []string
+	Ingredients     []Ingredient
+	Nutrition       Nutrition
 }
 
 func (form Form) ToInput(ownerID int32) CreateInput {
@@ -36,13 +39,12 @@ func (form Form) ToInput(ownerID int32) CreateInput {
 		Ingredients:     form.Ingredients,
 		Nutrition:       form.Nutrition,
 		OwnerID:         ownerID,
-
-		ThumbnailImage: nil,
-		ThumbnailURL:   "",
+		ThumbnailImage:  form.ThumbnailImage,
 	}
 }
 
-func NewRecipeForm(values url.Values) (Form, error) {
+func NewRecipeForm(form *multipart.Form) (Form, error) {
+	var values url.Values = form.Value
 	ingredients := make([]Ingredient, len(values["ingredient"]))
 
 	quantities := values["quantity"]
@@ -54,8 +56,11 @@ func NewRecipeForm(values url.Values) (Form, error) {
 			return Form{}, fmt.Errorf("parse quantity: %w", err)
 		}
 
-		//nolint:gosec // conversion is safe assuming realistic input
-		ingredients[i].Order = int8(i)
+		if i > math.MaxInt8 {
+			return Form{}, errors.New("too many ingredients")
+		}
+
+		ingredients[i].Order = int8(i) // #nosec G115 -- bounds checked above
 		ingredients[i].Quantity = float32(quantity)
 		ingredients[i].Unit = units[i]
 		ingredients[i].Name = name
@@ -67,13 +72,35 @@ func NewRecipeForm(values url.Values) (Form, error) {
 		return Form{}, fmt.Errorf("parse servings: %w", err)
 	}
 
-	// TODO: handle errors
-	preparationDuration, _ := ParseFormDuration(values.Get("preparation-time"))
-	cookDuration, _ := ParseFormDuration(values.Get("cook-time"))
-	calories, _ := strconv.ParseFloat(values.Get("calories"), 32)
-	protein, _ := strconv.ParseFloat(values.Get("protein"), 32)
-	fat, _ := strconv.ParseFloat(values.Get("fat"), 32)
-	carbs, _ := strconv.ParseFloat(values.Get("carbs"), 32)
+	preparationDuration, err := ParseFormDuration(values.Get("preparation-time"))
+	if err != nil {
+		return Form{}, fmt.Errorf("parse preparation duration: %w", err)
+	}
+
+	cookDuration, err := ParseFormDuration(values.Get("cook-time"))
+	if err != nil {
+		return Form{}, fmt.Errorf("parse cook duration: %w", err)
+	}
+
+	calories, err := strconv.ParseFloat(values.Get("calories"), 32)
+	if err != nil {
+		return Form{}, fmt.Errorf("parse calories: %w", err)
+	}
+
+	protein, err := strconv.ParseFloat(values.Get("protein"), 32)
+	if err != nil {
+		return Form{}, fmt.Errorf("parse protein: %w", err)
+	}
+
+	fat, err := strconv.ParseFloat(values.Get("fat"), 32)
+	if err != nil {
+		return Form{}, fmt.Errorf("parse fat: %w", err)
+	}
+
+	carbs, err := strconv.ParseFloat(values.Get("carbs"), 32)
+	if err != nil {
+		return Form{}, fmt.Errorf("parse carbs: %w", err)
+	}
 
 	id, err := strconv.ParseInt(values.Get("id"), 10, 32)
 	if err != nil {
@@ -81,17 +108,17 @@ func NewRecipeForm(values url.Values) (Form, error) {
 	}
 
 	return Form{
-		ID:                int32(id),
-		Name:              values.Get("name"),
-		Description:       values.Get("description"),
-		Source:            values.Get("source"),
-		Instructions:      values.Get("instructions"),
-		Servings:          int8(servings),
-		PreparationTime:   preparationDuration,
-		CookTime:          cookDuration,
-		Tags:              values["tag"],
-		Ingredients:       ingredients,
-		ThumbnailImageURL: values.Get("cover-image-url"),
+		ID:              int32(id),
+		Name:            values.Get("name"),
+		Description:     values.Get("description"),
+		Source:          values.Get("source"),
+		Instructions:    values.Get("instructions"),
+		Servings:        int8(servings),
+		PreparationTime: preparationDuration,
+		CookTime:        cookDuration,
+		Tags:            values["tag"],
+		Ingredients:     ingredients,
+		ThumbnailImage:  GetThumbnail(form),
 		Nutrition: Nutrition{
 			Calories: float32(calories),
 			Fat:      float32(fat),
@@ -115,4 +142,13 @@ func ParseFormDuration(value string) (time.Duration, error) {
 	}
 
 	return duration, nil
+}
+
+func GetThumbnail(form *multipart.Form) *multipart.FileHeader {
+	coverImage := form.File["thumbnail-image"]
+	if len(coverImage) == 1 {
+		return coverImage[0]
+	}
+
+	return nil
 }

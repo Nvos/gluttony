@@ -13,17 +13,18 @@ import (
 	"gluttony/pkg/markdown"
 	"gluttony/pkg/pagination"
 	"log/slog"
+	"mime/multipart"
 	"slices"
 	"time"
 )
 
 type Service struct {
-	db          *pgxpool.Pool
-	mediaStore  recipe.MediaStore
-	searchIndex recipe.Index
-	store       recipe.Store
-	markdown    *markdown.Markdown
-	logger      *slog.Logger
+	db           *pgxpool.Pool
+	mediaService recipe.MediaService
+	searchIndex  recipe.Index
+	store        recipe.Store
+	markdown     *markdown.Markdown
+	logger       *slog.Logger
 }
 
 func (s *Service) Stop() error {
@@ -36,7 +37,7 @@ func (s *Service) Stop() error {
 
 func NewService(
 	db *pgxpool.Pool,
-	mediaStore recipe.MediaStore,
+	mediaService recipe.MediaService,
 	searchIndex recipe.Index,
 	logger *slog.Logger,
 ) (*Service, error) {
@@ -44,8 +45,8 @@ func NewService(
 		return nil, errors.New("db is nil")
 	}
 
-	if mediaStore == nil {
-		return nil, errors.New("mediaStore is nil")
+	if mediaService == nil {
+		return nil, errors.New("mediaService is nil")
 	}
 
 	if searchIndex == nil {
@@ -53,26 +54,16 @@ func NewService(
 	}
 
 	return &Service{
-		db:          db,
-		mediaStore:  mediaStore,
-		searchIndex: searchIndex,
-		store:       postgres.NewStore(db),
-		markdown:    markdown.NewMarkdown(),
-		logger:      logger,
+		db:           db,
+		mediaService: mediaService,
+		searchIndex:  searchIndex,
+		store:        postgres.NewStore(db),
+		markdown:     markdown.NewMarkdown(),
+		logger:       logger,
 	}, nil
 }
 
 func (s *Service) Create(ctx context.Context, input recipe.CreateInput) error {
-	thumbnailImageURL := ""
-	if input.ThumbnailImage != nil {
-		gotThumbnailImageURL, err := s.mediaStore.UploadImage(input.ThumbnailImage)
-		if err != nil {
-			return fmt.Errorf("upload thumbnail image: %w", err)
-		}
-
-		thumbnailImageURL = gotThumbnailImageURL
-	}
-
 	tx, err := s.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("begin create recipe tx: %w", err)
@@ -88,10 +79,15 @@ func (s *Service) Create(ctx context.Context, input recipe.CreateInput) error {
 
 	txStore := s.store.WithTx(tx)
 
+	imageID, err := s.createImage(ctx, txStore, input.ThumbnailImage)
+	if err != nil {
+		return fmt.Errorf("create image: %w", err)
+	}
+
 	params := recipe.CreateRecipe{
 		Name:                 input.Name,
 		Description:          input.Description,
-		ThumbnailImageURL:    thumbnailImageURL,
+		ThumbnailImageID:     imageID,
 		Source:               input.Source,
 		InstructionsMarkdown: input.Instructions,
 		Servings:             input.Servings,
@@ -120,25 +116,10 @@ func (s *Service) Create(ctx context.Context, input recipe.CreateInput) error {
 		return fmt.Errorf("create recipe ingredients: %w", err)
 	}
 
-	indexRecipe := recipe.Recipe{
-		ID:                   recipeID,
-		Name:                 input.Name,
-		Description:          input.Description,
-		ThumbnailImageURL:    "",
-		Source:               "",
-		InstructionsMarkdown: "",
-		InstructionsHTML:     "",
-		Servings:             0,
-		PreparationTime:      0,
-		CookTime:             0,
-		Tags:                 nil,
-		Ingredients:          nil,
-		Nutrition: recipe.Nutrition{
-			Calories: 0,
-			Fat:      0,
-			Carbs:    0,
-			Protein:  0,
-		},
+	indexRecipe := recipe.IndexRecipeInput{
+		ID:          recipeID,
+		Name:        input.Name,
+		Description: input.Description,
 	}
 
 	if err := s.searchIndex.Index(indexRecipe); err != nil {
@@ -150,6 +131,31 @@ func (s *Service) Create(ctx context.Context, input recipe.CreateInput) error {
 	}
 
 	return nil
+}
+
+func (s *Service) createImage(
+	ctx context.Context,
+	txStore recipe.Store,
+	file *multipart.FileHeader,
+) (*int32, error) {
+	var imageID *int32
+	if file == nil {
+		return nil, nil
+	}
+
+	url, err := s.mediaService.UploadImage(file)
+	if err != nil {
+		return nil, fmt.Errorf("upload thumbnail image: %w", err)
+	}
+
+	input := recipe.CreateRecipeImageInput{URL: url}
+	gotID, err := txStore.CreateRecipeImage(ctx, input)
+	if err != nil {
+		return nil, fmt.Errorf("create recipe image: %w", err)
+	}
+	imageID = &gotID
+
+	return imageID, nil
 }
 
 func (s *Service) updateTagsIfChanged(
@@ -268,21 +274,16 @@ func (s *Service) Update(ctx context.Context, input recipe.UpdateInput) error {
 		return fmt.Errorf("update nutrition: %w", err)
 	}
 
-	thumbnailImageURL := current.ThumbnailImageURL
-	if input.ThumbnailImage != nil {
-		thumbnailImageURL, err = s.mediaStore.UploadImage(input.ThumbnailImage)
-		if err != nil {
-			return fmt.Errorf("upload thumbnail image: %w", err)
-		}
-
-		// TODO: remove previous image
+	imageID, err := s.createImage(ctx, txStore, input.ThumbnailImage)
+	if err != nil {
+		return fmt.Errorf("create image: %w", err)
 	}
 
 	err = txStore.UpdateRecipe(ctx, recipe.UpdateRecipe{
 		CreateRecipe: recipe.CreateRecipe{
 			Name:                 input.Name,
 			Description:          input.Description,
-			ThumbnailImageURL:    thumbnailImageURL,
+			ThumbnailImageID:     imageID,
 			Source:               input.Source,
 			InstructionsMarkdown: input.Instructions,
 			Servings:             input.Servings,

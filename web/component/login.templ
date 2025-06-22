@@ -1,7 +1,6 @@
 package component
 
 import "gluttony/internal/user"
-import "gluttony/internal/handlers"
 import "gluttony/web"
 import "github.com/starfederation/datastar/sdk/go"
 import "fmt"
@@ -21,7 +20,7 @@ templ FormLogin(props LoginFormProps) {
 		<h2 class="text-neutral-font-secondary">
 			Enter your account credentials below
 		</h2>
-		@Alert(handlers.Alert{})
+		@Alert(AlertInput{})
 		<label class="form-control">
 			<span class="label">
 				<span class="label-text">Username</span>

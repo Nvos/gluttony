@@ -6,9 +6,10 @@ import (
 	"fmt"
 	usersvc "gluttony/internal/service/user"
 	"gluttony/internal/user"
-	"gluttony/pkg/html"
 	"gluttony/pkg/router"
 	"gluttony/pkg/session"
+	"gluttony/web"
+	"gluttony/web/component"
 	"log/slog"
 	"net/http"
 	"time"
@@ -104,9 +105,6 @@ func AuthenticationMiddleware(sessionService *session.Service) router.Middleware
 	}
 }
 
-const view500 html.TemplateName = "view/500"
-const view404 html.TemplateName = "view/404"
-
 func ErrorMiddleware(logger *slog.Logger) router.Middleware {
 	return func(next router.HandlerFunc) router.HandlerFunc {
 		return func(c *router.Context) error {
@@ -116,6 +114,8 @@ func ErrorMiddleware(logger *slog.Logger) router.Middleware {
 			}
 
 			var httpErr *router.HTTPError
+			webCtx := web.NewContext(c.Request, GetDoer(c), "en")
+
 			if errors.As(err, &httpErr) {
 				if httpErr.Err != nil {
 					logger.Error(
@@ -125,11 +125,12 @@ func ErrorMiddleware(logger *slog.Logger) router.Middleware {
 					)
 				}
 
+
 				switch httpErr.Code {
 				case http.StatusNotFound, http.StatusBadRequest:
-					return c.RenderView(view404, http.StatusNotFound)
+					return c.TemplComponent(http.StatusNotFound, component.View404(webCtx))
 				case http.StatusInternalServerError:
-					return c.RenderView(view500, http.StatusInternalServerError)
+					return c.TemplComponent(http.StatusNotFound, component.View500(webCtx))
 				default:
 					c.Response.WriteHeader(httpErr.Code)
 
@@ -138,7 +139,8 @@ func ErrorMiddleware(logger *slog.Logger) router.Middleware {
 			}
 
 			logger.Error("Http handler returned internal error", slog.String("err", err.Error()))
-			return c.RenderView(view500, http.StatusInternalServerError)
+
+			return c.TemplComponent(http.StatusNotFound, component.View500(webCtx))
 		}
 	}
 }

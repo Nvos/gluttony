@@ -6,14 +6,14 @@ import (
 	"gluttony/web"
 )
 
-templ ViewRecipeUpdate(c *web.Context, form recipe.Form) {
+templ ViewRecipeUpdate(c *web.Context, thumbnailURL string, form recipe.Form) {
 	@View("Recipes", c) {
 		<div class="flex flex-1">
 			@Sidebar(c)
 			<div class="bg-neutral-layer-2 w-full">
 				@CreateRecipeUpdate(form)
 				<main class="flex flex-col p-8">
-					@FormRecipe(form)
+					@FormRecipe(thumbnailURL, form)
 				</main>
 			</div>
 		</div>

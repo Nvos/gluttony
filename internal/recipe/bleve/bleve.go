@@ -54,7 +54,7 @@ func New(workDir string) (*Index, error) {
 	return &Index{index: index}, nil
 }
 
-func (idx *Index) Index(value recipe.Recipe) error {
+func (idx *Index) Index(value recipe.IndexRecipeInput) error {
 	toIndex := indexValue{
 		ID:          value.ID,
 		Name:        value.Name,

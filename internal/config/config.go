@@ -1,7 +1,8 @@
-package app
+package config
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -18,7 +19,6 @@ var defaultPaths = struct {
 	logFile string
 	workDir string
 }{
-	// Use forward slashes here - they will be converted to the proper separator
 	logFile: "/var/log/gluttony/gluttony.log",
 	workDir: "/var/lib/gluttony",
 }
@@ -191,15 +191,15 @@ func (c *Config) Validate() error {
 	}
 
 	if c.Database.Host == "" {
-		return fmt.Errorf("database host is required")
+		return errors.New("database host is required") //nolint:perfsprint
 	}
 
 	if c.Database.User == "" {
-		return fmt.Errorf("database user is required")
+		return errors.New("database user is required")
 	}
 
 	if c.Database.Name == "" {
-		return fmt.Errorf("database name is required")
+		return errors.New("database name is required")
 	}
 
 	// Validate directories exist

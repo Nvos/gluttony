@@ -3,7 +3,6 @@ package router
 import (
 	"context"
 	"fmt"
-	"gluttony/pkg/html"
 	"net/http"
 )
 
@@ -11,7 +10,6 @@ type Context struct {
 	Response http.ResponseWriter
 	Request  *http.Request
 	Data     map[string]any
-	renderer *html.Renderer
 }
 
 func (c *Context) Context() context.Context {
@@ -50,29 +48,8 @@ func (c *Context) Redirect(url string, code int) {
 	http.Redirect(c.Response, c.Request, url, code)
 }
 
-func (c *Context) RenderView(name html.TemplateName, code int) error {
-	c.Response.Header().Set("Content-Type", "text/html; charset=utf-8")
-	c.Response.WriteHeader(code)
-
-	if err := c.renderer.RenderTemplate(name, c.Response, c.Data); err != nil {
-		return fmt.Errorf("execute template %q: %w", name, err)
-	}
-
-	return nil
-}
-
 func (c *Context) SetData(key string, value any) {
 	c.Data[key] = value
-}
-
-func (c *Context) RenderViewFragment(name html.TemplateName, fragment html.FragmentName, code int) error {
-	c.Response.Header().Set("Content-Type", "text/html; charset=utf-8")
-	c.Response.WriteHeader(code)
-	if err := c.renderer.RenderFragment(name, fragment, c.Response, c.Data); err != nil {
-		return fmt.Errorf("execute template %q: %w", name, err)
-	}
-
-	return nil
 }
 
 // FormString returns the first value matching the provided key in the form as a string.

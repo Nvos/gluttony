@@ -6,7 +6,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"gluttony/internal/ingredient"
 	"gluttony/pkg/pagination"
-	"io"
+	"mime/multipart"
 	"time"
 )
 
@@ -86,15 +86,14 @@ type CreateInput struct {
 	Tags            []string
 	Ingredients     []Ingredient
 	Nutrition       Nutrition
-	ThumbnailImage  io.Reader
-	ThumbnailURL    string
+	ThumbnailImage  *multipart.FileHeader
 	OwnerID         int32
 }
 
 type CreateRecipe struct {
 	Name                 string
 	Description          string
-	ThumbnailImageURL    string
+	ThumbnailImageID     *int32
 	Source               string
 	InstructionsMarkdown string
 	Servings             int8
@@ -110,8 +109,19 @@ type UpdateRecipe struct {
 	CreateRecipe
 }
 
-type MediaStore interface {
-	UploadImage(file io.Reader) (string, error)
+type CreateRecipeImageInput struct {
+	URL string
+}
+
+type IndexRecipeInput struct {
+	ID          int32
+	Name        string
+	Description string
+}
+
+type MediaService interface {
+	UploadImage(file *multipart.FileHeader) (string, error)
+	Delete(imageID string) error
 }
 
 type Store interface {
@@ -144,11 +154,11 @@ type Store interface {
 	DeleteRecipeIngredients(ctx context.Context, recipeID int32) error
 	UpdateNutrition(ctx context.Context, recipeID int32, nutrition Nutrition) error
 	UpdateRecipe(ctx context.Context, input UpdateRecipe) error
+	CreateRecipeImage(ctx context.Context, input CreateRecipeImageInput) (int32, error)
 }
 
 type Index interface {
-	// TODO: add custom model for indexing, no need to pass whole Recipe
-	Index(value Recipe) error
+	Index(value IndexRecipeInput) error
 	Search(ctx context.Context, query string, offset pagination.Offset) (SearchResult, error)
 	Close() error
 }

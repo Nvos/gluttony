@@ -13,6 +13,7 @@
 @import './alert.css' layer(components);
 @import './navigation.css' layer(components);
 @import './tag.css' layer(components);
+@import './markdown.css' layer(markdown);
 
 @import 'tailwindcss';
 
@@ -81,33 +82,22 @@
     font-display: swap;
     src: url('/assets/font/inter/InterVariable.woff2') format('woff2');
   }
-}
 
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--color-neutral-2);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--color-neutral-6);
-  border-radius: 2px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-neutral-7);
-}
-
-/*TODO: move to separate fil e*/
-.markdown {
-  h1 {
-    @apply mb-2 text-xl;
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
   }
 
-  ol {
-    @apply marker:text-primary-9 mb-4 list-decimal pl-4;
+  ::-webkit-scrollbar-track {
+    background: var(--color-neutral-2);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-neutral-6);
+    border-radius: 2px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-neutral-7);
   }
 }

@@ -66,8 +66,12 @@ func (s *Store) AllRecipeSummaries(
 			ID:                row.ID,
 			Name:              row.Name,
 			Description:       row.Description,
-			ThumbnailImageURL: row.ThumbnailUrl,
+			ThumbnailImageURL: "",
 			Tags:              []recipe.Tag{},
+		}
+
+		if row.Url != nil {
+			value.ThumbnailImageURL = *row.Url
 		}
 
 		out = append(out, value)
@@ -102,7 +106,7 @@ func (s *Store) GetRecipe(ctx context.Context, id int32) (recipe.Recipe, error) 
 		Name:                 r.Name,
 		Description:          r.Description,
 		InstructionsMarkdown: r.InstructionsMarkdown,
-		ThumbnailImageURL:    r.ThumbnailUrl,
+		ThumbnailImageURL:    r.Url,
 		Tags:                 tags[id],
 		Source:               r.Source,
 		//nolint:gosec // conversion is fine
@@ -260,7 +264,7 @@ func (s *Store) CreateRecipe(ctx context.Context, input recipe.CreateRecipe) (in
 		CookTimeSeconds:        int32(input.CookTime.Seconds()),
 		PreparationTimeSeconds: int32(input.PreparationTime.Seconds()),
 		Source:                 input.Source,
-		ThumbnailUrl:           input.ThumbnailImageURL,
+		ThumbnailID:            input.ThumbnailImageID,
 		OwnerID:                input.OwnerID,
 		Servings:               int32(input.Servings),
 	}
@@ -355,11 +359,12 @@ func (s *Store) UpdateNutrition(ctx context.Context, recipeID int32, nutrition r
 
 func (s *Store) UpdateRecipe(ctx context.Context, input recipe.UpdateRecipe) error {
 	params := UpdateRecipeParams{
-		ID:                     input.ID,
-		Name:                   input.Name,
-		Description:            input.Description,
-		InstructionsMarkdown:   input.InstructionsMarkdown,
-		ThumbnailUrl:           input.ThumbnailImageURL,
+		ID:                   input.ID,
+		Name:                 input.Name,
+		Description:          input.Description,
+		InstructionsMarkdown: input.InstructionsMarkdown,
+		// TODO: resolve image update
+		//ThumbnailID:            input.ThumbnailImageURL,
 		CookTimeSeconds:        int32(input.CookTime.Seconds()),
 		PreparationTimeSeconds: int32(input.PreparationTime.Seconds()),
 		Source:                 input.Source,
@@ -372,4 +377,13 @@ func (s *Store) UpdateRecipe(ctx context.Context, input recipe.UpdateRecipe) err
 	}
 
 	return nil
+}
+
+func (s *Store) CreateRecipeImage(ctx context.Context, input recipe.CreateRecipeImageInput) (int32, error) {
+	id, err := s.queries.CreateRecipeImage(ctx, input.URL)
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
 }

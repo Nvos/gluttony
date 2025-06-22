@@ -2,14 +2,12 @@ package recipe
 
 import (
 	"errors"
-	"fmt"
 	datastar "github.com/starfederation/datastar/sdk/go"
 	"gluttony/internal/handlers"
 	"gluttony/internal/recipe"
 	"gluttony/pkg/router"
 	"gluttony/web"
 	"gluttony/web/component"
-	"mime/multipart"
 	"net/http"
 	"strconv"
 )
@@ -37,24 +35,24 @@ func (r *Routes) UpdateViewHandler(c *router.Context) error {
 	}
 
 	form := recipe.Form{
-		ID:                fullRecipe.ID,
-		Name:              fullRecipe.Name,
-		Description:       fullRecipe.Description,
-		Source:            fullRecipe.Source,
-		Instructions:      fullRecipe.InstructionsMarkdown,
-		ThumbnailImageURL: fullRecipe.ThumbnailImageURL,
-		Servings:          fullRecipe.Servings,
-		PreparationTime:   fullRecipe.PreparationTime,
-		CookTime:          fullRecipe.CookTime,
-		Tags:              tags,
-		Ingredients:       fullRecipe.Ingredients,
-		Nutrition:         fullRecipe.Nutrition,
+		ID:              fullRecipe.ID,
+		Name:            fullRecipe.Name,
+		Description:     fullRecipe.Description,
+		Source:          fullRecipe.Source,
+		Instructions:    fullRecipe.InstructionsMarkdown,
+		ThumbnailImage:  nil,
+		Servings:        fullRecipe.Servings,
+		PreparationTime: fullRecipe.PreparationTime,
+		CookTime:        fullRecipe.CookTime,
+		Tags:            tags,
+		Ingredients:     fullRecipe.Ingredients,
+		Nutrition:       fullRecipe.Nutrition,
 	}
 
 	webCtx := web.NewContext(c.Request, handlers.GetDoer(c), "en")
 	return c.TemplComponent(
 		http.StatusOK,
-		component.ViewRecipeUpdate(webCtx, form),
+		component.ViewRecipeUpdate(webCtx, fullRecipe.ThumbnailImageURL, form),
 	)
 }
 
@@ -63,26 +61,12 @@ func (r *Routes) UpdateFormHandler(c *router.Context) error {
 		return c.Error(http.StatusBadRequest, err)
 	}
 
-	form, err := recipe.NewRecipeForm(c.Request.MultipartForm.Value)
+	form, err := recipe.NewRecipeForm(c.Request.MultipartForm)
 	if err != nil {
 		return c.Error(http.StatusBadRequest, err)
 	}
 
 	input := form.ToInput(handlers.GetDoer(c).ID)
-
-	coverImage := c.Request.MultipartForm.File["thumbnail-image"]
-	if len(coverImage) == 1 {
-		file, err := coverImage[0].Open()
-		if err != nil {
-			// TODO: handle err
-			panic(fmt.Errorf("could not open cover image: %w", err))
-		}
-		defer func(file multipart.File) {
-			_ = file.Close()
-		}(file)
-
-		input.ThumbnailImage = file
-	}
 
 	sse := datastar.NewSSE(c.Response, c.Request)
 	err = r.service.Update(c.Context(), recipe.UpdateInput{
