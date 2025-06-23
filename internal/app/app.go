@@ -11,8 +11,8 @@ import (
 	"gluttony/internal/user/postgres"
 	"gluttony/migrations"
 	"gluttony/pkg/database"
+	"gluttony/pkg/image"
 	"gluttony/pkg/log"
-	"gluttony/pkg/media"
 	"gluttony/pkg/router"
 	"gluttony/pkg/session"
 	"log/slog"
@@ -75,7 +75,7 @@ func New(cfg *config.Config) (*App, error) {
 	userStore := postgres.NewStore(db)
 
 	userService := user.NewService(userStore, sessionService)
-	mediaService := media.New(mediaDir)
+	mediaService := image.NewService(mediaDir)
 	recipeSearchIndex, err := bleve.New(cfg.WorkDirectoryPath)
 	if err != nil {
 		return nil, fmt.Errorf("create recipe search index: %w", err)

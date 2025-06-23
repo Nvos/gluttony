@@ -359,12 +359,11 @@ func (s *Store) UpdateNutrition(ctx context.Context, recipeID int32, nutrition r
 
 func (s *Store) UpdateRecipe(ctx context.Context, input recipe.UpdateRecipe) error {
 	params := UpdateRecipeParams{
-		ID:                   input.ID,
-		Name:                 input.Name,
-		Description:          input.Description,
-		InstructionsMarkdown: input.InstructionsMarkdown,
-		// TODO: resolve image update
-		//ThumbnailID:            input.ThumbnailImageURL,
+		ID:                     input.ID,
+		Name:                   input.Name,
+		Description:            input.Description,
+		InstructionsMarkdown:   input.InstructionsMarkdown,
+		ThumbnailID:            input.ThumbnailImageID,
 		CookTimeSeconds:        int32(input.CookTime.Seconds()),
 		PreparationTimeSeconds: int32(input.PreparationTime.Seconds()),
 		Source:                 input.Source,

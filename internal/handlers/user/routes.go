@@ -24,4 +24,5 @@ func NewRoutes(
 func (r *Routes) Mount(router *router.Router) {
 	router.Get("/login", r.LoginViewHandler)
 	router.Post("/login", r.LoginFormHandler)
+	router.Get("/logout", r.LogoutHandler)
 }

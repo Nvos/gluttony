@@ -71,6 +71,7 @@ templ ImagePreview(thumbnalURL string, form recipe.Form) {
 		<input
 			id="thumbnail-image"
 			type="file"
+			accept="image/png, image/jpeg, image/webp"
 			name="thumbnail-image"
 			class="absolute inset-0 z-10 m-0 h-full w-full p-0 opacity-0 outline-none"
 			data-on-change="file = evt.target.files[0]; fileToDataUrl(evt, url => $imageUrl = url )"

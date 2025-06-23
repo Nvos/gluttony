@@ -2,7 +2,6 @@ package recipe
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5"
@@ -20,7 +19,7 @@ import (
 
 type Service struct {
 	db           *pgxpool.Pool
-	mediaService recipe.MediaService
+	imageService recipe.ImageService
 	searchIndex  recipe.Index
 	store        recipe.Store
 	markdown     *markdown.Markdown
@@ -37,7 +36,7 @@ func (s *Service) Stop() error {
 
 func NewService(
 	db *pgxpool.Pool,
-	mediaService recipe.MediaService,
+	imageService recipe.ImageService,
 	searchIndex recipe.Index,
 	logger *slog.Logger,
 ) (*Service, error) {
@@ -45,8 +44,8 @@ func NewService(
 		return nil, errors.New("db is nil")
 	}
 
-	if mediaService == nil {
-		return nil, errors.New("mediaService is nil")
+	if imageService == nil {
+		return nil, errors.New("imageService is nil")
 	}
 
 	if searchIndex == nil {
@@ -55,7 +54,7 @@ func NewService(
 
 	return &Service{
 		db:           db,
-		mediaService: mediaService,
+		imageService: imageService,
 		searchIndex:  searchIndex,
 		store:        postgres.NewStore(db),
 		markdown:     markdown.NewMarkdown(),
@@ -69,17 +68,25 @@ func (s *Service) Create(ctx context.Context, input recipe.CreateInput) error {
 		return fmt.Errorf("begin create recipe tx: %w", err)
 	}
 
+	var imageURL string
 	defer func() {
-		if err := tx.Rollback(ctx); err != nil {
+		if err == nil {
 			return
 		}
 
-		// TODO: remove image
+		_ = tx.Rollback(ctx)
+		if err := s.imageService.Delete(imageURL); err != nil {
+			s.logger.Error(
+				"Failed to delete image during recipe create rollback",
+				slog.String("url", imageURL),
+				slog.String("err", err.Error()),
+			)
+		}
 	}()
 
 	txStore := s.store.WithTx(tx)
 
-	imageID, err := s.createImage(ctx, txStore, input.ThumbnailImage)
+	imageURL, imageID, err := s.createImage(ctx, txStore, input.ThumbnailImage)
 	if err != nil {
 		return fmt.Errorf("create image: %w", err)
 	}
@@ -137,25 +144,25 @@ func (s *Service) createImage(
 	ctx context.Context,
 	txStore recipe.Store,
 	file *multipart.FileHeader,
-) (*int32, error) {
+) (string, *int32, error) {
 	var imageID *int32
 	if file == nil {
-		return nil, nil
+		return "", nil, nil
 	}
 
-	url, err := s.mediaService.UploadImage(file)
+	url, err := s.imageService.Upload(file)
 	if err != nil {
-		return nil, fmt.Errorf("upload thumbnail image: %w", err)
+		return "", nil, fmt.Errorf("upload thumbnail image: %w", err)
 	}
 
 	input := recipe.CreateRecipeImageInput{URL: url}
 	gotID, err := txStore.CreateRecipeImage(ctx, input)
 	if err != nil {
-		return nil, fmt.Errorf("create recipe image: %w", err)
+		return "", nil, fmt.Errorf("create recipe image: %w", err)
 	}
 	imageID = &gotID
 
-	return imageID, nil
+	return url, imageID, nil
 }
 
 func (s *Service) updateTagsIfChanged(
@@ -222,7 +229,8 @@ func (s *Service) updateIngredientsIfChanged(
 	return nil
 }
 
-func (s *Service) Update(ctx context.Context, input recipe.UpdateInput) error {
+//nolint:nonamedreturns // used for rollback detection
+func (s *Service) Update(ctx context.Context, input recipe.UpdateInput) (err error) {
 	current, err := s.GetFull(ctx, input.ID)
 	if err != nil {
 		return fmt.Errorf("get recipe by id=%v: %w", input.ID, err)
@@ -233,17 +241,20 @@ func (s *Service) Update(ctx context.Context, input recipe.UpdateInput) error {
 		return fmt.Errorf("begin update recipe tx: %w", err)
 	}
 
+	var imageURL string
 	defer func() {
-		err := tx.Rollback(ctx)
-		if errors.Is(err, sql.ErrTxDone) {
+		if err == nil {
 			return
 		}
 
-		if err != nil {
-			s.logger.Error("Rolling back transaction", slog.String("err", err.Error()))
+		_ = tx.Rollback(ctx)
+		if err := s.imageService.Delete(imageURL); err != nil {
+			s.logger.Error(
+				"Failed to delete image during recipe update rollback",
+				slog.String("url", imageURL),
+				slog.String("err", err.Error()),
+			)
 		}
-
-		// TODO: remove image
 	}()
 
 	txStore := s.store.WithTx(tx)
@@ -274,7 +285,7 @@ func (s *Service) Update(ctx context.Context, input recipe.UpdateInput) error {
 		return fmt.Errorf("update nutrition: %w", err)
 	}
 
-	imageID, err := s.createImage(ctx, txStore, input.ThumbnailImage)
+	imageURL, imageID, err := s.createImage(ctx, txStore, input.ThumbnailImage)
 	if err != nil {
 		return fmt.Errorf("create image: %w", err)
 	}

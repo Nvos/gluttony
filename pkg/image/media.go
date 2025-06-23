@@ -1,4 +1,4 @@
-package media
+package image
 
 import (
 	"errors"
@@ -16,15 +16,19 @@ type Service struct {
 	rootDir *os.Root
 }
 
-func New(rootDir *os.Root) *Service {
+func NewService(rootDir *os.Root) *Service {
 	return &Service{rootDir: rootDir}
 }
 
 func (s *Service) Delete(fileName string) error {
-	return s.rootDir.Remove(fileName)
+	if err := s.rootDir.Remove(fileName); err != nil {
+		return fmt.Errorf("delete image by filename='%s': %w", fileName, err)
+	}
+
+	return nil
 }
 
-func (s *Service) UploadImage(file *multipart.FileHeader) (string, error) {
+func (s *Service) Upload(file *multipart.FileHeader) (string, error) {
 	if file.Size > maxFileSize {
 		return "", errors.New("file size is too big")
 	}

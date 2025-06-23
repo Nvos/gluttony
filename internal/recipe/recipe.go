@@ -119,8 +119,8 @@ type IndexRecipeInput struct {
 	Description string
 }
 
-type MediaService interface {
-	UploadImage(file *multipart.FileHeader) (string, error)
+type ImageService interface {
+	Upload(file *multipart.FileHeader) (string, error)
 	Delete(imageID string) error
 }
 

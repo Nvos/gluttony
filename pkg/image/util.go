@@ -1,4 +1,4 @@
-package media
+package image
 
 import (
 	"fmt"
@@ -45,7 +45,8 @@ func optimizeAndWriteImage(
 }
 
 func isMediaContentAllowed(file multipart.File) (bool, error) {
-	buffer := make([]byte, 512)
+	const headerBufferSize = 512
+	buffer := make([]byte, headerBufferSize)
 
 	if _, err := file.Read(buffer); err != nil {
 		return false, fmt.Errorf("read header bytes: %w", err)
@@ -59,8 +60,7 @@ func isMediaContentAllowed(file multipart.File) (bool, error) {
 	switch contentType {
 	case "image/jpeg", "image/png", "image/webp":
 		return true, nil
-	default:
-		return false, nil
 	}
 
+	return false, nil
 }

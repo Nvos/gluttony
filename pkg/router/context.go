@@ -40,10 +40,6 @@ func (c *Context) SetCookie(cookie *http.Cookie) {
 	http.SetCookie(c.Response, cookie)
 }
 
-func (c *Context) HTMXRedirect(url string) {
-	c.Response.Header().Set("Hx-Redirect", url)
-}
-
 func (c *Context) Redirect(url string, code int) {
 	http.Redirect(c.Response, c.Request, url, code)
 }
