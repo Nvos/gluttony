@@ -285,22 +285,28 @@ func (s *Service) Update(ctx context.Context, input recipe.UpdateInput) (err err
 		return fmt.Errorf("update nutrition: %w", err)
 	}
 
+	thumbnailImageID := current.ThumbnailImageID
+
 	imageURL, imageID, err := s.createImage(ctx, txStore, input.ThumbnailImage)
 	if err != nil {
 		return fmt.Errorf("create image: %w", err)
+	}
+
+	if imageID != nil {
+		thumbnailImageID = imageID
 	}
 
 	err = txStore.UpdateRecipe(ctx, recipe.UpdateRecipe{
 		CreateRecipe: recipe.CreateRecipe{
 			Name:                 input.Name,
 			Description:          input.Description,
-			ThumbnailImageID:     imageID,
+			ThumbnailImageID:     thumbnailImageID,
 			Source:               input.Source,
 			InstructionsMarkdown: input.Instructions,
 			Servings:             input.Servings,
 			PreparationTime:      input.PreparationTime,
 			CookTime:             input.CookTime,
-			// Not used by update, likely need to separate model fully
+			// TODO: Not used by update, likely need to separate model fully
 			OwnerID: 0,
 		},
 		UpdatedAt: time.Now().UTC(),

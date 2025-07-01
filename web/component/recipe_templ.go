@@ -384,9 +384,9 @@ func RecipeIngredientList(ingredients []recipe.Ingredient) templ.Component {
 			}
 			if ingredient.Unit == "count" {
 				var templ_7745c5c3_Var15 string
-				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%f %s", ingredient.Quantity, ingredient.Name))
+				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%.0f %s", ingredient.Quantity, ingredient.Name))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/component/recipe.templ`, Line: 120, Col: 66}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/component/recipe.templ`, Line: 120, Col: 68}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 				if templ_7745c5c3_Err != nil {
@@ -394,9 +394,9 @@ func RecipeIngredientList(ingredients []recipe.Ingredient) templ.Component {
 				}
 			} else {
 				var templ_7745c5c3_Var16 string
-				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%f %s %s", ingredient.Quantity, ingredient.Unit, ingredient.Name))
+				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%.2f %s %s", ingredient.Quantity, ingredient.Unit, ingredient.Name))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/component/recipe.templ`, Line: 122, Col: 86}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/component/recipe.templ`, Line: 122, Col: 88}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 				if templ_7745c5c3_Err != nil {

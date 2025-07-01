@@ -2,7 +2,7 @@
 SELECT *
 FROM recipes
          JOIN recipe_nutrition rn on recipes.id = rn.recipe_id
-         JOIN images im on recipes.thumbnail_id = im.id
+         LEFT JOIN images im on recipes.thumbnail_id = im.id
 WHERE recipes.id = $1
 LIMIT 1;
 

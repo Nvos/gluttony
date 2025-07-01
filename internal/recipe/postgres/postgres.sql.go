@@ -378,7 +378,7 @@ const getFullRecipe = `-- name: GetFullRecipe :one
 SELECT recipes.id, name, description, instructions_markdown, thumbnail_id, servings, cook_time_seconds, preparation_time_seconds, source, created_at, updated_at, owner_id, recipe_id, calories, fat, carbs, protein, im.id, url
 FROM recipes
          JOIN recipe_nutrition rn on recipes.id = rn.recipe_id
-         JOIN images im on recipes.thumbnail_id = im.id
+         LEFT JOIN images im on recipes.thumbnail_id = im.id
 WHERE recipes.id = $1
 LIMIT 1
 `
@@ -401,8 +401,8 @@ type GetFullRecipeRow struct {
 	Fat                    float32
 	Carbs                  float32
 	Protein                float32
-	ID_2                   int32
-	Url                    string
+	ID_2                   *int32
+	Url                    *string
 }
 
 func (q *Queries) GetFullRecipe(ctx context.Context, id int32) (GetFullRecipeRow, error) {

@@ -41,6 +41,7 @@ type Recipe struct {
 	ID                   int32
 	Name                 string
 	Description          string
+	ThumbnailImageID     *int32
 	ThumbnailImageURL    string
 	Source               string
 	InstructionsMarkdown string

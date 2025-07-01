@@ -101,12 +101,18 @@ func (s *Store) GetRecipe(ctx context.Context, id int32) (recipe.Recipe, error) 
 		return recipe.Recipe{}, fmt.Errorf("get all ingredients for recipe id=%d: %w", id, err)
 	}
 
+	thumbnailImageURL := ""
+	if r.Url != nil {
+		thumbnailImageURL = *r.Url
+	}
+
 	return recipe.Recipe{
 		ID:                   id,
 		Name:                 r.Name,
 		Description:          r.Description,
 		InstructionsMarkdown: r.InstructionsMarkdown,
-		ThumbnailImageURL:    r.Url,
+		ThumbnailImageURL:    thumbnailImageURL,
+		ThumbnailImageID:     r.ThumbnailID,
 		Tags:                 tags[id],
 		Source:               r.Source,
 		//nolint:gosec // conversion is fine

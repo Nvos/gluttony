@@ -22,23 +22,14 @@ templ Sidebar(c *web.Context) {
 						<span>Recipes</span>
 					</a>
 				</li>
-				<li>
-					<a
-						href="/settings"
-						class={ "link", templ.KV("active", strings.HasPrefix(c.Req.URL.Path, "/settings")) }
-					>
-						@IconSettings()
-						<span>Settings</span>
-					</a>
-				</li>
 			</ul>
 		</nav>
 		<div class="flex-1"></div>
-		<div class="flex-0 px-2 py-4">
-		    <a class="link" href="/logout">
-		        @IconLogout()
-		       <span>Logout</span>
-		    </a>
+		<div class="flex-0 px-2 py-4 border-t-neutral-border-1 border-t">
+			<a class="link" href="/logout">
+				@IconLogout()
+				<span>Logout</span>
+			</a>
 		</div>
 	</div>
 }

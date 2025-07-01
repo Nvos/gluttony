@@ -117,9 +117,9 @@ templ RecipeIngredientList(ingredients []recipe.Ingredient) {
 			<li class="pb-1">
 				<div>
 					if ingredient.Unit == "count" {
-						{ fmt.Sprintf("%f %s", ingredient.Quantity, ingredient.Name) }
+						{ fmt.Sprintf("%.0f %s", ingredient.Quantity, ingredient.Name) }
 					} else {
-						{ fmt.Sprintf("%f %s %s", ingredient.Quantity, ingredient.Unit, ingredient.Name) }
+						{ fmt.Sprintf("%.2f %s %s", ingredient.Quantity, ingredient.Unit, ingredient.Name) }
 					}
 				</div>
 				if ingredient.Note != "" {
