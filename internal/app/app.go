@@ -98,7 +98,7 @@ func New(cfg *config.Config) (*App, error) {
 
 	mux.Use(middlewares...)
 	MountRoutes(mux, cfg.Environment, assetsFS, mediaDir.FS())
-	MountWebRoutes(mux, sessionService, userService, recipeService)
+	MountWebRoutes(mux, cfg, sessionService, userService, recipeService)
 
 	const defaultTimeout = 15 * time.Second
 	httpServer := &http.Server{

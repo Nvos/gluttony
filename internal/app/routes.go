@@ -15,6 +15,7 @@ import (
 
 func MountWebRoutes(
 	mux *router.Router,
+	cfg *config.Config,
 	sessionService *session.Service,
 	userService *user.Service,
 	recipeService *recipe.Service,
@@ -24,7 +25,7 @@ func MountWebRoutes(
 		panic(err)
 	}
 
-	userRouter, err := userhandlers.NewRoutes(userService, sessionService)
+	userRouter, err := userhandlers.NewRoutes(cfg, userService, sessionService)
 	if err != nil {
 		panic(err)
 	}

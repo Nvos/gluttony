@@ -11,7 +11,6 @@ import (
 	"gluttony/web"
 	"gluttony/web/component"
 	"net/http"
-	"time"
 )
 
 func (r *Routes) LoginViewHandler(c *router.Context) error {
@@ -75,8 +74,7 @@ func (r *Routes) LoginFormHandler(c *router.Context) error {
 
 	c.Response.Header().Add("Vary", "Cookie")
 	c.Response.Header().Add("Cache-Control", `no-cache="Set-Cookie"`)
-	const dayDuration = 24 * time.Hour
-	c.SetCookie(session.ToCookie(time.Now().UTC().Add(dayDuration)))
+	c.SetCookie(session.ToCookie(r.cfg))
 
 	sse := datastar.NewSSE(c.Response, c.Request)
 	if err := sse.Redirect(props.RedirectURL); err != nil {

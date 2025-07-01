@@ -12,7 +12,6 @@ import (
 	"gluttony/web/component"
 	"log/slog"
 	"net/http"
-	"time"
 )
 
 // ImpersonateMiddleware creates a middleware that impersonates a user by
@@ -42,8 +41,7 @@ func ImpersonateMiddleware(
 
 				c.Response.Header().Add("Vary", "Cookie")
 				c.Response.Header().Add("Cache-Control", `no-cache="Set-Cookie"`)
-				const dayDuration = 24 * time.Hour
-				cookie = sess.ToCookie(time.Now().UTC().Add(dayDuration))
+				cookie = sess.ToCookie(nil)
 				c.SetCookie(cookie)
 			}
 
@@ -66,8 +64,7 @@ func ImpersonateMiddleware(
 
 			c.Response.Header().Add("Vary", "Cookie")
 			c.Response.Header().Add("Cache-Control", `no-cache="Set-Cookie"`)
-			const dayDuration = 24 * time.Hour
-			c.SetCookie(ses.ToCookie(time.Now().UTC().Add(dayDuration)))
+			c.SetCookie(ses.ToCookie(nil))
 
 			return next(c)
 		}

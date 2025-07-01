@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"gluttony/internal/config"
 	"net/http"
 	"time"
 )
@@ -41,17 +42,25 @@ func Get[T any](session Session, key Key) (T, bool) {
 	return value, true
 }
 
-func (s Session) ToCookie(expiresAt time.Time) *http.Cookie {
-	return &http.Cookie{
+func (s Session) ToCookie(cfg *config.Config) *http.Cookie {
+	const monthDuration = 30 * 24 * time.Hour // month
+
+	cookie := &http.Cookie{
 		Name:     cookieName,
 		Value:    s.id,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 		Path:     "/",
-		Expires:  expiresAt,
-		// TODO: should be secure in prod
-		// TODO: concrete domain in prod
+		Expires:  time.Now().UTC().Add(monthDuration),
 	}
+
+	if cfg != nil && cfg.Environment == config.EnvProduction {
+		cookie.Secure = true
+		cookie.SameSite = http.SameSiteStrictMode
+		cookie.Domain = cfg.Domain
+	}
+
+	return cookie
 }
 
 func NewInvalidateCookie() *http.Cookie {

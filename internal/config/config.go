@@ -32,6 +32,7 @@ const (
 
 type Config struct {
 	Environment       Environment
+	Domain            string
 	Server            ServerConfig
 	Database          database.Config
 	Log               LogConfig
@@ -123,6 +124,8 @@ func NewConfig(path string) (*Config, error) {
 		cfg.Impersonate = getEnvOrDefault("IMPERSONATE", "")
 	}
 
+	cfg.Domain = getEnvOrDefault("DOMAIN", "")
+
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("validating config: %w", err)
 	}
@@ -210,6 +213,16 @@ func (c *Config) Validate() error {
 
 	if _, err := os.Stat(c.WorkDirectoryPath); err != nil {
 		return fmt.Errorf("work directory does not exist: %s", c.WorkDirectoryPath)
+	}
+
+	if c.Environment == EnvProduction {
+		if c.Domain == "" {
+			return errors.New("domain is required in production mode")
+		}
+		
+		if c.Impersonate != "" {
+			return errors.New("impersonate is not supported in production mode")
+		}
 	}
 
 	return nil
