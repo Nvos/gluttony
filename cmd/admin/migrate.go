@@ -1,4 +1,4 @@
-package commands
+package admin
 
 import (
 	"context"
@@ -6,16 +6,10 @@ import (
 	"gluttony/internal/config"
 	"gluttony/migrations"
 	"gluttony/pkg/database"
-	"os"
 )
 
 func RunMigrations(ctx context.Context) error {
-	wd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("get work dir path: %w", err)
-	}
-
-	cfg, err := config.NewConfig(wd)
+	cfg, err := config.NewConfig()
 	if err != nil {
 		return fmt.Errorf("create config: %w", err)
 	}

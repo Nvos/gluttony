@@ -1,7 +1,7 @@
 node_modules
-./gluttony
+gluttony
 gluttony.exe
 work-directory
 .bin
 .idea
-.env
+*.env

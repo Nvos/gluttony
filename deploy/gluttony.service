@@ -1,0 +1,11 @@
+[Unit]
+Description=Gluttony
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/gluttony
+EnvironmentFile=/etc/gluttony/config.env
+
+[Install]
+WantedBy=multi-user.target

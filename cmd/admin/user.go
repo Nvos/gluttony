@@ -1,4 +1,4 @@
-package commands
+package admin
 
 import (
 	"context"
@@ -8,16 +8,10 @@ import (
 	"gluttony/internal/user/postgres"
 	"gluttony/pkg/database"
 	"gluttony/pkg/password"
-	"os"
 )
 
-func AddAdmin(ctx context.Context, username, pass string) error {
-	wd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("get work dir path: %w", err)
-	}
-
-	cfg, err := config.NewConfig(wd)
+func AddUser(ctx context.Context, username, pass string, role user.Role) error {
+	cfg, err := config.NewConfig()
 	if err != nil {
 		return fmt.Errorf("create config: %w", err)
 	}
@@ -36,7 +30,7 @@ func AddAdmin(ctx context.Context, username, pass string) error {
 	_, err = postgres.NewStore(pool).Create(ctx, user.CreateInput{
 		Username: username,
 		Password: hash,
-		Role:     user.RoleAdmin,
+		Role:     role,
 	})
 	if err != nil {
 		return fmt.Errorf("create admin: %w", err)

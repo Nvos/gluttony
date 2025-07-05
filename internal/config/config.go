@@ -4,13 +4,12 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"gluttony/pkg/database"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"gluttony/pkg/database"
 )
 
 const envPrefix = "GLUTTONY_"
@@ -50,23 +49,7 @@ type LogConfig struct {
 	Path  string
 }
 
-// NewConfig loads configuration from environment variables
-func NewConfig(path string) (*Config, error) {
-	envPath := filepath.Join(path, ".env")
-	env, err := readEnvFile(envPath)
-	if err != nil && !os.IsNotExist(err) {
-		return nil, fmt.Errorf("reading env file: %w", err)
-	}
-
-	// Merge env file values with existing environment variables
-	for k, v := range env {
-		if os.Getenv(k) == "" { // Don't override existing env variables
-			if err := os.Setenv(k, v); err != nil {
-				return nil, fmt.Errorf("set cfg key %s: %w", k, err)
-			}
-		}
-	}
-
+func NewConfig() (*Config, error) {
 	cfg := &Config{}
 
 	// Load environment
@@ -114,7 +97,7 @@ func NewConfig(path string) (*Config, error) {
 	cfg.Database = database.Config{
 		Host:     getEnvOrDefault("DATABASE_HOST", "localhost"),
 		Port:     dbPort,
-		User:     getEnvOrDefault("DATABASE_USER", "postgres"),
+		User:     getEnvOrDefault("DATABASE_USER", ""),
 		Password: getEnvOrDefault("DATABASE_PASSWORD", ""),
 		Name:     getEnvOrDefault("DATABASE_NAME", "gluttony"),
 	}
@@ -133,15 +116,13 @@ func NewConfig(path string) (*Config, error) {
 	return cfg, nil
 }
 
-// readEnvFile reads and parses the .env file, returning a map of key-value pairs
-func readEnvFile(path string) (map[string]string, error) {
+func LoadEnvFile(path string) error {
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer file.Close()
 
-	env := make(map[string]string)
 	scanner := bufio.NewScanner(file)
 	lineNum := 0
 
@@ -157,21 +138,27 @@ func readEnvFile(path string) (map[string]string, error) {
 		// Split on first = only
 		parts := strings.SplitN(line, "=", 2)
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid env file syntax at line %d: %s", lineNum, line)
+			return fmt.Errorf("invalid env file syntax at line %d: %s", lineNum, line)
 		}
 
 		key := strings.TrimSpace(parts[0])
 		value := strings.TrimSpace(parts[1])
 		value = strings.Trim(value, `"'`) // Remove quotes if present
 
-		env[key] = value
+		if os.Getenv(key) != "" {
+			continue
+		}
+
+		if err := os.Setenv(key, value); err != nil {
+			return fmt.Errorf("set cfg key %s: %w", key, err)
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("reading env file: %w", err)
+		return fmt.Errorf("reading env file: %w", err)
 	}
 
-	return env, nil
+	return nil
 }
 
 // getEnvOrDefault gets an environment variable or returns the default value
@@ -183,7 +170,6 @@ func getEnvOrDefault(key, defaultValue string) string {
 	return defaultValue
 }
 
-// Validate checks if the configuration is valid
 func (c *Config) Validate() error {
 	if c.Server.Port < 1 || c.Server.Port > 65535 {
 		return fmt.Errorf("invalid server port: %d", c.Server.Port)
@@ -219,7 +205,7 @@ func (c *Config) Validate() error {
 		if c.Domain == "" {
 			return errors.New("domain is required in production mode")
 		}
-		
+
 		if c.Impersonate != "" {
 			return errors.New("impersonate is not supported in production mode")
 		}

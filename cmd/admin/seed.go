@@ -1,4 +1,4 @@
-package commands
+package admin
 
 import (
 	"context"
@@ -7,16 +7,10 @@ import (
 	"gluttony/pkg/database"
 	"gluttony/seeds"
 	"io/fs"
-	"os"
 )
 
 func RunSeed(ctx context.Context) error {
-	wd, err := os.Getwd()
-	if err != nil {
-		panic(fmt.Sprintf("get work dir path: %v", err))
-	}
-
-	cfg, err := config.NewConfig(wd)
+	cfg, err := config.NewConfig()
 	if err != nil {
 		panic(fmt.Sprintf("create config: %v", err))
 	}

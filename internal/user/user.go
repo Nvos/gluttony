@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"errors"
+	"fmt"
 	"gluttony/pkg/session"
 )
 
@@ -16,6 +17,17 @@ const (
 	RoleAdmin Role = "admin"
 	RoleUser  Role = "user"
 )
+
+func NewRole(s string) (Role, error) {
+	switch s {
+	case string(RoleAdmin):
+		return RoleAdmin, nil
+	case string(RoleUser):
+		return RoleUser, nil
+	default:
+		return "", fmt.Errorf("invalid role = %q, must be one of: %s", s, "admin, user")
+	}
+}
 
 type User struct {
 	ID       int32

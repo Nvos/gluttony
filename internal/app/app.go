@@ -9,7 +9,6 @@ import (
 	"gluttony/internal/service/recipe"
 	"gluttony/internal/service/user"
 	"gluttony/internal/user/postgres"
-	"gluttony/migrations"
 	"gluttony/pkg/database"
 	"gluttony/pkg/image"
 	"gluttony/pkg/log"
@@ -45,10 +44,6 @@ func New(cfg *config.Config) (*App, error) {
 	db, err := database.New(context.Background(), cfg.Database)
 	if err != nil {
 		return nil, fmt.Errorf("create database: %w", err)
-	}
-
-	if err := database.Migrate(db, migrations.Migrations); err != nil {
-		return nil, fmt.Errorf("migrate database: %w", err)
 	}
 
 	rootDir, err := os.OpenRoot(cfg.WorkDirectoryPath)
