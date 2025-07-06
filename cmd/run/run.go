@@ -11,12 +11,7 @@ import (
 	"syscall"
 )
 
-func Run(rootCtx context.Context) error {
-	cfg, err := config.NewConfig()
-	if err != nil {
-		return fmt.Errorf("create config: %w", err)
-	}
-
+func Run(rootCtx context.Context, cfg *config.Config) error {
 	ctx, cancel := signal.NotifyContext(rootCtx,
 		os.Interrupt,
 		syscall.SIGINT,

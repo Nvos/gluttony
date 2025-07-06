@@ -15,7 +15,7 @@ func NewDev(level slog.Level) *slog.Logger {
 }
 
 func NewProd(level slog.Level, filePath string) (*slog.Logger, error) {
-	file, err := os.Open(filePath)
+	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		return nil, fmt.Errorf("open log file, path='%s': %w", filePath, err)
 	}

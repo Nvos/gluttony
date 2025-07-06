@@ -21,7 +21,7 @@ type Config struct {
 func (c *Config) ConnectionURL() string {
 	u := &url.URL{
 		Scheme: "postgres",
-		Host:   c.Host,
+		Host:   fmt.Sprintf("%s:%d", c.Host, c.Port),
 		Path:   c.Name,
 	}
 

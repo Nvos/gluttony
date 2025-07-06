@@ -8,12 +8,7 @@ import (
 	"gluttony/pkg/database"
 )
 
-func RunMigrations(ctx context.Context) error {
-	cfg, err := config.NewConfig()
-	if err != nil {
-		return fmt.Errorf("create config: %w", err)
-	}
-
+func RunMigrations(ctx context.Context, cfg *config.Config) error {
 	pool, err := database.New(ctx, cfg.Database)
 	if err != nil {
 		return fmt.Errorf("create db: %w", err)

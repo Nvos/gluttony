@@ -10,12 +10,7 @@ import (
 	"gluttony/pkg/password"
 )
 
-func AddUser(ctx context.Context, username, pass string, role user.Role) error {
-	cfg, err := config.NewConfig()
-	if err != nil {
-		return fmt.Errorf("create config: %w", err)
-	}
-
+func AddUser(ctx context.Context, cfg *config.Config, username, pass string, role user.Role) error {
 	pool, err := database.New(ctx, cfg.Database)
 	if err != nil {
 		return fmt.Errorf("create db: %w", err)

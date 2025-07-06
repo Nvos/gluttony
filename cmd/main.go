@@ -24,8 +24,13 @@ func main() {
 		}
 	}
 
-	args := flag.Args()
+	cfg, err := config.NewConfig()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Parse config: %v\n", err)
+		os.Exit(1)
+	}
 
+	args := flag.Args()
 	if len(args) < 1 {
 		printUsage()
 		os.Exit(1)
@@ -36,14 +41,14 @@ func main() {
 
 	switch command {
 	case "migrate":
-		if err := admin.RunMigrations(ctx); err != nil {
+		if err := admin.RunMigrations(ctx, cfg); err != nil {
 			fmt.Fprintf(os.Stderr, "Migration failed: %v\n", err)
 			os.Exit(1)
 		}
 		fmt.Println("Migrations completed successfully")
 
 	case "seed":
-		if err := admin.RunSeed(ctx); err != nil {
+		if err := admin.RunSeed(ctx, cfg); err != nil {
 			fmt.Fprintf(os.Stderr, "Seeding failed: %v\n", err)
 			os.Exit(1)
 		}
@@ -55,9 +60,9 @@ func main() {
 			printUserUsage()
 			os.Exit(1)
 		}
-		handleUserCommand(ctx, args[2:])
+		handleUserCommand(ctx, cfg, args[1:])
 	case "run":
-		if err := run.Run(ctx); err != nil {
+		if err := run.Run(ctx, cfg); err != nil {
 			fmt.Fprintf(os.Stderr, "Run failed: %v\n", err)
 			os.Exit(1)
 		}
@@ -69,7 +74,7 @@ func main() {
 	}
 }
 
-func handleUserCommand(ctx context.Context, args []string) {
+func handleUserCommand(ctx context.Context, cfg *config.Config, args []string) {
 	if len(args) == 0 {
 		printUserUsage()
 		os.Exit(1)
@@ -93,11 +98,12 @@ func handleUserCommand(ctx context.Context, args []string) {
 			os.Exit(1)
 		}
 
-		if err := admin.AddUser(ctx, username, password, role); err != nil {
+		if err := admin.AddUser(ctx, cfg, username, password, role); err != nil {
 			fmt.Fprintf(os.Stderr, "Adding user failed: %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("User created successfully with role: %s\n", role)
+
+		fmt.Println("User created successfully")
 
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown user subcommand: %s\n", subcommand)

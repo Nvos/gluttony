@@ -9,12 +9,7 @@ import (
 	"io/fs"
 )
 
-func RunSeed(ctx context.Context) error {
-	cfg, err := config.NewConfig()
-	if err != nil {
-		panic(fmt.Sprintf("create config: %v", err))
-	}
-
+func RunSeed(ctx context.Context, cfg *config.Config) error {
 	pool, err := database.New(ctx, cfg.Database)
 	if err != nil {
 		panic(fmt.Sprintf("create db: %v", err))
