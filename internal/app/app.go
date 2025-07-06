@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gluttony/internal/config"
 	"gluttony/internal/handlers"
+	"gluttony/internal/i18n"
 	"gluttony/internal/recipe/bleve"
 	"gluttony/internal/service/recipe"
 	"gluttony/internal/service/user"
@@ -82,9 +83,10 @@ func New(cfg *config.Config) (*App, error) {
 	}
 
 	mux := router.NewRouter()
-
+	i18nManager := i18n.NewI18n()
 	middlewares := []router.Middleware{
 		handlers.ErrorMiddleware(logger),
+		handlers.I18nMiddleware(i18nManager),
 		handlers.AuthenticationMiddleware(sessionService),
 	}
 	if cfg.Environment == config.EnvDevelopment && cfg.Impersonate != "" {

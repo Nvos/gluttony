@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"gluttony/internal/i18n"
 	usersvc "gluttony/internal/service/user"
 	"gluttony/internal/user"
 	"gluttony/pkg/router"
@@ -122,7 +123,6 @@ func ErrorMiddleware(logger *slog.Logger) router.Middleware {
 					)
 				}
 
-
 				switch httpErr.Code {
 				case http.StatusNotFound, http.StatusBadRequest:
 					return c.TemplComponent(http.StatusNotFound, component.View404(webCtx))
@@ -164,6 +164,19 @@ func AuthorizationMiddleware(role user.Role) router.Middleware {
 
 				return nil
 			}
+
+			return next(c)
+		}
+	}
+}
+
+func I18nMiddleware(manager *i18n.I18n) router.Middleware {
+	return func(next router.HandlerFunc) router.HandlerFunc {
+		return func(c *router.Context) error {
+			// TODO: Add user setting table containing language (default should be en)
+			nextCtx := i18n.WithI18nBundle(c.Context(), manager.Bundles["en"])
+			nextRequest := c.Request.WithContext(nextCtx)
+			c.Request = nextRequest
 
 			return next(c)
 		}
