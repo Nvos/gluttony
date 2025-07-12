@@ -17,8 +17,8 @@ func (app *App) Run(ctx context.Context, group *errgroup.Group) error {
 	app.logger.InfoContext(
 		ctx,
 		"Configuration",
-		slog.String("mode", string(app.cfg.Environment)),
-		slog.String("rootDir", app.cfg.WorkDirectoryPath),
+		slog.String("mode", string(app.cfg.Mode)),
+		slog.String("rootDir", app.cfg.WorkDir),
 	)
 
 	group.Go(func() error {
@@ -49,7 +49,7 @@ func (app *App) Run(ctx context.Context, group *errgroup.Group) error {
 
 func (app *App) stop() error {
 	shutdownTimeout := defaultHttpServerTimeout
-	if app.cfg.Environment == config.EnvDevelopment {
+	if app.cfg.Mode == config.ModeDev {
 		shutdownTimeout = 0
 	}
 	shutdownCtx, cancelFn := context.WithTimeout(context.Background(), shutdownTimeout)

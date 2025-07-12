@@ -9,6 +9,8 @@
 1. Copy `gluttony.service` to `/lib/systemd/system/gluttony.service`
 2. Copy `gluttony` binary to `/usr/bin/gluttony`
 3. Create configuration env in `/etc/gluttony/config.env`
+4. Create `postgres-password` file containing password for postgres database in
+   `/etc/credstore` directory
 
 # Caddy
 

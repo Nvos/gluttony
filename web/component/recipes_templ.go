@@ -10,7 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "gluttony/web"
 
-import "gluttony/pkg/pagination"
+import "gluttony/x/pagination"
 import "strconv"
 import "gluttony/internal/recipe"
 import "fmt"

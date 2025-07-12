@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"gluttony/internal/user"
-	"gluttony/pkg/password"
-	"gluttony/pkg/session"
+	"gluttony/x/password"
+	"gluttony/x/session"
 )
 
 type Service struct {

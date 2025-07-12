@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"gluttony/internal/handlers"
 	"gluttony/internal/recipe"
-	"gluttony/pkg/pagination"
-	"gluttony/pkg/router"
 	"gluttony/web"
 	"gluttony/web/component"
+	"gluttony/x/httpx"
+	"gluttony/x/pagination"
 	"net/http"
 	"strconv"
 )
@@ -18,12 +18,12 @@ type RecipesQueryParams struct {
 	Page  int32
 }
 
-func (r *Routes) RecipesHandler(c *router.Context) error {
+func (r *Routes) RecipesHandler(c *httpx.Context) error {
 	params, err := readRecipesURLParams(c.Request)
 	if err != nil {
-		return router.NewHTTPError(
+		return httpx.NewHTTPError(
 			http.StatusBadRequest,
-			router.WithError(err),
+			httpx.WithError(err),
 		)
 	}
 
@@ -38,7 +38,7 @@ func (r *Routes) RecipesHandler(c *router.Context) error {
 
 	paginator := pagination.New(params.Page, summariesPage.TotalCount)
 	if params.Page > paginator.TotalCount {
-		return router.NewHTTPError(http.StatusNotFound)
+		return httpx.NewHTTPError(http.StatusNotFound)
 	}
 
 	webCtx := web.NewContext(c.Request, handlers.GetDoer(c), "en")

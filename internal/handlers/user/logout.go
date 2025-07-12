@@ -1,12 +1,12 @@
 package user
 
 import (
-	"gluttony/pkg/router"
-	"gluttony/pkg/session"
+	"gluttony/x/httpx"
+	"gluttony/x/session"
 	"net/http"
 )
 
-func (r *Routes) LogoutHandler(c *router.Context) error {
+func (r *Routes) LogoutHandler(c *httpx.Context) error {
 	c.SetCookie(session.NewInvalidateCookie())
 	c.Redirect("/", http.StatusFound)
 

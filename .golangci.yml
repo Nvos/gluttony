@@ -61,7 +61,7 @@ linters:
         - "^os/exec.Cmd$"
         - "^reflect.StructField$"
         - "github.com/jackc/pgx/v5.TxOptions$"
-        - "github.com/urfave/cli/v2.App$"
+        - "github.com/alecthomas/kong.HelpOptions$"
 
     funlen:
       # Checks the number of lines in a function.

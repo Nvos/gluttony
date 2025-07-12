@@ -1,0 +1,17 @@
+mode="dev"
+work-dir="./workdir"
+impersonate=""
+
+[database]
+host="localhost"
+port=5432
+name="gluttony"
+user="postgres"
+
+[logger]
+level="debug"
+path="./gluttony.log"
+
+[http]
+host="127.0.0.1"
+port=8333

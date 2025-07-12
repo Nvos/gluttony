@@ -6,13 +6,13 @@ import (
 	"gluttony/internal/handlers"
 	"gluttony/internal/ingredient"
 	"gluttony/internal/recipe"
-	"gluttony/pkg/router"
 	"gluttony/web"
 	"gluttony/web/component"
+	"gluttony/x/httpx"
 	"net/http"
 )
 
-func (r *Routes) CreateViewHandler(c *router.Context) error {
+func (r *Routes) CreateViewHandler(c *httpx.Context) error {
 	form := recipe.Form{
 		ID:              0,
 		Name:            "",
@@ -51,7 +51,7 @@ func (r *Routes) CreateViewHandler(c *router.Context) error {
 	)
 }
 
-func (r *Routes) CreateFormHandler(c *router.Context) error {
+func (r *Routes) CreateFormHandler(c *httpx.Context) error {
 	if err := c.FormParse(); err != nil {
 		return c.Error(http.StatusBadRequest, err)
 	}

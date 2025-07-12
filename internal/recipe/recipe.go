@@ -5,7 +5,7 @@ import (
 	"errors"
 	"github.com/jackc/pgx/v5"
 	"gluttony/internal/ingredient"
-	"gluttony/pkg/pagination"
+	"gluttony/x/pagination"
 	"mime/multipart"
 	"time"
 )

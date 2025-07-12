@@ -11,7 +11,7 @@ import (
 	"syscall"
 )
 
-func Run(rootCtx context.Context, cfg *config.Config) error {
+func Run(rootCtx context.Context, cfg *config.Config, sec *config.Secret) error {
 	ctx, cancel := signal.NotifyContext(rootCtx,
 		os.Interrupt,
 		syscall.SIGINT,
@@ -21,7 +21,7 @@ func Run(rootCtx context.Context, cfg *config.Config) error {
 
 	group, groupCtx := errgroup.WithContext(ctx)
 
-	a, err := app.New(cfg)
+	a, err := app.New(cfg, sec)
 	if err != nil {
 		return fmt.Errorf("create new app: %w", err)
 	}

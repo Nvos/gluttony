@@ -5,7 +5,7 @@ import (
 	"gluttony/internal/handlers"
 	"gluttony/internal/service/recipe"
 	"gluttony/internal/user"
-	"gluttony/pkg/router"
+	"gluttony/x/httpx"
 )
 
 type Routes struct {
@@ -22,8 +22,8 @@ func NewRoutes(service *recipe.Service) (*Routes, error) {
 	}, nil
 }
 
-func (r *Routes) Mount(mux *router.Router) {
-	middlewares := []router.Middleware{
+func (r *Routes) Mount(mux *httpx.Router) {
+	middlewares := []httpx.Middleware{
 		handlers.AuthorizationMiddleware(user.RoleUser),
 	}
 

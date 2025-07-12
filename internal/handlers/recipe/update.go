@@ -5,9 +5,9 @@ import (
 	datastar "github.com/starfederation/datastar/sdk/go"
 	"gluttony/internal/handlers"
 	"gluttony/internal/recipe"
-	"gluttony/pkg/router"
 	"gluttony/web"
 	"gluttony/web/component"
+	"gluttony/x/httpx"
 	"net/http"
 	"strconv"
 )
@@ -17,7 +17,7 @@ const (
 	updateForm = "recipe/form"
 )
 
-func (r *Routes) UpdateViewHandler(c *router.Context) error {
+func (r *Routes) UpdateViewHandler(c *httpx.Context) error {
 	recipeIDPathParam := c.Request.PathValue("recipe_id")
 	recipeID, err := strconv.ParseInt(recipeIDPathParam, 10, 32)
 	if err != nil {
@@ -56,7 +56,7 @@ func (r *Routes) UpdateViewHandler(c *router.Context) error {
 	)
 }
 
-func (r *Routes) UpdateFormHandler(c *router.Context) error {
+func (r *Routes) UpdateFormHandler(c *httpx.Context) error {
 	if err := c.FormParse(); err != nil {
 		return c.Error(http.StatusBadRequest, err)
 	}

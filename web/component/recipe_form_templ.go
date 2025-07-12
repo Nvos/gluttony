@@ -11,7 +11,7 @@ import templruntime "github.com/a-h/templ/runtime"
 import "gluttony/internal/recipe"
 import "strconv"
 import "fmt"
-import "gluttony/pkg/timeutil"
+import "gluttony/x/timeutil"
 
 func FormRecipe(thumbnailURL string, form recipe.Form) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {

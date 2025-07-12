@@ -7,14 +7,14 @@ import (
 	userhandlers "gluttony/internal/handlers/user"
 	"gluttony/internal/service/recipe"
 	"gluttony/internal/service/user"
-	"gluttony/pkg/router"
-	"gluttony/pkg/session"
+	"gluttony/x/httpx"
+	"gluttony/x/session"
 	"io/fs"
 	"net/http"
 )
 
 func MountWebRoutes(
-	mux *router.Router,
+	mux *httpx.Router,
 	cfg *config.Config,
 	sessionService *session.Service,
 	userService *user.Service,
@@ -30,7 +30,7 @@ func MountWebRoutes(
 		panic(err)
 	}
 
-	mux.Get("/", func(c *router.Context) error {
+	mux.Get("/", func(c *httpx.Context) error {
 		c.Redirect("/recipes", http.StatusFound)
 
 		return nil
@@ -41,12 +41,12 @@ func MountWebRoutes(
 }
 
 func MountRoutes(
-	mux *router.Router,
-	mode config.Environment,
+	mux *httpx.Router,
+	mode config.Mode,
 	assetsFS fs.FS,
 	mediaFS fs.FS,
 ) {
-	isCacheEnabled := mode == config.EnvProduction
+	isCacheEnabled := mode == config.ModeProd
 	mux.Get("/assets/{pathname...}", handlers.AssetHandler(assetsFS, isCacheEnabled))
 	mux.Get("/media/{pathname...}", handlers.MediaHandler(mediaFS))
 }

@@ -1,4 +1,4 @@
-package database
+package sqlx
 
 import (
 	"context"
@@ -10,23 +10,26 @@ import (
 	"net/url"
 )
 
-type Config struct {
-	Name     string
-	User     string
-	Host     string
-	Port     int
+type Secret struct {
 	Password string
 }
 
-func (c *Config) ConnectionURL() string {
+type Config struct {
+	Name string
+	User string
+	Host string
+	Port int
+}
+
+func NewConnectionURL(cfg Config, sec Secret) string {
 	u := &url.URL{
 		Scheme: "postgres",
-		Host:   fmt.Sprintf("%s:%d", c.Host, c.Port),
-		Path:   c.Name,
+		Host:   fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+		Path:   cfg.Name,
 	}
 
-	if c.User != "" || c.Password != "" {
-		u.User = url.UserPassword(c.User, c.Password)
+	if cfg.User != "" || sec.Password != "" {
+		u.User = url.UserPassword(cfg.User, sec.Password)
 	}
 
 	q := u.Query()
@@ -37,8 +40,8 @@ func (c *Config) ConnectionURL() string {
 	return u.String()
 }
 
-func New(ctx context.Context, cfg Config) (*pgxpool.Pool, error) {
-	pool, err := pgxpool.New(ctx, cfg.ConnectionURL())
+func New(ctx context.Context, cfg Config, sec Secret) (*pgxpool.Pool, error) {
+	pool, err := pgxpool.New(ctx, NewConnectionURL(cfg, sec))
 	if err != nil {
 		return nil, fmt.Errorf("new db: %w", err)
 	}

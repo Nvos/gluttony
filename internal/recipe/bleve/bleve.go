@@ -6,7 +6,7 @@ import (
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/search/query"
 	"gluttony/internal/recipe"
-	"gluttony/pkg/pagination"
+	"gluttony/x/pagination"
 	"os"
 	"path/filepath"
 	"strconv"

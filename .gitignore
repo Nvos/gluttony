@@ -4,4 +4,5 @@ gluttony.exe
 work-directory
 .bin
 .idea
-*.env
+secrets
+config.toml

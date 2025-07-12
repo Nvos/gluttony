@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/gluttony
-EnvironmentFile=/etc/gluttony/config.env
+ExecStart=/usr/bin/gluttony run --config /etc/gluttony/config.toml
+LoadCredential=postgres-password
 
 [Install]
 WantedBy=multi-user.target

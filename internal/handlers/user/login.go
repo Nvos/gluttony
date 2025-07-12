@@ -7,13 +7,13 @@ import (
 	datastar "github.com/starfederation/datastar/sdk/go"
 	"gluttony/internal/handlers"
 	"gluttony/internal/user"
-	"gluttony/pkg/router"
 	"gluttony/web"
 	"gluttony/web/component"
+	"gluttony/x/httpx"
 	"net/http"
 )
 
-func (r *Routes) LoginViewHandler(c *router.Context) error {
+func (r *Routes) LoginViewHandler(c *httpx.Context) error {
 	redirectURL := "/recipes"
 	next := c.Request.URL.Query().Get("next")
 	if next != "" {
@@ -33,7 +33,7 @@ func (r *Routes) LoginViewHandler(c *router.Context) error {
 	return c.TemplComponent(http.StatusOK, component.ViewLogin(webCtx, formProps))
 }
 
-func (r *Routes) LoginFormHandler(c *router.Context) error {
+func (r *Routes) LoginFormHandler(c *httpx.Context) error {
 	var props component.LoginFormProps
 	if err := json.NewDecoder(c.Request.Body).Decode(&props); err != nil {
 		return c.Error(http.StatusBadRequest, err)

@@ -3,8 +3,8 @@ package user
 import (
 	"gluttony/internal/config"
 	"gluttony/internal/service/user"
-	"gluttony/pkg/router"
-	"gluttony/pkg/session"
+	"gluttony/x/httpx"
+	"gluttony/x/session"
 )
 
 type Routes struct {
@@ -25,7 +25,7 @@ func NewRoutes(
 	}, nil
 }
 
-func (r *Routes) Mount(router *router.Router) {
+func (r *Routes) Mount(router *httpx.Router) {
 	router.Get("/login", r.LoginViewHandler)
 	router.Post("/login", r.LoginFormHandler)
 	router.Get("/logout", r.LogoutHandler)

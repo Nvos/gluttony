@@ -54,7 +54,7 @@ func (s Session) ToCookie(cfg *config.Config) *http.Cookie {
 		Expires:  time.Now().UTC().Add(monthDuration),
 	}
 
-	if cfg != nil && cfg.Environment == config.EnvProduction {
+	if cfg != nil && cfg.Mode == config.ModeProd {
 		cookie.Secure = true
 		cookie.SameSite = http.SameSiteStrictMode
 		cookie.Domain = cfg.Domain

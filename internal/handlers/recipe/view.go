@@ -2,14 +2,14 @@ package recipe
 
 import (
 	"gluttony/internal/handlers"
-	"gluttony/pkg/router"
 	"gluttony/web"
 	"gluttony/web/component"
+	"gluttony/x/httpx"
 	"net/http"
 	"strconv"
 )
 
-func (r *Routes) DetailsViewHandler(c *router.Context) error {
+func (r *Routes) DetailsViewHandler(c *httpx.Context) error {
 	recipeIDRaw := c.Request.PathValue("recipe_id")
 	recipeID, err := strconv.ParseInt(recipeIDRaw, 10, 32)
 	if err != nil {

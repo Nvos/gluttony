@@ -7,10 +7,10 @@ import (
 	"gluttony/internal/i18n"
 	usersvc "gluttony/internal/service/user"
 	"gluttony/internal/user"
-	"gluttony/pkg/router"
-	"gluttony/pkg/session"
 	"gluttony/web"
 	"gluttony/web/component"
+	"gluttony/x/httpx"
+	"gluttony/x/session"
 	"log/slog"
 	"net/http"
 )
@@ -22,14 +22,14 @@ func ImpersonateMiddleware(
 	impersonate string,
 	userService *usersvc.Service,
 	sessionService *session.Service,
-) router.Middleware {
+) httpx.Middleware {
 	u, err := userService.GetByUsername(context.Background(), impersonate)
 	if err != nil {
 		panic(err)
 	}
 
-	return func(next router.HandlerFunc) router.HandlerFunc {
-		return func(c *router.Context) error {
+	return func(next httpx.HandlerFunc) httpx.HandlerFunc {
+		return func(c *httpx.Context) error {
 			var cookie *http.Cookie
 			cookie, err = c.Request.Cookie("GluttonySession")
 			if err != nil {
@@ -72,9 +72,9 @@ func ImpersonateMiddleware(
 	}
 }
 
-func AuthenticationMiddleware(sessionService *session.Service) router.Middleware {
-	return func(next router.HandlerFunc) router.HandlerFunc {
-		return func(c *router.Context) error {
+func AuthenticationMiddleware(sessionService *session.Service) httpx.Middleware {
+	return func(next httpx.HandlerFunc) httpx.HandlerFunc {
+		return func(c *httpx.Context) error {
 			cookie, err := c.Request.Cookie("GluttonySession")
 			if err != nil {
 				return next(c)
@@ -103,15 +103,15 @@ func AuthenticationMiddleware(sessionService *session.Service) router.Middleware
 	}
 }
 
-func ErrorMiddleware(logger *slog.Logger) router.Middleware {
-	return func(next router.HandlerFunc) router.HandlerFunc {
-		return func(c *router.Context) error {
+func ErrorMiddleware(logger *slog.Logger) httpx.Middleware {
+	return func(next httpx.HandlerFunc) httpx.HandlerFunc {
+		return func(c *httpx.Context) error {
 			err := next(c)
 			if err == nil {
 				return nil
 			}
 
-			var httpErr *router.HTTPError
+			var httpErr *httpx.HTTPError
 			webCtx := web.NewContext(c.Request, GetDoer(c), "en")
 
 			if errors.As(err, &httpErr) {
@@ -142,9 +142,9 @@ func ErrorMiddleware(logger *slog.Logger) router.Middleware {
 	}
 }
 
-func AuthorizationMiddleware(role user.Role) router.Middleware {
-	return func(next router.HandlerFunc) router.HandlerFunc {
-		return func(c *router.Context) error {
+func AuthorizationMiddleware(role user.Role) httpx.Middleware {
+	return func(next httpx.HandlerFunc) httpx.HandlerFunc {
+		return func(c *httpx.Context) error {
 			doer := GetDoer(c)
 			if doer == nil {
 				url := "/login?next=" + c.Request.URL.Path
@@ -170,9 +170,9 @@ func AuthorizationMiddleware(role user.Role) router.Middleware {
 	}
 }
 
-func I18nMiddleware(manager *i18n.I18n) router.Middleware {
-	return func(next router.HandlerFunc) router.HandlerFunc {
-		return func(c *router.Context) error {
+func I18nMiddleware(manager *i18n.I18n) httpx.Middleware {
+	return func(next httpx.HandlerFunc) httpx.HandlerFunc {
+		return func(c *httpx.Context) error {
 			// TODO: Add user setting table containing language (default should be en)
 			nextCtx := i18n.WithI18nBundle(c.Context(), manager.Bundles["en"])
 			nextRequest := c.Request.WithContext(nextCtx)

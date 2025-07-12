@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gluttony/pkg/session"
+	"gluttony/x/session"
 )
 
 var ErrInvalidCredentials = errors.New("invalid credentials")

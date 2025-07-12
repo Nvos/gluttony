@@ -1,134 +1,121 @@
 package main
 
 import (
-	"flag"
+	"context"
 	"fmt"
+	"github.com/alecthomas/kong"
 	"gluttony/cmd/admin"
 	"gluttony/cmd/run"
 	"gluttony/internal/config"
 	"gluttony/internal/user"
-	"golang.org/x/net/context"
-	"os"
 )
 
-func main() {
-	// Parse global flags
-	var envFile string
-	flag.StringVar(&envFile, "env-file", "", "Path to environment file")
-	flag.Parse()
+type Admin struct {
+	Migrate    AdminMigrateCommand    `cmd:"" help:"Run database migrations."`
+	Seed       AdminSeedCommand       `cmd:"" help:"Seed database with sample data."`
+	CreateUser AdminCreateUserCommand `cmd:"" help:"Create user."`
+}
 
-	if envFile != "" {
-		if err := config.LoadEnvFile(envFile); err != nil {
-			fmt.Fprintf(os.Stderr, "Load env file=%q: %v\n", envFile, err)
-			os.Exit(1)
-		}
+type Globals struct {
+	Config string `help:"Path to config file." default:"config.toml" short:"c"`
+
+	cfg *config.Config `kong:"-"`
+	sec *config.Secret `kong:"-"`
+}
+
+type CLI struct {
+	Globals
+
+	Admin Admin      `cmd:"" help:"Admin commands."`
+	Run   RunCommand `cmd:"" help:"Run Gluttony application."`
+}
+
+type RunCommand struct {
+}
+
+type AdminCreateUserCommand struct {
+	Username string `arg:"" help:"User username."`
+	Password string `arg:"" help:"User password."`
+	Role     string `arg:"" help:"User role." enum:"admin,user" default:"user"`
+}
+
+type AdminMigrateCommand struct {
+}
+
+type AdminSeedCommand struct {
+}
+
+func (c *AdminMigrateCommand) Run(cli *CLI) error {
+	if err := admin.RunMigrations(context.Background(), cli.cfg, cli.sec); err != nil {
+		return fmt.Errorf("run migrations: %w", err)
 	}
 
-	cfg, err := config.NewConfig()
+	return nil
+}
+
+func (c *AdminSeedCommand) Run(cli *CLI) error {
+	if err := admin.RunSeed(context.Background(), cli.cfg, cli.sec); err != nil {
+		return fmt.Errorf("run seed: %w", err)
+	}
+
+	return nil
+}
+
+func (c *AdminCreateUserCommand) Run(cli *CLI) error {
+	role, err := user.NewRole(cli.Admin.CreateUser.Role)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Parse config: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("parse role: %w", err)
 	}
 
-	args := flag.Args()
-	if len(args) < 1 {
-		printUsage()
-		os.Exit(1)
+	err = admin.AddUser(
+		context.Background(),
+		cli.cfg,
+		cli.sec,
+		cli.Admin.CreateUser.Username,
+		cli.Admin.CreateUser.Password,
+		role,
+	)
+	if err != nil {
+		return fmt.Errorf("create user: %w", err)
 	}
 
-	ctx := context.Background()
-	command := args[0]
-
-	switch command {
-	case "migrate":
-		if err := admin.RunMigrations(ctx, cfg); err != nil {
-			fmt.Fprintf(os.Stderr, "Migration failed: %v\n", err)
-			os.Exit(1)
-		}
-		fmt.Println("Migrations completed successfully")
-
-	case "seed":
-		if err := admin.RunSeed(ctx, cfg); err != nil {
-			fmt.Fprintf(os.Stderr, "Seeding failed: %v\n", err)
-			os.Exit(1)
-		}
-		fmt.Println("Database seeded successfully")
-
-	case "user":
-		if len(args) < 3 {
-			fmt.Fprintf(os.Stderr, "Usage: %s user <subcommand>\n", args[0])
-			printUserUsage()
-			os.Exit(1)
-		}
-		handleUserCommand(ctx, cfg, args[1:])
-	case "run":
-		if err := run.Run(ctx, cfg); err != nil {
-			fmt.Fprintf(os.Stderr, "Run failed: %v\n", err)
-			os.Exit(1)
-		}
-
-	default:
-		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", command)
-		printUsage()
-		os.Exit(1)
-	}
+	return nil
 }
 
-func handleUserCommand(ctx context.Context, cfg *config.Config, args []string) {
-	if len(args) == 0 {
-		printUserUsage()
-		os.Exit(1)
+func (c *RunCommand) Run(cli *CLI) error {
+	if err := run.Run(context.Background(), cli.cfg, cli.sec); err != nil {
+		return fmt.Errorf("run: %w", err)
 	}
 
-	subcommand := args[0]
-
-	switch subcommand {
-	case "add":
-		if len(args) < 4 {
-			fmt.Fprintf(os.Stderr, "Usage: %s user add <role> <username> <password>\n", args[0])
-			fmt.Fprintf(os.Stderr, "Roles: admin, user\n")
-			os.Exit(1)
-		}
-		rawRole := args[1]
-		username := args[2]
-		password := args[3]
-		role, err := user.NewRole(rawRole)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Parse role: %v\n", err)
-			os.Exit(1)
-		}
-
-		if err := admin.AddUser(ctx, cfg, username, password, role); err != nil {
-			fmt.Fprintf(os.Stderr, "Adding user failed: %v\n", err)
-			os.Exit(1)
-		}
-
-		fmt.Println("User created successfully")
-
-	default:
-		fmt.Fprintf(os.Stderr, "Unknown user subcommand: %s\n", subcommand)
-		printUserUsage()
-		os.Exit(1)
-	}
+	return nil
 }
 
-func printUsage() {
-	fmt.Print(`Usage: cli [--env-file=<path>] <command>
+func main() {
+	//nolint:exhaustruct // zero values are fine, no need to fill anything
+	cli := CLI{}
 
-Global flags:
-  --env-file=<path>        Load environment variables from file (optional)
+	ctx := kong.Parse(
+		&cli,
+		kong.Name("gluttony"),
+		kong.ConfigureHelp(kong.HelpOptions{Compact: true}),
+		kong.WithAfterApply(func(ctx *kong.Context) error {
+			cfg, err := config.NewConfig(cli.Config)
+			if err != nil {
+				return fmt.Errorf("parse config: %w", err)
+			}
 
-Commands:
-  migrate                  Run database migrations
-  seed                     Seed database with sample data
-  user                     User management commands
-  run                      Start Gluttony service
-`)
-}
+			sec, err := config.NewSecret()
+			if err != nil {
+				return fmt.Errorf("parse secret: %w", err)
+			}
 
-func printUserUsage() {
-	fmt.Print(`User commands:
-  add <role> <username> <password>  Create user with specified role
-    Roles: admin, user
-`)
+			cli.cfg = cfg
+			cli.sec = sec
+
+			return nil
+		}),
+	)
+
+	err := ctx.Run()
+	ctx.FatalIfErrorf(err)
 }

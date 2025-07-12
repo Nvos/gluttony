@@ -10,11 +10,11 @@ import (
 	"gluttony/internal/service/recipe"
 	"gluttony/internal/service/user"
 	"gluttony/internal/user/postgres"
-	"gluttony/pkg/database"
-	"gluttony/pkg/image"
-	"gluttony/pkg/log"
-	"gluttony/pkg/router"
-	"gluttony/pkg/session"
+	"gluttony/x/httpx"
+	"gluttony/x/image"
+	"gluttony/x/log"
+	"gluttony/x/session"
+	"gluttony/x/sqlx"
 	"log/slog"
 	"net/http"
 	"os"
@@ -32,27 +32,27 @@ type App struct {
 	httpServer *http.Server
 }
 
-func New(cfg *config.Config) (*App, error) {
-	logger, err := NewLogger(cfg.Environment, cfg.Log.Level, cfg.Log.Path)
+func New(cfg *config.Config, sec *config.Secret) (*App, error) {
+	logger, err := NewLogger(cfg.Mode, cfg.Logger.Level, cfg.Logger.Path)
 	if err != nil {
 		return nil, fmt.Errorf("create logger: %w", err)
 	}
 
-	if err := os.MkdirAll(cfg.WorkDirectoryPath, 0750); err != nil {
+	if err := os.MkdirAll(cfg.WorkDir, 0750); err != nil {
 		return nil, fmt.Errorf("create root working directory: %w", err)
 	}
 
-	db, err := database.New(context.Background(), cfg.Database)
+	db, err := sqlx.New(context.Background(), cfg.Database, sec.Database)
 	if err != nil {
 		return nil, fmt.Errorf("create database: %w", err)
 	}
 
-	rootDir, err := os.OpenRoot(cfg.WorkDirectoryPath)
+	rootDir, err := os.OpenRoot(cfg.WorkDir)
 	if err != nil {
 		return nil, fmt.Errorf("open root directory: %w", err)
 	}
 
-	if err := os.MkdirAll(filepath.Join(cfg.WorkDirectoryPath, "media"), 0750); err != nil {
+	if err := os.MkdirAll(filepath.Join(cfg.WorkDir, "media"), 0750); err != nil {
 		return nil, fmt.Errorf("create media directory: %w", err)
 	}
 
@@ -61,7 +61,7 @@ func New(cfg *config.Config) (*App, error) {
 		return nil, fmt.Errorf("open media directory: %w", err)
 	}
 
-	assetsFS, err := GetAssets(cfg.Environment)
+	assetsFS, err := GetAssets(cfg.Mode)
 	if err != nil {
 		return nil, fmt.Errorf("get assets: %w", err)
 	}
@@ -72,7 +72,7 @@ func New(cfg *config.Config) (*App, error) {
 
 	userService := user.NewService(userStore, sessionService)
 	mediaService := image.NewService(mediaDir)
-	recipeSearchIndex, err := bleve.New(cfg.WorkDirectoryPath)
+	recipeSearchIndex, err := bleve.New(cfg.WorkDir)
 	if err != nil {
 		return nil, fmt.Errorf("create recipe search index: %w", err)
 	}
@@ -82,24 +82,24 @@ func New(cfg *config.Config) (*App, error) {
 		return nil, fmt.Errorf("create recipe service: %w", err)
 	}
 
-	mux := router.NewRouter()
+	mux := httpx.NewRouter()
 	i18nManager := i18n.NewI18n()
-	middlewares := []router.Middleware{
+	middlewares := []httpx.Middleware{
 		handlers.ErrorMiddleware(logger),
 		handlers.I18nMiddleware(i18nManager),
 		handlers.AuthenticationMiddleware(sessionService),
 	}
-	if cfg.Environment == config.EnvDevelopment && cfg.Impersonate != "" {
+	if cfg.Mode == config.ModeDev && cfg.Impersonate != "" {
 		middlewares = append(middlewares, handlers.ImpersonateMiddleware(cfg.Impersonate, userService, sessionService))
 	}
 
 	mux.Use(middlewares...)
-	MountRoutes(mux, cfg.Environment, assetsFS, mediaDir.FS())
+	MountRoutes(mux, cfg.Mode, assetsFS, mediaDir.FS())
 	MountWebRoutes(mux, cfg, sessionService, userService, recipeService)
 
 	const defaultTimeout = 15 * time.Second
 	httpServer := &http.Server{
-		Addr:              fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
+		Addr:              fmt.Sprintf("%s:%d", cfg.HTTP.Host, cfg.HTTP.Port),
 		Handler:           mux,
 		ReadTimeout:       defaultTimeout,
 		ReadHeaderTimeout: defaultTimeout,
@@ -116,8 +116,8 @@ func New(cfg *config.Config) (*App, error) {
 	}, nil
 }
 
-func NewLogger(mode config.Environment, level slog.Level, filePath string) (*slog.Logger, error) {
-	if mode == config.EnvProduction {
+func NewLogger(mode config.Mode, level slog.Level, filePath string) (*slog.Logger, error) {
+	if mode == config.ModeProd {
 		logger, err := log.NewProd(level, filePath)
 		if err != nil {
 			return nil, fmt.Errorf("create prod logger: %w", err)

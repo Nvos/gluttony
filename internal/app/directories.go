@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 )
 
-func GetAssets(mode config.Environment) (fs.FS, error) {
-	if mode == config.EnvProduction {
+func GetAssets(mode config.Mode) (fs.FS, error) {
+	if mode == config.ModeProd {
 		return assets.Embedded, nil
 	}
 

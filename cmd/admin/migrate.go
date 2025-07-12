@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"gluttony/internal/config"
 	"gluttony/migrations"
-	"gluttony/pkg/database"
+	"gluttony/x/sqlx"
 )
 
-func RunMigrations(ctx context.Context, cfg *config.Config) error {
-	pool, err := database.New(ctx, cfg.Database)
+func RunMigrations(ctx context.Context, cfg *config.Config, sec *config.Secret) error {
+	pool, err := sqlx.New(ctx, cfg.Database, sec.Database)
 	if err != nil {
 		return fmt.Errorf("create db: %w", err)
 	}
 	defer pool.Close()
 
-	if err := database.Migrate(pool, migrations.Migrations); err != nil {
+	if err := sqlx.Migrate(pool, migrations.Migrations); err != nil {
 		return fmt.Errorf("migrate db: %w", err)
 	}
 

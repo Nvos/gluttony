@@ -6,12 +6,18 @@ import (
 	"gluttony/internal/config"
 	"gluttony/internal/user"
 	"gluttony/internal/user/postgres"
-	"gluttony/pkg/database"
-	"gluttony/pkg/password"
+	"gluttony/x/password"
+	"gluttony/x/sqlx"
 )
 
-func AddUser(ctx context.Context, cfg *config.Config, username, pass string, role user.Role) error {
-	pool, err := database.New(ctx, cfg.Database)
+func AddUser(
+	ctx context.Context,
+	cfg *config.Config,
+	sec *config.Secret,
+	username, pass string,
+	role user.Role,
+) error {
+	pool, err := sqlx.New(ctx, cfg.Database, sec.Database)
 	if err != nil {
 		return fmt.Errorf("create db: %w", err)
 	}
