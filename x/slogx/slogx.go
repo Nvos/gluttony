@@ -1,10 +1,15 @@
-package log
+package slogx
 
 import (
 	"fmt"
 	"log/slog"
 	"os"
 )
+
+type Config struct {
+	Level slog.Level
+	Path  string
+}
 
 func NewDev(level slog.Level) *slog.Logger {
 	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{

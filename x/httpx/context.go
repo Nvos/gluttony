@@ -9,7 +9,8 @@ import (
 type Context struct {
 	Response http.ResponseWriter
 	Request  *http.Request
-	Data     map[string]any
+
+	Data map[string]any
 }
 
 func (c *Context) Context() context.Context {
@@ -73,8 +74,4 @@ func (c *Context) FormStrings(key string) []string {
 	}
 
 	return nil
-}
-
-func (c *Context) IsHTMXRequest() bool {
-	return c.Request.Header.Get("Hx-Request") == "true"
 }

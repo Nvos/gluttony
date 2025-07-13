@@ -5,12 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"gluttony/internal/i18n"
-	usersvc "gluttony/internal/service/user"
 	"gluttony/internal/user"
 	"gluttony/web"
 	"gluttony/web/component"
 	"gluttony/x/httpx"
-	"gluttony/x/session"
 	"log/slog"
 	"net/http"
 )
@@ -20,78 +18,42 @@ import (
 // INTENDED ONLY FOR DEV.
 func ImpersonateMiddleware(
 	impersonate string,
-	userService *usersvc.Service,
-	sessionService *session.Service,
+	userService *user.Service,
 ) httpx.Middleware {
-	u, err := userService.GetByUsername(context.Background(), impersonate)
+	sess, err := userService.Impersonate(context.Background(), impersonate)
 	if err != nil {
 		panic(err)
 	}
 
 	return func(next httpx.HandlerFunc) httpx.HandlerFunc {
 		return func(c *httpx.Context) error {
-			var cookie *http.Cookie
-			cookie, err = c.Request.Cookie("GluttonySession")
-			if err != nil {
-				sess, sessErr := sessionService.New(c.Context())
-				if sessErr != nil {
-					return fmt.Errorf("new session: %w", sessErr)
-				}
-
-				sess.Data[user.DoerSessionKey] = u
-
-				c.Response.Header().Add("Vary", "Cookie")
-				c.Response.Header().Add("Cache-Control", `no-cache="Set-Cookie"`)
-				cookie = sess.ToCookie(nil)
-				c.SetCookie(cookie)
-			}
-
-			sess, err := sessionService.Get(c.Context(), cookie.Value)
-			if err == nil {
-				return next(c)
-			}
-
-			_, ok := user.GetSessionDoer(sess)
-			if ok {
-				return next(c)
-			}
-
-			ses, err := sessionService.Restore(c.Context(), cookie.Value)
-			if err != nil {
-				return fmt.Errorf("new session: %w", err)
-			}
-
-			ses.Data[user.DoerSessionKey] = u
+			nextCtx := user.WithContextSession(c.Request.Context(), sess)
+			c.Request = c.Request.WithContext(nextCtx)
 
 			c.Response.Header().Add("Vary", "Cookie")
 			c.Response.Header().Add("Cache-Control", `no-cache="Set-Cookie"`)
-			c.SetCookie(ses.ToCookie(nil))
+			c.SetCookie(sess.ToCookie(nil))
 
 			return next(c)
 		}
 	}
 }
 
-func AuthenticationMiddleware(sessionService *session.Service) httpx.Middleware {
+func AuthenticationMiddleware(userService *user.Service) httpx.Middleware {
 	return func(next httpx.HandlerFunc) httpx.HandlerFunc {
 		return func(c *httpx.Context) error {
-			cookie, err := c.Request.Cookie("GluttonySession")
+			cookie, err := c.Request.Cookie(user.SessionCookieName)
 			if err != nil {
 				return next(c)
 			}
 
-			sess, err := sessionService.Get(c.Context(), cookie.Value)
+			sess, err := userService.GetSession(cookie.Value)
 			if err != nil {
 				return next(c)
 			}
 
-			u, ok := user.GetSessionDoer(sess)
-			if !ok {
-				return next(c)
-			}
-
-			c.Data["User"] = u
-
+			nextCtx := user.WithContextSession(c.Request.Context(), sess)
+			c.Request = c.Request.WithContext(nextCtx)
 			if c.Request.URL.Path == "/login" || c.Request.URL.Path == "/" {
 				c.Redirect("/recipes", http.StatusTemporaryRedirect)
 
@@ -145,16 +107,16 @@ func ErrorMiddleware(logger *slog.Logger) httpx.Middleware {
 func AuthorizationMiddleware(role user.Role) httpx.Middleware {
 	return func(next httpx.HandlerFunc) httpx.HandlerFunc {
 		return func(c *httpx.Context) error {
-			doer := GetDoer(c)
-			if doer == nil {
+			session, ok := user.GetContextSession(c.Context())
+			if !ok {
 				url := "/login?next=" + c.Request.URL.Path
 				c.Redirect(url, http.StatusFound)
 
 				return nil
 			}
 
-			hasAccess := role == doer.Role
-			if doer.Role == user.RoleAdmin {
+			hasAccess := role == session.User.Role
+			if session.User.Role == user.RoleAdmin {
 				hasAccess = true
 			}
 

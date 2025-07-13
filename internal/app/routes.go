@@ -5,10 +5,9 @@ import (
 	"gluttony/internal/handlers"
 	recipehandlers "gluttony/internal/handlers/recipe"
 	userhandlers "gluttony/internal/handlers/user"
-	"gluttony/internal/service/recipe"
-	"gluttony/internal/service/user"
+	"gluttony/internal/recipe"
+	"gluttony/internal/user"
 	"gluttony/x/httpx"
-	"gluttony/x/session"
 	"io/fs"
 	"net/http"
 )
@@ -16,7 +15,6 @@ import (
 func MountWebRoutes(
 	mux *httpx.Router,
 	cfg *config.Config,
-	sessionService *session.Service,
 	userService *user.Service,
 	recipeService *recipe.Service,
 ) {
@@ -25,7 +23,7 @@ func MountWebRoutes(
 		panic(err)
 	}
 
-	userRouter, err := userhandlers.NewRoutes(cfg, userService, sessionService)
+	userRouter, err := userhandlers.NewRoutes(cfg, userService)
 	if err != nil {
 		panic(err)
 	}

@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gluttony/x/session"
 )
 
-var ErrInvalidCredentials = errors.New("invalid credentials")
+type ctxSessionKey string
 
-const DoerSessionKey = session.Key("doer")
+const sessionKey ctxSessionKey = "session"
+
+var ErrInvalidCredentials = errors.New("invalid credentials")
 
 type Role string
 
@@ -50,8 +51,4 @@ type Credentials struct {
 type Store interface {
 	GetByUsername(ctx context.Context, username string) (User, error)
 	Create(ctx context.Context, input CreateInput) (int32, error)
-}
-
-func GetSessionDoer(value session.Session) (User, bool) {
-	return session.Get[User](value, DoerSessionKey)
 }

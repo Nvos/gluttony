@@ -2,26 +2,22 @@ package user
 
 import (
 	"gluttony/internal/config"
-	"gluttony/internal/service/user"
+	"gluttony/internal/user"
 	"gluttony/x/httpx"
-	"gluttony/x/session"
 )
 
 type Routes struct {
-	cfg            *config.Config
-	service        *user.Service
-	sessionService *session.Service
+	cfg     *config.Config
+	service *user.Service
 }
 
 func NewRoutes(
 	cfg *config.Config,
 	service *user.Service,
-	sessionStore *session.Service,
 ) (*Routes, error) {
 	return &Routes{
-		service:        service,
-		sessionService: sessionStore,
-		cfg:            cfg,
+		service: service,
+		cfg:     cfg,
 	}, nil
 }
 

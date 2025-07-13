@@ -6,14 +6,14 @@ import (
 	"gluttony/internal/config"
 	"gluttony/internal/handlers"
 	"gluttony/internal/i18n"
+	"gluttony/internal/recipe"
 	"gluttony/internal/recipe/bleve"
-	"gluttony/internal/service/recipe"
-	"gluttony/internal/service/user"
-	"gluttony/internal/user/postgres"
+	recipepgx "gluttony/internal/recipe/postgres"
+	"gluttony/internal/user"
+	userpgx "gluttony/internal/user/postgres"
 	"gluttony/x/httpx"
 	"gluttony/x/image"
-	"gluttony/x/log"
-	"gluttony/x/session"
+	"gluttony/x/slogx"
 	"gluttony/x/sqlx"
 	"log/slog"
 	"net/http"
@@ -66,18 +66,18 @@ func New(cfg *config.Config, sec *config.Secret) (*App, error) {
 		return nil, fmt.Errorf("get assets: %w", err)
 	}
 
-	sessionStore := session.NewStoreMemory()
-	sessionService := session.NewService(sessionStore)
-	userStore := postgres.NewStore(db)
+	recipeStore := recipepgx.NewStore(db)
+	userStore := userpgx.NewStore(db)
 
-	userService := user.NewService(userStore, sessionService)
+	sessionService := user.NewSessionService()
+	userService := user.NewService(cfg, userStore, sessionService)
 	mediaService := image.NewService(mediaDir)
 	recipeSearchIndex, err := bleve.New(cfg.WorkDir)
 	if err != nil {
 		return nil, fmt.Errorf("create recipe search index: %w", err)
 	}
 
-	recipeService, err := recipe.NewService(db, mediaService, recipeSearchIndex, logger)
+	recipeService, err := recipe.NewService(db, recipeStore, mediaService, recipeSearchIndex, logger)
 	if err != nil {
 		return nil, fmt.Errorf("create recipe service: %w", err)
 	}
@@ -87,15 +87,15 @@ func New(cfg *config.Config, sec *config.Secret) (*App, error) {
 	middlewares := []httpx.Middleware{
 		handlers.ErrorMiddleware(logger),
 		handlers.I18nMiddleware(i18nManager),
-		handlers.AuthenticationMiddleware(sessionService),
+		handlers.AuthenticationMiddleware(userService),
 	}
 	if cfg.Mode == config.ModeDev && cfg.Impersonate != "" {
-		middlewares = append(middlewares, handlers.ImpersonateMiddleware(cfg.Impersonate, userService, sessionService))
+		middlewares = append(middlewares, handlers.ImpersonateMiddleware(cfg.Impersonate, userService))
 	}
 
 	mux.Use(middlewares...)
 	MountRoutes(mux, cfg.Mode, assetsFS, mediaDir.FS())
-	MountWebRoutes(mux, cfg, sessionService, userService, recipeService)
+	MountWebRoutes(mux, cfg, userService, recipeService)
 
 	const defaultTimeout = 15 * time.Second
 	httpServer := &http.Server{
@@ -118,7 +118,7 @@ func New(cfg *config.Config, sec *config.Secret) (*App, error) {
 
 func NewLogger(mode config.Mode, level slog.Level, filePath string) (*slog.Logger, error) {
 	if mode == config.ModeProd {
-		logger, err := log.NewProd(level, filePath)
+		logger, err := slogx.NewProd(level, filePath)
 		if err != nil {
 			return nil, fmt.Errorf("create prod logger: %w", err)
 		}
@@ -126,5 +126,5 @@ func NewLogger(mode config.Mode, level slog.Level, filePath string) (*slog.Logge
 		return logger, nil
 	}
 
-	return log.NewDev(level), nil
+	return slogx.NewDev(level), nil
 }

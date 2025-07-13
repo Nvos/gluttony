@@ -3,7 +3,7 @@ package config
 import (
 	"errors"
 	"gluttony/x/httpx"
-	"gluttony/x/logx"
+	"gluttony/x/slogx"
 	"gluttony/x/sqlx"
 	"os"
 	"path/filepath"
@@ -26,7 +26,7 @@ type Config struct {
 	Domain      string
 	HTTP        httpx.Config
 	Database    sqlx.Config
-	Logger      logx.Config
+	Logger      slogx.Config
 	WorkDir     string `koanf:"work-dir"`
 	Impersonate string
 }

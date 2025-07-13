@@ -39,7 +39,7 @@ func (r *Routes) LoginFormHandler(c *httpx.Context) error {
 		return c.Error(http.StatusBadRequest, err)
 	}
 
-	u, err := r.service.GetByCredentials(c.Context(), props.Credentials)
+	sess, err := r.service.Login(c.Context(), props.Credentials)
 	if err != nil {
 		sse := datastar.NewSSE(c.Response, c.Request)
 
@@ -65,16 +65,9 @@ func (r *Routes) LoginFormHandler(c *httpx.Context) error {
 		return fmt.Errorf("get user=%s: %w", props.Credentials.Username, err)
 	}
 
-	session, err := r.sessionService.New(c.Context())
-	if err != nil {
-		return fmt.Errorf("new session: %w", err)
-	}
-
-	session.Data[user.DoerSessionKey] = u
-
 	c.Response.Header().Add("Vary", "Cookie")
 	c.Response.Header().Add("Cache-Control", `no-cache="Set-Cookie"`)
-	c.SetCookie(session.ToCookie(r.cfg))
+	c.SetCookie(sess.ToCookie(r.cfg))
 
 	sse := datastar.NewSSE(c.Response, c.Request)
 	if err := sse.Redirect(props.RedirectURL); err != nil {

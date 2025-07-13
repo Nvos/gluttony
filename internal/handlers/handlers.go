@@ -8,17 +8,12 @@ import (
 )
 
 func GetDoer(c *httpx.Context) *user.User {
-	value, ok := c.Data["User"]
+	sess, ok := user.GetContextSession(c.Context())
 	if !ok {
 		return nil
 	}
 
-	doer, ok := value.(user.User)
-	if !ok {
-		panic("Invalid type set in 'User' router ctx key")
-	}
-
-	return &doer
+	return &sess.User
 }
 
 func AssetHandler(assetsFS fs.FS, isCache bool) httpx.HandlerFunc {

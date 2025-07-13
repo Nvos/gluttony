@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"gluttony/internal/recipe"
-	"gluttony/internal/recipe/postgres"
 	"gluttony/x/markdown"
 	"gluttony/x/pagination"
 	"gluttony/x/sqlx"
@@ -19,9 +17,9 @@ import (
 
 type Service struct {
 	db           *pgxpool.Pool
-	imageService recipe.ImageService
-	searchIndex  recipe.Index
-	store        recipe.Store
+	imageService ImageService
+	searchIndex  Index
+	store        Store
 	markdown     *markdown.Markdown
 	logger       *slog.Logger
 }
@@ -36,12 +34,17 @@ func (s *Service) Stop() error {
 
 func NewService(
 	db *pgxpool.Pool,
-	imageService recipe.ImageService,
-	searchIndex recipe.Index,
+	store Store,
+	imageService ImageService,
+	searchIndex Index,
 	logger *slog.Logger,
 ) (*Service, error) {
 	if db == nil {
 		return nil, errors.New("db is nil")
+	}
+
+	if store == nil {
+		return nil, errors.New("store is nil")
 	}
 
 	if imageService == nil {
@@ -53,16 +56,16 @@ func NewService(
 	}
 
 	return &Service{
-		db:           db,
 		imageService: imageService,
 		searchIndex:  searchIndex,
-		store:        postgres.NewStore(db),
+		store:        store,
+		db:           db,
 		markdown:     markdown.NewMarkdown(),
 		logger:       logger,
 	}, nil
 }
 
-func (s *Service) Create(ctx context.Context, input recipe.CreateInput) error {
+func (s *Service) Create(ctx context.Context, input CreateInput) error {
 	tx, err := s.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("begin create recipe tx: %w", err)
@@ -91,7 +94,7 @@ func (s *Service) Create(ctx context.Context, input recipe.CreateInput) error {
 		return fmt.Errorf("create image: %w", err)
 	}
 
-	params := recipe.CreateRecipe{
+	params := CreateRecipe{
 		Name:                 input.Name,
 		Description:          input.Description,
 		ThumbnailImageID:     imageID,
@@ -105,7 +108,7 @@ func (s *Service) Create(ctx context.Context, input recipe.CreateInput) error {
 	recipeID, err := txStore.CreateRecipe(ctx, params)
 	if err != nil {
 		if sqlx.IsUniqueViolation(err) {
-			return recipe.ErrUniqueName
+			return ErrUniqueName
 		}
 
 		return fmt.Errorf("create recipe: %w", err)
@@ -123,7 +126,7 @@ func (s *Service) Create(ctx context.Context, input recipe.CreateInput) error {
 		return fmt.Errorf("create recipe ingredients: %w", err)
 	}
 
-	indexRecipe := recipe.IndexRecipeInput{
+	indexRecipe := IndexRecipeInput{
 		ID:          recipeID,
 		Name:        input.Name,
 		Description: input.Description,
@@ -142,7 +145,7 @@ func (s *Service) Create(ctx context.Context, input recipe.CreateInput) error {
 
 func (s *Service) createImage(
 	ctx context.Context,
-	txStore recipe.Store,
+	txStore Store,
 	file *multipart.FileHeader,
 ) (string, *int32, error) {
 	var imageID *int32
@@ -155,7 +158,7 @@ func (s *Service) createImage(
 		return "", nil, fmt.Errorf("upload thumbnail image: %w", err)
 	}
 
-	input := recipe.CreateRecipeImageInput{URL: url}
+	input := CreateRecipeImageInput{URL: url}
 	gotID, err := txStore.CreateRecipeImage(ctx, input)
 	if err != nil {
 		return "", nil, fmt.Errorf("create recipe image: %w", err)
@@ -167,9 +170,9 @@ func (s *Service) createImage(
 
 func (s *Service) updateTagsIfChanged(
 	ctx context.Context,
-	txStore recipe.Store,
+	txStore Store,
 	recipeID int32,
-	current []recipe.Tag,
+	current []Tag,
 	incoming []string,
 ) error {
 	if len(incoming) == 0 {
@@ -198,10 +201,10 @@ func (s *Service) updateTagsIfChanged(
 
 func (s *Service) updateIngredientsIfChanged(
 	ctx context.Context,
-	txStore recipe.Store,
+	txStore Store,
 	recipeID int32,
-	current []recipe.Ingredient,
-	incoming []recipe.Ingredient,
+	current []Ingredient,
+	incoming []Ingredient,
 ) error {
 	if len(incoming) == 0 {
 		return nil
@@ -209,7 +212,7 @@ func (s *Service) updateIngredientsIfChanged(
 
 	isIngredientsChanged := !slices.EqualFunc(
 		current, incoming,
-		func(v1, v2 recipe.Ingredient) bool {
+		func(v1, v2 Ingredient) bool {
 			return v1 == v2
 		},
 	)
@@ -230,7 +233,7 @@ func (s *Service) updateIngredientsIfChanged(
 }
 
 //nolint:nonamedreturns // used for rollback detection
-func (s *Service) Update(ctx context.Context, input recipe.UpdateInput) (err error) {
+func (s *Service) Update(ctx context.Context, input UpdateInput) (err error) {
 	current, err := s.GetFull(ctx, input.ID)
 	if err != nil {
 		return fmt.Errorf("get recipe by id=%v: %w", input.ID, err)
@@ -296,8 +299,8 @@ func (s *Service) Update(ctx context.Context, input recipe.UpdateInput) (err err
 		thumbnailImageID = imageID
 	}
 
-	err = txStore.UpdateRecipe(ctx, recipe.UpdateRecipe{
-		CreateRecipe: recipe.CreateRecipe{
+	err = txStore.UpdateRecipe(ctx, UpdateRecipe{
+		CreateRecipe: CreateRecipe{
 			Name:                 input.Name,
 			Description:          input.Description,
 			ThumbnailImageID:     thumbnailImageID,
@@ -314,7 +317,7 @@ func (s *Service) Update(ctx context.Context, input recipe.UpdateInput) (err err
 	})
 	if err != nil {
 		if sqlx.IsUniqueViolation(err) {
-			return recipe.ErrUniqueName
+			return ErrUniqueName
 		}
 
 		return fmt.Errorf("update recipe: %w", err)
@@ -329,9 +332,9 @@ func (s *Service) Update(ctx context.Context, input recipe.UpdateInput) (err err
 
 func (s *Service) AllSummaries(
 	ctx context.Context,
-	input recipe.SearchInput,
-) (pagination.Page[recipe.Summary], error) {
-	out := pagination.Page[recipe.Summary]{
+	input SearchInput,
+) (pagination.Page[Summary], error) {
+	out := pagination.Page[Summary]{
 		TotalCount: 0,
 		Rows:       nil,
 	}
@@ -350,7 +353,7 @@ func (s *Service) AllSummaries(
 	} else {
 		count, err := s.store.CountRecipeSummaries(ctx)
 		if err != nil {
-			return pagination.Page[recipe.Summary]{}, fmt.Errorf("count recipe summaries: %w", err)
+			return pagination.Page[Summary]{}, fmt.Errorf("count recipe summaries: %w", err)
 		}
 
 		out.TotalCount = count
@@ -380,15 +383,15 @@ func (s *Service) AllSummaries(
 	return out, nil
 }
 
-func (s *Service) GetFull(ctx context.Context, recipeID int32) (recipe.Recipe, error) {
+func (s *Service) GetFull(ctx context.Context, recipeID int32) (Recipe, error) {
 	r, err := s.store.GetRecipe(ctx, recipeID)
 	if err != nil {
-		return recipe.Recipe{}, fmt.Errorf("get recipe id=%d: %w", recipeID, err)
+		return Recipe{}, fmt.Errorf("get recipe id=%d: %w", recipeID, err)
 	}
 
 	html, err := s.markdown.ConvertToHTML(r.InstructionsMarkdown)
 	if err != nil {
-		return recipe.Recipe{}, fmt.Errorf("convert instructions to HTML: %w", err)
+		return Recipe{}, fmt.Errorf("convert instructions to HTML: %w", err)
 	}
 
 	r.InstructionsHTML = html

@@ -12,11 +12,6 @@ import (
 	"strconv"
 )
 
-const (
-	updateView = "view/recipe/update"
-	updateForm = "recipe/form"
-)
-
 func (r *Routes) UpdateViewHandler(c *httpx.Context) error {
 	recipeIDPathParam := c.Request.PathValue("recipe_id")
 	recipeID, err := strconv.ParseInt(recipeIDPathParam, 10, 32)
