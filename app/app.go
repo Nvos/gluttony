@@ -3,14 +3,14 @@ package app
 import (
 	"context"
 	"fmt"
-	"gluttony/internal/config"
-	"gluttony/internal/handlers"
-	"gluttony/internal/i18n"
-	"gluttony/internal/recipe"
-	"gluttony/internal/recipe/bleve"
-	recipepgx "gluttony/internal/recipe/postgres"
-	"gluttony/internal/user"
-	userpgx "gluttony/internal/user/postgres"
+	config2 "gluttony/config"
+	"gluttony/handlers"
+	"gluttony/i18n"
+	"gluttony/recipe"
+	"gluttony/recipe/bleve"
+	recipepgx "gluttony/recipe/postgres"
+	user2 "gluttony/user"
+	userpgx "gluttony/user/postgres"
 	"gluttony/x/httpx"
 	"gluttony/x/image"
 	"gluttony/x/slogx"
@@ -23,16 +23,16 @@ import (
 )
 
 type App struct {
-	cfg    *config.Config
+	cfg    *config2.Config
 	logger *slog.Logger
 
 	recipeService *recipe.Service
-	userService   *user.Service
+	userService   *user2.Service
 
 	httpServer *http.Server
 }
 
-func New(cfg *config.Config, sec *config.Secret) (*App, error) {
+func New(cfg *config2.Config, sec *config2.Secret) (*App, error) {
 	logger, err := NewLogger(cfg.Mode, cfg.Logger.Level, cfg.Logger.Path)
 	if err != nil {
 		return nil, fmt.Errorf("create logger: %w", err)
@@ -69,8 +69,8 @@ func New(cfg *config.Config, sec *config.Secret) (*App, error) {
 	recipeStore := recipepgx.NewStore(db)
 	userStore := userpgx.NewStore(db)
 
-	sessionService := user.NewSessionService()
-	userService := user.NewService(cfg, userStore, sessionService)
+	sessionService := user2.NewSessionService()
+	userService := user2.NewService(cfg, userStore, sessionService)
 	mediaService := image.NewService(mediaDir)
 	recipeSearchIndex, err := bleve.New(cfg.WorkDir)
 	if err != nil {
@@ -89,7 +89,7 @@ func New(cfg *config.Config, sec *config.Secret) (*App, error) {
 		handlers.I18nMiddleware(i18nManager),
 		handlers.AuthenticationMiddleware(userService),
 	}
-	if cfg.Mode == config.ModeDev && cfg.Impersonate != "" {
+	if cfg.Mode == config2.ModeDev && cfg.Impersonate != "" {
 		middlewares = append(middlewares, handlers.ImpersonateMiddleware(cfg.Impersonate, userService))
 	}
 
@@ -116,8 +116,8 @@ func New(cfg *config.Config, sec *config.Secret) (*App, error) {
 	}, nil
 }
 
-func NewLogger(mode config.Mode, level slog.Level, filePath string) (*slog.Logger, error) {
-	if mode == config.ModeProd {
+func NewLogger(mode config2.Mode, level slog.Level, filePath string) (*slog.Logger, error) {
+	if mode == config2.ModeProd {
 		logger, err := slogx.NewProd(level, filePath)
 		if err != nil {
 			return nil, fmt.Errorf("create prod logger: %w", err)

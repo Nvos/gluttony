@@ -2,9 +2,9 @@ package recipe
 
 import (
 	"github.com/yuin/goldmark"
-	"gluttony/internal/handlers"
-	"gluttony/internal/recipe"
-	"gluttony/internal/user"
+	"gluttony/handlers"
+	"gluttony/recipe"
+	"gluttony/user"
 	"gluttony/x/httpx"
 )
 

@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"gluttony/internal/config"
+	"gluttony/config"
 	"net/http"
 	"sync"
 	"time"

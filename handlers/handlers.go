@@ -1,14 +1,14 @@
 package handlers
 
 import (
-	"gluttony/internal/user"
+	user2 "gluttony/user"
 	"gluttony/x/httpx"
 	"io/fs"
 	"net/http"
 )
 
-func GetDoer(c *httpx.Context) *user.User {
-	sess, ok := user.GetContextSession(c.Context())
+func GetDoer(c *httpx.Context) *user2.User {
+	sess, ok := user2.GetContextSession(c.Context())
 	if !ok {
 		return nil
 	}

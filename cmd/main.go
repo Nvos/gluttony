@@ -6,8 +6,8 @@ import (
 	"github.com/alecthomas/kong"
 	"gluttony/cmd/admin"
 	"gluttony/cmd/run"
-	"gluttony/internal/config"
-	"gluttony/internal/user"
+	config2 "gluttony/config"
+	"gluttony/user"
 )
 
 type Admin struct {
@@ -19,8 +19,8 @@ type Admin struct {
 type Globals struct {
 	Config string `help:"Path to config file." default:"config.toml" short:"c"`
 
-	cfg *config.Config `kong:"-"`
-	sec *config.Secret `kong:"-"`
+	cfg *config2.Config `kong:"-"`
+	sec *config2.Secret `kong:"-"`
 }
 
 type CLI struct {
@@ -99,12 +99,12 @@ func main() {
 		kong.Name("gluttony"),
 		kong.ConfigureHelp(kong.HelpOptions{Compact: true}),
 		kong.WithAfterApply(func(ctx *kong.Context) error {
-			cfg, err := config.NewConfig(cli.Config)
+			cfg, err := config2.NewConfig(cli.Config)
 			if err != nil {
 				return fmt.Errorf("parse config: %w", err)
 			}
 
-			sec, err := config.NewSecret()
+			sec, err := config2.NewSecret()
 			if err != nil {
 				return fmt.Errorf("parse secret: %w", err)
 			}

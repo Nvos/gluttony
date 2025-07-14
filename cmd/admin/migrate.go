@@ -3,12 +3,12 @@ package admin
 import (
 	"context"
 	"fmt"
-	"gluttony/internal/config"
+	config2 "gluttony/config"
 	"gluttony/migrations"
 	"gluttony/x/sqlx"
 )
 
-func RunMigrations(ctx context.Context, cfg *config.Config, sec *config.Secret) error {
+func RunMigrations(ctx context.Context, cfg *config2.Config, sec *config2.Secret) error {
 	pool, err := sqlx.New(ctx, cfg.Database, sec.Database)
 	if err != nil {
 		return fmt.Errorf("create db: %w", err)

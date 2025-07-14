@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gluttony/internal/i18n"
-	"gluttony/internal/user"
+	"gluttony/i18n"
+	user2 "gluttony/user"
 	"gluttony/web"
 	"gluttony/web/component"
 	"gluttony/x/httpx"
@@ -18,7 +18,7 @@ import (
 // INTENDED ONLY FOR DEV.
 func ImpersonateMiddleware(
 	impersonate string,
-	userService *user.Service,
+	userService *user2.Service,
 ) httpx.Middleware {
 	sess, err := userService.Impersonate(context.Background(), impersonate)
 	if err != nil {
@@ -27,7 +27,7 @@ func ImpersonateMiddleware(
 
 	return func(next httpx.HandlerFunc) httpx.HandlerFunc {
 		return func(c *httpx.Context) error {
-			nextCtx := user.WithContextSession(c.Request.Context(), sess)
+			nextCtx := user2.WithContextSession(c.Request.Context(), sess)
 			c.Request = c.Request.WithContext(nextCtx)
 
 			c.Response.Header().Add("Vary", "Cookie")
@@ -39,10 +39,10 @@ func ImpersonateMiddleware(
 	}
 }
 
-func AuthenticationMiddleware(userService *user.Service) httpx.Middleware {
+func AuthenticationMiddleware(userService *user2.Service) httpx.Middleware {
 	return func(next httpx.HandlerFunc) httpx.HandlerFunc {
 		return func(c *httpx.Context) error {
-			cookie, err := c.Request.Cookie(user.SessionCookieName)
+			cookie, err := c.Request.Cookie(user2.SessionCookieName)
 			if err != nil {
 				return next(c)
 			}
@@ -52,7 +52,7 @@ func AuthenticationMiddleware(userService *user.Service) httpx.Middleware {
 				return next(c)
 			}
 
-			nextCtx := user.WithContextSession(c.Request.Context(), sess)
+			nextCtx := user2.WithContextSession(c.Request.Context(), sess)
 			c.Request = c.Request.WithContext(nextCtx)
 			if c.Request.URL.Path == "/login" || c.Request.URL.Path == "/" {
 				c.Redirect("/recipes", http.StatusTemporaryRedirect)
@@ -104,10 +104,10 @@ func ErrorMiddleware(logger *slog.Logger) httpx.Middleware {
 	}
 }
 
-func AuthorizationMiddleware(role user.Role) httpx.Middleware {
+func AuthorizationMiddleware(role user2.Role) httpx.Middleware {
 	return func(next httpx.HandlerFunc) httpx.HandlerFunc {
 		return func(c *httpx.Context) error {
-			session, ok := user.GetContextSession(c.Context())
+			session, ok := user2.GetContextSession(c.Context())
 			if !ok {
 				url := "/login?next=" + c.Request.URL.Path
 				c.Redirect(url, http.StatusFound)
@@ -116,7 +116,7 @@ func AuthorizationMiddleware(role user.Role) httpx.Middleware {
 			}
 
 			hasAccess := role == session.User.Role
-			if session.User.Role == user.RoleAdmin {
+			if session.User.Role == user2.RoleAdmin {
 				hasAccess = true
 			}
 

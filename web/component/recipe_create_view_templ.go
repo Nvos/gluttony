@@ -9,7 +9,7 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import "gluttony/web"
-import "gluttony/internal/recipe"
+import "gluttony/recipe"
 
 func ViewRecipeCreate(c *web.Context, form recipe.Form) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {

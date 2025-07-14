@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/search/query"
-	"gluttony/internal/recipe"
+	"gluttony/recipe"
 	"gluttony/x/pagination"
 	"os"
 	"path/filepath"

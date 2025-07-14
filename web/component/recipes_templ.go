@@ -12,7 +12,7 @@ import "gluttony/web"
 
 import "gluttony/x/pagination"
 import "strconv"
-import "gluttony/internal/recipe"
+import "gluttony/recipe"
 import "fmt"
 
 func ViewRecipes(c *web.Context, query string, p pagination.Paginator, recipes []recipe.Summary) templ.Component {

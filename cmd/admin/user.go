@@ -3,17 +3,17 @@ package admin
 import (
 	"context"
 	"fmt"
-	"gluttony/internal/config"
-	"gluttony/internal/user"
-	"gluttony/internal/user/postgres"
+	config2 "gluttony/config"
+	"gluttony/user"
+	"gluttony/user/postgres"
 	"gluttony/x/password"
 	"gluttony/x/sqlx"
 )
 
 func AddUser(
 	ctx context.Context,
-	cfg *config.Config,
-	sec *config.Secret,
+	cfg *config2.Config,
+	sec *config2.Secret,
 	username, pass string,
 	role user.Role,
 ) error {

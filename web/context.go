@@ -1,7 +1,7 @@
 package web
 
 import (
-	"gluttony/internal/user"
+	"gluttony/user"
 	"net/http"
 )
 

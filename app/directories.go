@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 	"gluttony/assets"
-	"gluttony/internal/config"
+	"gluttony/config"
 	"io/fs"
 	"os"
 	"path/filepath"

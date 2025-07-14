@@ -8,7 +8,7 @@ package component
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "gluttony/internal/recipe"
+import "gluttony/recipe"
 import "gluttony/web"
 import "fmt"
 import "strconv"

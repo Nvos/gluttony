@@ -1,8 +1,8 @@
 package user
 
 import (
-	"gluttony/internal/config"
-	"gluttony/internal/user"
+	"gluttony/config"
+	"gluttony/user"
 	"gluttony/x/httpx"
 )
 

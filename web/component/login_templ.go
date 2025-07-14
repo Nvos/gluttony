@@ -8,11 +8,11 @@ package component
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "gluttony/internal/user"
+import "gluttony/user"
 import "gluttony/web"
 import "github.com/starfederation/datastar/sdk/go"
 import "fmt"
-import "gluttony/internal/i18n"
+import "gluttony/i18n"
 
 type LoginFormProps struct {
 	Credentials user.Credentials `json:"credentials"`

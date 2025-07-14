@@ -1,12 +1,12 @@
 package app
 
 import (
-	"gluttony/internal/config"
-	"gluttony/internal/handlers"
-	recipehandlers "gluttony/internal/handlers/recipe"
-	userhandlers "gluttony/internal/handlers/user"
-	"gluttony/internal/recipe"
-	"gluttony/internal/user"
+	"gluttony/config"
+	"gluttony/handlers"
+	recipehandlers "gluttony/handlers/recipe"
+	userhandlers "gluttony/handlers/user"
+	"gluttony/recipe"
+	"gluttony/user"
 	"gluttony/x/httpx"
 	"io/fs"
 	"net/http"

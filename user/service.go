@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"gluttony/internal/config"
+	"gluttony/config"
 	"gluttony/x/password"
 )
 

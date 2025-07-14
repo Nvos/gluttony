@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5"
-	"gluttony/internal/user"
+	"gluttony/user"
 )
 
 var _ user.Store = (*Store)(nil)

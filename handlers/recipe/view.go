@@ -1,7 +1,7 @@
 package recipe
 
 import (
-	"gluttony/internal/handlers"
+	"gluttony/handlers"
 	"gluttony/web"
 	"gluttony/web/component"
 	"gluttony/x/httpx"

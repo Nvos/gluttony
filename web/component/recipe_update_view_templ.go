@@ -10,7 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"fmt"
-	"gluttony/internal/recipe"
+	"gluttony/recipe"
 	"gluttony/web"
 )
 

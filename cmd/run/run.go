@@ -3,15 +3,15 @@ package run
 import (
 	"context"
 	"fmt"
-	"gluttony/internal/app"
-	"gluttony/internal/config"
+	"gluttony/app"
+	config2 "gluttony/config"
 	"golang.org/x/sync/errgroup"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
-func Run(rootCtx context.Context, cfg *config.Config, sec *config.Secret) error {
+func Run(rootCtx context.Context, cfg *config2.Config, sec *config2.Secret) error {
 	ctx, cancel := signal.NotifyContext(rootCtx,
 		os.Interrupt,
 		syscall.SIGINT,

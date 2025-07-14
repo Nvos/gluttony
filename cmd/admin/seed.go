@@ -3,13 +3,13 @@ package admin
 import (
 	"context"
 	"fmt"
-	"gluttony/internal/config"
+	config2 "gluttony/config"
 	"gluttony/seeds"
 	"gluttony/x/sqlx"
 	"io/fs"
 )
 
-func RunSeed(ctx context.Context, cfg *config.Config, sec *config.Secret) error {
+func RunSeed(ctx context.Context, cfg *config2.Config, sec *config2.Secret) error {
 	pool, err := sqlx.New(ctx, cfg.Database, sec.Database)
 	if err != nil {
 		panic(fmt.Sprintf("create db: %v", err))

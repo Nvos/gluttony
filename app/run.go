@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gluttony/internal/config"
+	"gluttony/config"
 	"golang.org/x/sync/errgroup"
 	"log/slog"
 	"net/http"

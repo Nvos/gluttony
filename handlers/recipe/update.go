@@ -3,8 +3,8 @@ package recipe
 import (
 	"errors"
 	datastar "github.com/starfederation/datastar/sdk/go"
-	"gluttony/internal/handlers"
-	"gluttony/internal/recipe"
+	"gluttony/handlers"
+	recipe2 "gluttony/recipe"
 	"gluttony/web"
 	"gluttony/web/component"
 	"gluttony/x/httpx"
@@ -29,7 +29,7 @@ func (r *Routes) UpdateViewHandler(c *httpx.Context) error {
 		tags = append(tags, tag.Name)
 	}
 
-	form := recipe.Form{
+	form := recipe2.Form{
 		ID:              fullRecipe.ID,
 		Name:            fullRecipe.Name,
 		Description:     fullRecipe.Description,
@@ -56,7 +56,7 @@ func (r *Routes) UpdateFormHandler(c *httpx.Context) error {
 		return c.Error(http.StatusBadRequest, err)
 	}
 
-	form, err := recipe.NewRecipeForm(c.Request.MultipartForm)
+	form, err := recipe2.NewRecipeForm(c.Request.MultipartForm)
 	if err != nil {
 		return c.Error(http.StatusBadRequest, err)
 	}
@@ -64,7 +64,7 @@ func (r *Routes) UpdateFormHandler(c *httpx.Context) error {
 	input := form.ToInput(handlers.GetDoer(c).ID)
 
 	sse := datastar.NewSSE(c.Response, c.Request)
-	err = r.service.Update(c.Context(), recipe.UpdateInput{
+	err = r.service.Update(c.Context(), recipe2.UpdateInput{
 		ID:          form.ID,
 		CreateInput: input,
 	})
@@ -77,7 +77,7 @@ func (r *Routes) UpdateFormHandler(c *httpx.Context) error {
 	}
 
 	uniqueName := ""
-	if errors.Is(err, recipe.ErrUniqueName) {
+	if errors.Is(err, recipe2.ErrUniqueName) {
 		uniqueName = "Recipe with such name exists"
 	}
 	err = sse.MarshalAndMergeSignals(map[string]string{
