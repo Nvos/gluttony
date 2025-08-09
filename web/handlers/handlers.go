@@ -1,20 +1,11 @@
 package handlers
 
 import (
-	user2 "gluttony/user"
+	"gluttony/user"
 	"gluttony/x/httpx"
 	"io/fs"
 	"net/http"
 )
-
-func GetDoer(c *httpx.Context) *user2.User {
-	sess, ok := user2.GetContextSession(c.Context())
-	if !ok {
-		return nil
-	}
-
-	return &sess.User
-}
 
 func AssetHandler(assetsFS fs.FS, isCache bool) httpx.HandlerFunc {
 	httpFS := http.FileServerFS(assetsFS)
@@ -38,4 +29,13 @@ func MediaHandler(mediaFS fs.FS) httpx.HandlerFunc {
 
 		return nil
 	}
+}
+
+func GetDoer(c *httpx.Context) *user.User {
+	sess, ok := user.GetContextSession(c.Context())
+	if !ok {
+		return nil
+	}
+
+	return &sess.User
 }

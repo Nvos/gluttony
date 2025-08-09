@@ -1,9 +1,9 @@
 package recipe
 
 import (
-	"gluttony/handlers"
 	"gluttony/web"
 	"gluttony/web/component"
+	"gluttony/web/handlers"
 	"gluttony/x/httpx"
 	"net/http"
 	"strconv"

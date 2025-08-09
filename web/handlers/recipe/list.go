@@ -3,10 +3,10 @@ package recipe
 import (
 	"errors"
 	"fmt"
-	"gluttony/handlers"
 	"gluttony/recipe"
 	"gluttony/web"
 	"gluttony/web/component"
+	"gluttony/web/handlers"
 	"gluttony/x/httpx"
 	"gluttony/x/pagination"
 	"net/http"

@@ -2,11 +2,11 @@ package app
 
 import (
 	"gluttony/config"
-	"gluttony/handlers"
-	recipehandlers "gluttony/handlers/recipe"
-	userhandlers "gluttony/handlers/user"
 	"gluttony/recipe"
 	"gluttony/user"
+	"gluttony/web/handlers"
+	recipehandlers "gluttony/web/handlers/recipe"
+	userhandlers "gluttony/web/handlers/user"
 	"gluttony/x/httpx"
 	"io/fs"
 	"net/http"

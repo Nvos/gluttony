@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	datastar "github.com/starfederation/datastar/sdk/go"
-	"gluttony/handlers"
 	"gluttony/user"
 	"gluttony/web"
 	"gluttony/web/component"
+	"gluttony/web/handlers"
 	"gluttony/x/httpx"
 	"net/http"
 )
